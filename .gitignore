@@ -1,0 +1,62 @@
+# WARNING: Please, DO NOT edit this section of the file! It is maintained in the repository template.
+
+.scannerwork
+*cloc*report*.json
+lines-of-code-report.json
+*sbom*report*.json
+*vulnerabilities*report*.json
+*report*json.zip
+.version
+
+*.code-workspace
+!project.code-workspace
+
+# Please, add your custom content below!
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Testing and Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+.pytype/
+
+# Django specific
+.env
+*.sqlite3
+*.db
+staticfiles/
+mediafiles/
+
+# Editor and IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+.structurizr
+workspace.json
+

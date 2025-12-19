@@ -1,0 +1,7 @@
+# Gitleaks allowlist for false positives
+# Add file:line patterns for legitimate secrets that gitleaks flags incorrectly
+#
+# Format: path/to/file:line_number:hash
+# Example: docs/examples/sample.md:42:b1234567890abcdef
+
+# Add your allowlist entries below this line

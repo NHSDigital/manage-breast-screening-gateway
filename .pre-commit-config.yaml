@@ -1,0 +1,26 @@
+# Pre-commit hooks configuration
+# See https://pre-commit.com for more information
+
+repos:
+  - repo: local
+    hooks:
+      - id: scan-secrets
+        name: Scan secrets
+        entry: ./scripts/githooks/scan-secrets.sh
+        args: ['check=staged-changes']
+        language: script
+        pass_filenames: false
+
+      - id: check-english-usage
+        name: Check English usage (Vale)
+        entry: ./scripts/githooks/check-english-usage.sh
+        language: script
+        pass_filenames: true
+        types: [markdown, text]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.12
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

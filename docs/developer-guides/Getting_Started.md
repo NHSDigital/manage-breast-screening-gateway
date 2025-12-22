@@ -25,7 +25,7 @@ Before you begin, ensure you have the following installed:
    ```
 
    This command will:
-   - Install tools from `.tool-versions` (Python, uv, pre-commit, vale, gitleaks)
+   - Install tools from `.tool-versions` (Python, uv, pre-commit, gitleaks)
    - Install Python dependencies via uv
    - Set up pre-commit hooks
 

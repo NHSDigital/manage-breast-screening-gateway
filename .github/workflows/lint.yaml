@@ -72,20 +72,3 @@ jobs:
 
       - name: Run gitleaks
         run: ./gitleaks detect --source . --verbose --no-git
-
-  vale:
-    name: Check English usage (Vale)
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Vale
-        run: |
-          wget https://github.com/errata-ai/vale/releases/download/v3.6.0/vale_3.6.0_Linux_64-bit.tar.gz
-          tar -xzf vale_3.6.0_Linux_64-bit.tar.gz
-          chmod +x vale
-
-      - name: Run Vale
-        run: ./vale --config scripts/config/vale/vale.ini --glob='*.md' .

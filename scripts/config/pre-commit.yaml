@@ -12,13 +12,6 @@ repos:
         language: script
         pass_filenames: false
 
-      - id: check-english-usage
-        name: Check English usage (Vale)
-        entry: ./scripts/githooks/check-english-usage.sh
-        language: script
-        pass_filenames: true
-        types: [markdown, text]
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.12
     hooks:

@@ -89,7 +89,6 @@ Pre-commit hooks run automatically on commit:
 - **Secrets scanning** (gitleaks)
 - **Code formatting** (ruff format)
 - **Linting** (ruff check)
-- **English usage** (Vale)
 
 Run manually:
 

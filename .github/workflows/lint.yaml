@@ -62,13 +62,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for secret scanning
+          # By default, the checkout action just checks out the latest commit, creating a "shallow" clone.
+          # If we only scanned the latest commit, we might miss leaks that are not in the latest commit
+          # but are still present in previous commits on the branch.
+          #
+          # We don't want to checkout (and scan) the entire repository though, because that would mean
+          # 'bad' commits (including false-positives) block the CI for unrelated PRs, even if they're not
+          # on main, or part of the new branch.
+          #
+          # To keep PRs independent of each other, we can fetch with an "infinite" depth, rather than
+          # the special 0 value of actions/checkout, which means "fetch all history for all tags and branches"
+          fetch-depth: 0x7fffffff # INFINITE_DEPTH
 
-      - name: Install gitleaks
-        run: |
-          wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz
-          tar -xzf gitleaks_8.18.4_linux_x64.tar.gz
-          chmod +x gitleaks
-
-      - name: Run gitleaks
-        run: ./gitleaks detect --source . --verbose --no-git --config scripts/config/gitleaks.toml
+      - name: Scan secrets
+        uses: ./.github/actions/scan-secrets

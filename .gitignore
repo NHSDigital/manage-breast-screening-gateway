@@ -33,6 +33,7 @@ build/
 .coverage
 .coverage.*
 htmlcov/
+coverage.xml
 .tox/
 .hypothesis/
 

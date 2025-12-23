@@ -39,7 +39,7 @@ githooks-config: # Install pre-commit hooks @Configuration
 
 githooks-run: # Run git hooks @Operations
 	pre-commit run \
-		--config scripts/config/pre-commit.yaml \
+    --config .pre-commit-config.yaml \
 		--all-files
 
 _install-uv:

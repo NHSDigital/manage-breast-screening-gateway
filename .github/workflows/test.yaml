@@ -30,7 +30,7 @@ jobs:
         run: uv run pytest
 
       - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: always()
         with:
           files: ./coverage.xml

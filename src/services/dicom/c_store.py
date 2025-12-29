@@ -17,7 +17,7 @@ class CStore:
     def __init__(self, storage: PACSStorage):
         self.storage = storage
 
-    def call(self, event: Event):
+    def call(self, event: Event) -> int:
         try:
             ds = event.dataset
             ds.file_meta = event.file_meta

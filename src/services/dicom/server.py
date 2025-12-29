@@ -51,7 +51,7 @@ class PACSServer:
         logger.info(f"Storage: {self.storage.storage_root}")
         logger.info(f"Database: {self.storage.db_path}")
 
-        self.ae.start_server(("0.0.0.0", self.port), evt_handlers=handlers)
+        self.ae.start_server(("0.0.0.0", self.port), evt_handlers=handlers)  # type: ignore
 
     def stop(self):
         """Stop the PACS server."""

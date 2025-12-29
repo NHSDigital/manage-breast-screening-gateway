@@ -54,6 +54,14 @@ class PACSStorage:
         if db_dir:
             os.makedirs(db_dir, exist_ok=True)
 
+        schema_path = Path(__file__).parent / "init_pacs_db.sql"
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='stored_instances'")
+            if cursor.fetchone() is None:
+                logger.info(f"Initializing database schema from {schema_path}")
+                conn.executescript(schema_path.read_text())
+                conn.commit()
+
     @contextmanager
     def _get_connection(self):
         """Get a database connection with proper error handling."""

@@ -1,0 +1,29 @@
+services:
+  pacs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pacs-server
+    ports:
+      - "4244:4244"
+    volumes:
+      - pacs-storage:/var/lib/pacs/storage
+      - pacs-db:/var/lib/pacs
+    environment:
+      - PACS_AET=SCREENING_PACS
+      - PACS_PORT=4244
+      - PACS_STORAGE_PATH=/var/lib/pacs/storage
+      - PACS_DB_PATH=/var/lib/pacs/pacs.db
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sqlite3", "/var/lib/pacs/pacs.db", "SELECT 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  pacs-storage:
+    driver: local
+  pacs-db:
+    driver: local

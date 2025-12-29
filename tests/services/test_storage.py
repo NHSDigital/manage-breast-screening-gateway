@@ -1,10 +1,11 @@
-from unittest.mock import patch, MagicMock
-from services.storage import PACSStorage
-from pathlib import Path
-from threading import Lock
-from shutil import rmtree
 import hashlib
 import os
+from pathlib import Path
+from shutil import rmtree
+from threading import Lock
+from unittest.mock import MagicMock, patch
+
+from services.storage import PACSStorage
 
 tmp_dir = f"{os.path.dirname(os.path.realpath(__file__))}/tmp"
 

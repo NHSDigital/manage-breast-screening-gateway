@@ -1,10 +1,10 @@
+import os
+from shutil import rmtree
 from unittest.mock import PropertyMock
 
-import os
 import pytest
 from pydicom import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian
-from shutil import rmtree
 
 from services.dicom.c_store import FAILURE, SUCCESS, CStore
 from services.storage import PACSStorage

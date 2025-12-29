@@ -45,15 +45,7 @@ class PACSServer:
         self.ae = AE(ae_title=self.ae_title)
         self.ae.supported_contexts = StoragePresentationContexts
 
-        c_store = CStore(self.storage)
-
-        # TODO: Implement worklist lookup to get NHS number from accession number
-        def c_store_handler(event):
-            # Placeholder - will be replaced with worklist lookup
-            nhs_number = "UNKNOWN"
-            return c_store.call(nhs_number, event)
-
-        handlers = [(evt.EVT_C_STORE, c_store_handler)]
+        handlers = [(evt.EVT_C_STORE, CStore(self.storage).call)]
 
         logger.info(f"PACS server listening on 0.0.0.0:{self.port}")
         logger.info(f"Storage: {self.storage.storage_root}")

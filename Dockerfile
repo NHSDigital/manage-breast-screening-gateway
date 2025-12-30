@@ -23,6 +23,7 @@ RUN uv sync --frozen --no-dev
 
 # Copy source code
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 
 # Set environment variables with defaults
 ENV PACS_AET=SCREENING_PACS \

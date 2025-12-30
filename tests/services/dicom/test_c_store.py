@@ -33,6 +33,12 @@ class TestCStore:
 
         assert subject.call(mock_event) == FAILURE
 
+    def test_no_patient_id_fails(self, mock_storage, mock_event):
+        subject = CStore(mock_storage)
+        mock_event.dataset.PatientID = None
+
+        assert subject.call(mock_event) == FAILURE
+
     def test_existing_sop_instance_uid(self, mock_storage, mock_event):
         mock_storage.instance_exists.return_value = True
         subject = CStore(mock_storage)

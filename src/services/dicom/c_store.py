@@ -24,11 +24,15 @@ class CStore:
 
             sop_instance_uid = ds.get("SOPInstanceUID", "")
             if not sop_instance_uid:
-                logger.error("Missing SOP Instance UID")
+                logger.error("Missing SOPInstanceUID")
+                return FAILURE
+
+            patient_id = ds.get("PatientID")
+            if not patient_id:
+                logger.error("Missing PatientID")
                 return FAILURE
 
             accession_number = ds.get("AccessionNumber", "")
-            patient_id = ds.get("PatientID", "")
 
             self.storage.store_instance(
                 sop_instance_uid,

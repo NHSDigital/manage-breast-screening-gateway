@@ -6,7 +6,7 @@ import pytest
 from pydicom import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian
 
-from services.dicom.c_store import FAILURE, SUCCESS, CStore
+from services.dicom.c_store import SUCCESS, CStore
 from services.storage import PACSStorage
 
 tmp_dir = f"{os.path.dirname(os.path.realpath(__file__))}/tmp"
@@ -31,12 +31,6 @@ class TestCStoreSavesMetadata:
     def storage(self):
         return PACSStorage(f"{tmp_dir}/test.db", tmp_dir)
 
-    def test_no_sop_instance_uid_fails(self, storage, mock_event):
-        subject = CStore(storage)
-        mock_event.dataset.SOPInstanceUID = None
-
-        assert subject.call(mock_event) == FAILURE
-
     def test_existing_sop_instance_uid(self, storage, mock_event):
         sop_instance_uid = "1.2.3.4.5.6"
         subject = CStore(storage)
@@ -49,6 +43,18 @@ class TestCStoreSavesMetadata:
         )
 
         assert subject.call(mock_event) == SUCCESS
+
+        with storage._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                    SELECT patient_id
+                    FROM   stored_instances
+                    WHERE  sop_instance_uid = '1.2.3.4.5.6'
+                """
+            )
+            results = cursor.fetchall()
+
+            assert len(results) == 1
 
         rmtree(tmp_dir)
 

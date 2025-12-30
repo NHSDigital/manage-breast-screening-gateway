@@ -10,6 +10,7 @@
 src/services/storage.py:ipv4:74
 tests/integration/test_c_store_saves_metadata.py:ipv4:21
 tests/integration/test_c_store_saves_metadata.py:ipv4:41
+tests/integration/test_c_store_saves_metadata.py:ipv4:52
 tests/integration/test_c_store_saves_metadata.py:ipv4:65
 tests/services/test_storage.py:ipv4:37
 tests/services/test_storage.py:ipv4:40

@@ -1,5 +1,3 @@
-import os
-from shutil import rmtree
 from unittest.mock import PropertyMock
 
 import pytest
@@ -8,8 +6,6 @@ from pydicom.uid import ExplicitVRLittleEndian
 
 from services.dicom.c_store import SUCCESS, CStore
 from services.storage import PACSStorage
-
-tmp_dir = f"{os.path.dirname(os.path.realpath(__file__))}/tmp"
 
 
 class TestCStoreSavesMetadata:
@@ -28,7 +24,7 @@ class TestCStoreSavesMetadata:
         return event
 
     @pytest.fixture
-    def storage(self):
+    def storage(self, tmp_dir):
         return PACSStorage(f"{tmp_dir}/test.db", tmp_dir)
 
     def test_existing_sop_instance_uid(self, storage, mock_event):
@@ -56,8 +52,6 @@ class TestCStoreSavesMetadata:
 
             assert len(results) == 1
 
-        rmtree(tmp_dir)
-
     def test_valid_event_is_stored(self, storage, mock_event):
         subject = CStore(storage)
 
@@ -66,7 +60,8 @@ class TestCStoreSavesMetadata:
         with storage._get_connection() as conn:
             cursor = conn.execute(
                 """
-                    SELECT patient_id, accession_number, source_aet, storage_path
+                    SELECT patient_id, accession_number,
+                           source_aet, storage_path
                     FROM   stored_instances
                     WHERE  sop_instance_uid = '1.2.3.4.5.6'
                 """
@@ -79,5 +74,3 @@ class TestCStoreSavesMetadata:
             assert accession_number == "ABC123"
             assert source_aet == "ae-title"
             assert storage_path == "ff/af/ffaff041ab509297.dcm"
-
-        rmtree(tmp_dir)

@@ -1,16 +1,13 @@
-import os
 from unittest.mock import patch
 
 from pynetdicom import evt
 
 from services.dicom.server import PACSServer, main
 
-tmp_dir = f"{os.path.dirname(os.path.realpath(__file__))}/tmp"
-
 
 @patch(f"{PACSServer.__module__}.PACSStorage")
 class TestServer:
-    def test_init(self, mock_storage):
+    def test_init(self, mock_storage, tmp_dir):
         subject = PACSServer("Custom AE Title", 2222, tmp_dir, f"{tmp_dir}/test.db")
 
         assert subject.ae_title == "Custom AE Title"

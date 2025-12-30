@@ -1,18 +1,14 @@
 import hashlib
-import os
 from pathlib import Path
-from shutil import rmtree
 from threading import Lock
 from unittest.mock import MagicMock, patch
 
 from services.storage import PACSStorage
 
-tmp_dir = f"{os.path.dirname(os.path.realpath(__file__))}/tmp"
-
 
 @patch("services.storage.sqlite3")
 class TestStorage:
-    def test_init(self, mock_db):
+    def test_init(self, mock_db, tmp_dir):
         mock_connection = MagicMock()
         mock_db.connect.return_value = mock_connection
         subject = PACSStorage(tmp_dir, tmp_dir)
@@ -26,7 +22,7 @@ class TestStorage:
         mock_connection.execute.assert_any_call("PRAGMA synchronous=NORMAL")
         mock_connection.commit.assert_called_once()
 
-    def test_instance_exists_returns_true(self, mock_db):
+    def test_instance_exists_returns_true(self, mock_db, tmp_dir):
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = (1,)
         mock_connection = MagicMock()
@@ -41,7 +37,7 @@ class TestStorage:
             "SELECT 1 FROM stored_instances WHERE sop_instance_uid = ? AND status = 'STORED'", ("1.2.3.4.5.6",)
         )
 
-    def test_instance_exists_returns_false(self, mock_db):
+    def test_instance_exists_returns_false(self, mock_db, tmp_dir):
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = None
         mock_connection = MagicMock()
@@ -52,7 +48,7 @@ class TestStorage:
 
         assert subject.instance_exists("1.2.3.4.5.6") is False
 
-    def test_store_instance_saves_to_filesystem(self, mock_db):
+    def test_store_instance_saves_to_filesystem(self, mock_db, tmp_dir):
         sop_instance_uid = "1.2.3.4.5.6"
         mock_connection = MagicMock()
         mock_db.connect.return_value = mock_connection
@@ -73,9 +69,7 @@ class TestStorage:
         assert relative_path in filepath
         assert open(filepath).read() == "foo"
 
-        rmtree(tmp_dir)
-
-    def test_store_instance_saves_to_db(self, mock_db):
+    def test_store_instance_saves_to_db(self, mock_db, tmp_dir):
         mock_connection = MagicMock()
         mock_db.connect.return_value = mock_connection
         subject = PACSStorage(tmp_dir, tmp_dir)
@@ -116,6 +110,3 @@ class TestStorage:
             ),
         )
         mock_connection.commit.assert_called_once()
-
-        # Clean up
-        rmtree(tmp_dir)

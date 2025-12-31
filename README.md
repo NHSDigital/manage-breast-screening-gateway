@@ -101,9 +101,19 @@ make githooks-run
 This gateway implements a lightweight DICOM service architecture:
 
 1. **DICOM Worklist Server** - Provides scheduled procedure information to modalities
-2. **DICOM PACS Server** - Receives and stores medical images
+2. **DICOM PACS Server** - Receives and stores medical images ([docs](docs/pacs/README.md))
 3. **Event Processing** - Processes MPPS status updates and image metadata
 4. **Azure Relay Communication** - Bidirectional communication with cloud service
+
+### PACS Server
+
+The PACS server provides C-STORE functionality for receiving medical images:
+- Hash-based storage for scalability
+- SQLite metadata indexing
+- Thread-safe concurrent access
+- Docker containerized deployment
+
+See [PACS documentation](docs/pacs/README.md) for detailed information.
 
 ## Testing
 

@@ -4,7 +4,8 @@ import pytest
 from pydicom import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian
 
-from services.dicom.c_store import FAILURE, SUCCESS, CStore
+from services.dicom import FAILURE, SUCCESS
+from services.dicom.c_store import CStore
 
 
 class TestCStore:

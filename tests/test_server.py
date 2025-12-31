@@ -28,8 +28,9 @@ class TestServer:
         mock_storage.assert_called_once_with("/var/lib/pacs/pacs.db", "/var/lib/pacs/storage")
 
     @patch(f"{PACSServer.__module__}.AE")
+    @patch(f"{PACSServer.__module__}.CEcho")
     @patch(f"{PACSServer.__module__}.CStore")
-    def test_start(self, mock_c_store, mock_ae, mock_storage):
+    def test_start(self, mock_c_store, mock_c_echo, mock_ae, mock_storage):
         subject = PACSServer()
         subject.start()
 
@@ -37,7 +38,11 @@ class TestServer:
 
         mock_ae.assert_called_once_with(ae_title="SCREENING_PACS")
         mock_ae.return_value.start_server.assert_called_once_with(
-            ("0.0.0.0", 4244), evt_handlers=[(evt.EVT_C_STORE, mock_c_store.return_value.call)]
+            ("0.0.0.0", 4244),
+            evt_handlers=[
+                (evt.EVT_C_ECHO, mock_c_echo.return_value.call),
+                (evt.EVT_C_STORE, mock_c_store.return_value.call),
+            ],
         )
 
     @patch(f"{PACSServer.__module__}.AE")

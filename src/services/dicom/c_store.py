@@ -5,12 +5,10 @@ from pydicom import Dataset, dcmwrite
 from pydicom.filebase import DicomFileLike
 from pynetdicom.events import Event
 
+from services.dicom import FAILURE, SUCCESS
 from services.storage import InstanceExistsError, PACSStorage
 
 logger = logging.getLogger(__name__)
-
-SUCCESS = 0x0000
-FAILURE = 0xC000
 
 
 class CStore:

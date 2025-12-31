@@ -8,6 +8,7 @@ import os
 
 from pynetdicom import AE, StoragePresentationContexts, evt
 
+from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
 from services.storage import PACSStorage
 
@@ -45,7 +46,7 @@ class PACSServer:
         self.ae = AE(ae_title=self.ae_title)
         self.ae.supported_contexts = StoragePresentationContexts
 
-        handlers = [(evt.EVT_C_STORE, CStore(self.storage).call)]
+        handlers = [(evt.EVT_C_ECHO, CEcho().call), (evt.EVT_C_STORE, CStore(self.storage).call)]
 
         logger.info(f"PACS server listening on 0.0.0.0:{self.port}")
         logger.info(f"Storage: {self.storage.storage_root}")

@@ -76,8 +76,11 @@ class TestStorage:
         subject.instance_exists = MagicMock(return_value=False)
         mock_connection.reset_mock()
 
-        # TODO: More
-        metadata = {"patient_id": "9990001112", "patient_name": "SMITH^JANE"}
+        metadata = {
+            "accession_number": "ACC112233",
+            "patient_id": "9990001112",
+            "patient_name": "SMITH^JANE",
+        }
 
         subject.store_instance(
             "1.2.3.4.5.6",
@@ -85,7 +88,6 @@ class TestStorage:
             metadata,
         )
 
-        # FIXME: This assertion is whitespace sensitive
         mock_connection.execute.assert_called_once_with(
             """
                     INSERT INTO stored_instances (

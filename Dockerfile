@@ -37,4 +37,4 @@ ENV PACS_AET=SCREENING_PACS \
 EXPOSE 4244
 
 # Run the PACS server
-CMD ["uv", "run", "python", "-m", "services.dicom.server"]
+CMD ["uv", "run", "python", "-m", "server"]

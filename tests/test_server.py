@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from pynetdicom import evt
 
-from services.dicom.server import PACSServer, main
+from server import PACSServer, main
 
 
 @patch(f"{PACSServer.__module__}.PACSStorage")

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from dicom_helpers import send_random_dicom_series
 
-from services.dicom.server import PACSServer
+from server import PACSServer
 from services.storage import PACSStorage
 
 

@@ -9,6 +9,7 @@ from server import PACSServer
 from services.storage import PACSStorage
 
 
+@pytest.mark.integration
 class TestSendCStoreToGateway:
     @pytest.fixture(autouse=True)
     def with_pacs_server(self, tmp_dir):

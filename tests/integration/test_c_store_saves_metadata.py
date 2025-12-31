@@ -8,6 +8,7 @@ from services.dicom.c_store import SUCCESS, CStore
 from services.storage import PACSStorage
 
 
+@pytest.mark.integration
 class TestCStoreSavesMetadata:
     @pytest.fixture
     def mock_event(self):

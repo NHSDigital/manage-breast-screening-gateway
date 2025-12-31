@@ -33,11 +33,16 @@ class CStore:
                 return FAILURE
 
             accession_number = ds.get("AccessionNumber", "")
+            patient_name = str(ds.get("PatientName", ""))
 
             self.storage.store_instance(
                 sop_instance_uid,
                 self.dataset_to_bytes(ds),
-                {"accession_number": accession_number, "patient_id": patient_id},
+                {
+                    "accession_number": accession_number,
+                    "patient_id": patient_id,
+                    "patient_name": patient_name,
+                },
                 event.assoc.requestor.ae_title,
             )
             return SUCCESS

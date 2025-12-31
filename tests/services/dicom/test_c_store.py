@@ -14,6 +14,7 @@ class TestCStore:
         dataset.AccessionNumber = "ABC123"
         dataset.SOPInstanceUID = "1.2.3.4.5.6"
         dataset.PatientID = "9990001112"
+        dataset.PatientName = "JANE^SMITH"
         file_meta = FileMetaDataset()
         file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
         event = PropertyMock()
@@ -53,7 +54,11 @@ class TestCStore:
         mock_storage.store_instance.assert_called_once_with(
             "1.2.3.4.5.6",
             subject.dataset_to_bytes(mock_event.dataset),
-            {"accession_number": "ABC123", "patient_id": "9990001112"},
+            {
+                "accession_number": "ABC123",
+                "patient_id": "9990001112",
+                "patient_name": "JANE^SMITH",
+            },
             "ae-title",
         )
 

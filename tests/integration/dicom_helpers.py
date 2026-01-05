@@ -14,7 +14,7 @@ import numpy as np
 import pydicom
 from pydicom import dcmwrite
 from pydicom.dataset import Dataset, FileDataset
-from pydicom.uid import ImplicitVRLittleEndian, generate_uid
+from pydicom.uid import ExplicitVRLittleEndian, generate_uid
 from pynetdicom import AE
 from pynetdicom.sop_class import (
     DigitalMammographyXRayImageStorageForPresentation,
@@ -39,7 +39,7 @@ def generate_random_dicom_file(modality_type="MG"):
     file_meta.MediaStorageSOPClassUID = DigitalMammographyXRayImageStorageForPresentation
     file_meta.MediaStorageSOPInstanceUID = generate_uid()
     file_meta.ImplementationClassUID = generate_uid()
-    file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+    file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
 
     # Create the main dataset
     ds = FileDataset(file_path, {}, file_meta=file_meta, preamble=b"\0" * 128)
@@ -106,7 +106,7 @@ def generate_random_dicom_file(modality_type="MG"):
     ds.PixelData = pixel_data.tobytes()
 
     # Write the DICOM file
-    ds.file_meta.TransferSyntaxUID = ImplicitVRLittleEndian
+    ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
     dcmwrite(file_path, ds, enforce_file_format=False)
 
     logging.getLogger(__name__).info(f"Generated DICOM file: {file_path} with modality {modality_type}")

@@ -67,8 +67,8 @@ class PACSServer:
 def main():
     """Main entry point for PACS server."""
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=os.getenv("LOG_LEVEL", "INFO").upper(),
+        format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
     )
 
     ae_title = os.getenv("PACS_AET", "SCREENING_PACS")

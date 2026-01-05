@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import PropertyMock
 
 import pytest
@@ -75,3 +76,4 @@ class TestCStoreSavesMetadata:
             assert accession_number == "ABC123"
             assert source_aet == "ae-title"
             assert storage_path == "ff/af/ffaff041ab509297.dcm"
+            assert Path(f"{storage.storage_root}/{storage_path}").is_file()

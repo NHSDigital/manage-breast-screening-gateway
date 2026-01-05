@@ -1,10 +1,8 @@
 # Dockerfile for NHS Manage Breast Screening Gateway - PACS Server
-FROM python:3.14-slim
+FROM python:3.14-alpine
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    sqlite3 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add sqlite
 
 # Install uv for package management
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

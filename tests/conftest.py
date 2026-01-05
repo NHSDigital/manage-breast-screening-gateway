@@ -1,16 +1,15 @@
-import os
 import shutil
 import sys
 from pathlib import Path
 
 import pytest
 
-sys.path.append(os.path.dirname(os.path.realpath(__file__)) + "/../src")
+sys.path.append(f"{Path(__file__).parent.parent}/src")
 
 
 @pytest.fixture
 def tmp_dir():
-    return f"{os.path.dirname(os.path.realpath(__file__))}/tmp"
+    return f"{Path(__file__).parent}/tmp"
 
 
 @pytest.fixture(autouse=True)

@@ -8,12 +8,13 @@ from server import PACSServer, main
 @patch(f"{PACSServer.__module__}.PACSStorage")
 class TestServer:
     def test_init(self, mock_storage, tmp_dir):
-        subject = PACSServer("Custom AE Title", 2222, tmp_dir, f"{tmp_dir}/test.db")
+        subject = PACSServer("Custom AE Title", 2222, tmp_dir, f"{tmp_dir}/test.db", False)
 
         assert subject.ae_title == "Custom AE Title"
         assert subject.port == 2222
         assert subject.storage == mock_storage.return_value
         assert subject.ae is None
+        assert subject.block is False
 
         mock_storage.assert_called_once_with(f"{tmp_dir}/test.db", tmp_dir)
 
@@ -24,13 +25,14 @@ class TestServer:
         assert subject.port == 4244
         assert subject.storage == mock_storage.return_value
         assert subject.ae is None
+        assert subject.block is True
 
         mock_storage.assert_called_once_with("/var/lib/pacs/pacs.db", "/var/lib/pacs/storage")
 
     @patch(f"{PACSServer.__module__}.AE")
     @patch(f"{PACSServer.__module__}.CEcho")
     @patch(f"{PACSServer.__module__}.CStore")
-    def test_start(self, mock_c_store, mock_c_echo, mock_ae, mock_storage):
+    def test_start(self, mock_c_store, mock_c_echo, mock_ae, _):
         subject = PACSServer()
         subject.start()
 
@@ -39,6 +41,7 @@ class TestServer:
         mock_ae.assert_called_once_with(ae_title="SCREENING_PACS")
         mock_ae.return_value.start_server.assert_called_once_with(
             ("0.0.0.0", 4244),
+            block=True,
             evt_handlers=[
                 (evt.EVT_C_ECHO, mock_c_echo.return_value.call),
                 (evt.EVT_C_STORE, mock_c_store.return_value.call),
@@ -46,7 +49,7 @@ class TestServer:
         )
 
     @patch(f"{PACSServer.__module__}.AE")
-    def test_stop(self, mock_ae, mock_storage):
+    def test_stop(self, *_):
         subject = PACSServer()
         subject.start()
         subject.stop()

@@ -24,6 +24,7 @@ class PACSServer:
         port: int = 4244,
         storage_path: str = "/var/lib/pacs/storage",
         db_path: str = "/var/lib/pacs/pacs.db",
+        block: bool = True,
     ):
         """
         Initialize PACS server.
@@ -38,6 +39,7 @@ class PACSServer:
         self.port = port
         self.storage = PACSStorage(db_path, storage_path)
         self.ae = None
+        self.block = block
 
     def start(self):
         """Start the PACS server and listen for incoming connections."""
@@ -52,7 +54,7 @@ class PACSServer:
         logger.info(f"Storage: {self.storage.storage_root}")
         logger.info(f"Database: {self.storage.db_path}")
 
-        self.ae.start_server(("0.0.0.0", self.port), evt_handlers=handlers)  # type: ignore
+        self.ae.start_server(("0.0.0.0", self.port), block=self.block, evt_handlers=handlers)  # type: ignore
 
     def stop(self):
         """Stop the PACS server."""

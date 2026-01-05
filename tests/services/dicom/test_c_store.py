@@ -3,6 +3,9 @@ from unittest.mock import PropertyMock, patch
 import pytest
 from pydicom import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian
+from pynetdicom.sop_class import (
+    DigitalMammographyXRayImageStorageForPresentation,
+)
 
 from services.dicom import FAILURE, SUCCESS
 from services.dicom.c_store import CStore
@@ -18,6 +21,7 @@ class TestCStore:
         dataset.PatientName = "JANE^SMITH"
         file_meta = FileMetaDataset()
         file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
+        file_meta.MediaStorageSOPClassUID = DigitalMammographyXRayImageStorageForPresentation
         event = PropertyMock()
         event.file_meta = file_meta
         event.dataset = dataset

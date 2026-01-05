@@ -4,6 +4,10 @@ from io import BytesIO
 from pydicom import Dataset, dcmwrite
 from pydicom.filebase import DicomFileLike
 from pynetdicom.events import Event
+from pynetdicom.sop_class import (
+    DigitalMammographyXRayImageStorageForPresentation,  # type: ignore
+    DigitalMammographyXRayImageStorageForProcessing,  # type: ignore
+)
 
 from services.dicom import FAILURE, SUCCESS
 from services.storage import InstanceExistsError, PACSStorage
@@ -12,6 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class CStore:
+    VALID_SOP_CLASSES = [
+        DigitalMammographyXRayImageStorageForPresentation,
+        DigitalMammographyXRayImageStorageForProcessing,
+    ]
+
     def __init__(self, storage: PACSStorage):
         self.storage = storage
 
@@ -19,6 +28,10 @@ class CStore:
         try:
             ds = event.dataset
             ds.file_meta = event.file_meta
+
+            if ds.file_meta.MediaStorageSOPClassUID not in self.VALID_SOP_CLASSES:
+                logger.error(f"Invalid SOP Class UID: {ds.file_meta.MediaStorageSOPClassUID}")
+                return FAILURE
 
             sop_instance_uid = ds.get("SOPInstanceUID", "")
             if not sop_instance_uid:

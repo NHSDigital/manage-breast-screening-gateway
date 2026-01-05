@@ -4,6 +4,9 @@ from unittest.mock import PropertyMock
 import pytest
 from pydicom import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian
+from pynetdicom.sop_class import (
+    DigitalMammographyXRayImageStorageForProcessing,
+)
 
 from services.dicom.c_store import SUCCESS, CStore
 from services.storage import PACSStorage
@@ -19,6 +22,7 @@ class TestCStoreSavesMetadata:
         dataset.SOPInstanceUID = "1.2.3.4.5.6"
         file_meta = FileMetaDataset()
         file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
+        file_meta.MediaStorageSOPClassUID = DigitalMammographyXRayImageStorageForProcessing
         event = PropertyMock()
         event.file_meta = file_meta
         event.dataset = dataset

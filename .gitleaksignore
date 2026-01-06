@@ -18,5 +18,10 @@ tests/services/test_storage.py:ipv4:52
 tests/services/test_storage.py:ipv4:55
 tests/services/test_storage.py:ipv4:88
 tests/services/test_storage.py:ipv4:107
+tests/services/test_storage.py:ipv4:136
+tests/services/test_storage.py:ipv4:158
+tests/services/test_storage.py:ipv4:201
+tests/services/test_storage.py:ipv4:203
+tests/services/test_storage.py:ipv4:233
 tests/services/dicom/test_c_store.py:ipv4:15
 tests/services/dicom/test_c_store.py:ipv4:48

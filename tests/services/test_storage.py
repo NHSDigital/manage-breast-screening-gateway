@@ -181,13 +181,13 @@ class TestWorkingStorage:
 
         mock_connection.execute.assert_called_once_with(
             """
-                    INSERT INTO worklist_items (
-                        accession_number, patient_id, patient_name, patient_birth_date,
-                        patient_sex, scheduled_date, scheduled_time, modality,
-                        study_description, procedure_code, study_instance_uid,
-                        source_message_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
+                INSERT INTO worklist_items (
+                    accession_number, patient_id, patient_name, patient_birth_date,
+                    patient_sex, scheduled_date, scheduled_time, modality,
+                    study_description, procedure_code, study_instance_uid,
+                    source_message_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
             (
                 item["accession_number"],
                 item["patient_id"],
@@ -315,12 +315,12 @@ class TestWorkingStorage:
         assert mock_connection.execute.call_count == 2
         mock_connection.execute.assert_any_call(
             """
-                    UPDATE worklist_items
-                    SET status = ?,
-                        mpps_instance_uid = COALESCE(?, mpps_instance_uid),
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE accession_number = ?
-                """,
+                UPDATE worklist_items
+                SET status = ?,
+                    mpps_instance_uid = COALESCE(?, mpps_instance_uid),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
             ("COMPLETED", None, "ACC123456"),
         )
         mock_connection.execute.assert_any_call(
@@ -343,12 +343,12 @@ class TestWorkingStorage:
 
         result = mock_connection.execute.assert_called_once_with(
             """
-                    UPDATE worklist_items
-                    SET status = ?,
-                        mpps_instance_uid = COALESCE(?, mpps_instance_uid),
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE accession_number = ?
-                """,
+                UPDATE worklist_items
+                SET status = ?,
+                    mpps_instance_uid = COALESCE(?, mpps_instance_uid),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
             ("COMPLETED", None, "ACC123456"),
         )
         assert result is None
@@ -368,12 +368,12 @@ class TestWorkingStorage:
         assert mock_connection.execute.call_count == 2
         mock_connection.execute.assert_any_call(
             """
-                    UPDATE worklist_items
-                    SET status = ?,
-                        mpps_instance_uid = COALESCE(?, mpps_instance_uid),
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE accession_number = ?
-                """,
+                UPDATE worklist_items
+                SET status = ?,
+                    mpps_instance_uid = COALESCE(?, mpps_instance_uid),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
             ("COMPLETED", "some-uid", "ACC123456"),
         )
         assert result == "MSGID123456"
@@ -393,11 +393,11 @@ class TestWorkingStorage:
 
         mock_connection.execute.assert_called_once_with(
             """
-                    UPDATE worklist_items
-                    SET study_instance_uid = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE accession_number = ?
-                """,
+                UPDATE worklist_items
+                SET study_instance_uid = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
             (study_instance_uid, "ACC123456"),
         )
 

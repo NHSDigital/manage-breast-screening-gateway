@@ -1,16 +1,19 @@
-"""PACS DICOM Server
+"""PACS and MWL DICOM Servers
 
-Provides C-STORE SCP (Service Class Provider) for receiving DICOM images.
+Provides:
+- C-STORE SCP (Service Class Provider) for receiving DICOM images (PACS)
+- C-FIND SCP for modality worklist management (MWL)
 """
 
 import logging
 import os
 
 from pynetdicom import AE, StoragePresentationContexts, evt
+from pynetdicom.sop_class import ModalityWorklistInformationFind  # type: ignore[attr-defined]
 
 from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
-from services.storage import PACSStorage
+from services.storage import PACSStorage, WorklistStorage
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +65,52 @@ class PACSServer:
             logger.info("Stopping PACS server")
             self.ae.shutdown()
         self.storage.close()
+
+
+class MWLServer:
+    """DICOM Modality Worklist server with C-FIND support."""
+
+    def __init__(
+        self,
+        ae_title: str = "MWL_SCP",
+        port: int = 4243,
+        db_path: str = "/var/lib/pacs/worklist.db",
+        block: bool = True,
+    ):
+        """
+        Initialize MWL server.
+
+        Args:
+            ae_title: Application Entity Title
+            port: Port to listen on
+            db_path: Path to SQLite worklist database
+            block: Whether to block when starting server
+        """
+        self.ae_title = ae_title
+        self.port = port
+        self.storage = WorklistStorage(db_path)
+        self.ae = None
+        self.block = block
+
+    def start(self):
+        """Start the MWL server."""
+        logger.info(f"Starting MWL server: {self.ae_title} on port {self.port}")
+
+        self.ae = AE(ae_title=self.ae_title)
+        self.ae.add_supported_context(ModalityWorklistInformationFind)
+
+        handlers = [(evt.EVT_C_FIND)]
+
+        logger.info(f"MWL server listening on 0.0.0.0:{self.port}")
+        logger.info(f"Database: {self.storage.db_path}")
+
+        self.ae.start_server(("0.0.0.0", self.port), block=self.block, evt_handlers=handlers)  # type: ignore
+
+    def stop(self):
+        """Stop the MWL server."""
+        if self.ae:
+            logger.info("Stopping MWL server")
+            self.ae.shutdown()
 
 
 def main():

@@ -227,13 +227,13 @@ class WorklistStorage(Storage):
         with self._get_connection() as conn:
             conn.execute(
                 """
-                    INSERT INTO worklist_items (
-                        accession_number, patient_id, patient_name, patient_birth_date,
-                        patient_sex, scheduled_date, scheduled_time, modality,
-                        study_description, procedure_code, study_instance_uid,
-                        source_message_id
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
+                INSERT INTO worklist_items (
+                    accession_number, patient_id, patient_name, patient_birth_date,
+                    patient_sex, scheduled_date, scheduled_time, modality,
+                    study_description, procedure_code, study_instance_uid,
+                    source_message_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
                 (
                     accession_number,
                     patient_id,
@@ -326,12 +326,12 @@ class WorklistStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
-                    UPDATE worklist_items
-                    SET status = ?,
-                        mpps_instance_uid = COALESCE(?, mpps_instance_uid),
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE accession_number = ?
-                """,
+                UPDATE worklist_items
+                SET status = ?,
+                    mpps_instance_uid = COALESCE(?, mpps_instance_uid),
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
                 (status, mpps_instance_uid, accession_number),
             )
 
@@ -358,11 +358,11 @@ class WorklistStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
-                    UPDATE worklist_items
-                    SET study_instance_uid = ?,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE accession_number = ?
-                """,
+                UPDATE worklist_items
+                SET study_instance_uid = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
                 (study_instance_uid, accession_number),
             )
 

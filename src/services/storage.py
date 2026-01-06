@@ -11,7 +11,6 @@ import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from threading import Lock
 from typing import Dict
 
 logger = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ class InstanceExistsError(Exception):
 
 
 class PACSStorage:
-    """Thread-safe PACS storage manager with hash-based file organization."""
+    """PACS storage manager with hash-based file organization."""
 
     def __init__(self, db_path: str = "/var/lib/pacs/pacs.db", storage_root: str = "/var/lib/pacs/storage"):
         """
@@ -35,7 +34,6 @@ class PACSStorage:
         self.db_path = db_path
         self.storage_root = Path(storage_root)
         self.storage_root.mkdir(parents=True, exist_ok=True)
-        self._lock = Lock()
 
         # Ensure database is initialized
         self._ensure_db()
@@ -110,42 +108,41 @@ class PACSStorage:
         Raises:
             InstanceExistsError: If instance already exists
         """
-        with self._lock:
-            if self.instance_exists(sop_instance_uid):
-                raise InstanceExistsError(f"Instance already exists: {sop_instance_uid}")
+        if self.instance_exists(sop_instance_uid):
+            raise InstanceExistsError(f"Instance already exists: {sop_instance_uid}")
 
-            rel_path, abs_path, file_size, storage_hash = self.store_file(sop_instance_uid, file_data)
+        rel_path, abs_path, file_size, storage_hash = self.store_file(sop_instance_uid, file_data)
 
-            # Store metadata in database
-            with self._get_connection() as conn:
-                conn.execute(
-                    """
-                    INSERT INTO stored_instances (
-                        sop_instance_uid, storage_path, file_size, storage_hash,
-                        patient_id, patient_name, accession_number, source_aet,
-                        status
-                    ) VALUES (
-                        ?, ?, ?, ?,
-                        ?, ?, ?, ?,
-                        'STORED'
-                    )
-                """,
-                    (
-                        sop_instance_uid,
-                        str(rel_path),
-                        file_size,
-                        storage_hash,
-                        metadata.get("patient_id"),
-                        metadata.get("patient_name"),
-                        metadata.get("accession_number"),
-                        source_aet,
-                    ),
+        # Store metadata in database
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO stored_instances (
+                    sop_instance_uid, storage_path, file_size, storage_hash,
+                    patient_id, patient_name, accession_number, source_aet,
+                    status
+                ) VALUES (
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    'STORED'
                 )
-                conn.commit()
+            """,
+                (
+                    sop_instance_uid,
+                    str(rel_path),
+                    file_size,
+                    storage_hash,
+                    metadata.get("patient_id"),
+                    metadata.get("patient_name"),
+                    metadata.get("accession_number"),
+                    source_aet,
+                ),
+            )
+            conn.commit()
 
-            logger.info(f"Stored instance: {sop_instance_uid} -> {rel_path} ({file_size} bytes)")
+        logger.info(f"Stored instance: {sop_instance_uid} -> {rel_path} ({file_size} bytes)")
 
-            return str(abs_path)
+        return str(abs_path)
 
     def instance_exists(self, sop_instance_uid: str) -> bool:
         """Check if instance exists in database."""

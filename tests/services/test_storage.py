@@ -1,6 +1,5 @@
 import hashlib
 from pathlib import Path
-from threading import Lock
 from unittest.mock import MagicMock, patch
 
 from services.storage import PACSStorage
@@ -15,7 +14,6 @@ class TestStorage:
 
         assert subject.db_path == tmp_dir
         assert subject.storage_root == Path(tmp_dir)
-        assert isinstance(subject._lock, Lock)
 
         assert mock_connection.execute.call_count == 3
         mock_connection.execute.assert_any_call("PRAGMA journal_mode=WAL")
@@ -90,16 +88,16 @@ class TestStorage:
 
         mock_connection.execute.assert_called_once_with(
             """
-                    INSERT INTO stored_instances (
-                        sop_instance_uid, storage_path, file_size, storage_hash,
-                        patient_id, patient_name, accession_number, source_aet,
-                        status
-                    ) VALUES (
-                        ?, ?, ?, ?,
-                        ?, ?, ?, ?,
-                        'STORED'
-                    )
-                """,
+                INSERT INTO stored_instances (
+                    sop_instance_uid, storage_path, file_size, storage_hash,
+                    patient_id, patient_name, accession_number, source_aet,
+                    status
+                ) VALUES (
+                    ?, ?, ?, ?,
+                    ?, ?, ?, ?,
+                    'STORED'
+                )
+            """,
             (
                 "1.2.3.4.5.6",
                 "ff/af/ffaff041ab509297.dcm",

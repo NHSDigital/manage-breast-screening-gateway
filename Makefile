@@ -53,10 +53,13 @@ _install-uv:
 # ---------------------------------------------------------------------------
 # Testing
 # ---------------------------------------------------------------------------
-test: test-unit test-lint # Run all tests @Testing
+test: test-unit test-integration test-lint # Run all tests @Testing
 
 test-unit: # Run unit tests (use ARGS="<args>" for additional options) @Testing
-	uv run pytest $(ARGS)
+	uv run pytest -m "not integration" $(ARGS)
+
+test-integration:
+	uv run pytest -m "integration" $(ARGS)
 
 test-lint: # Lint files @Testing
 	uv run ruff check .

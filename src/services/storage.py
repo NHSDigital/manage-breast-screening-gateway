@@ -1,10 +1,3 @@
-"""
-PACS Storage Layer
-
-Manages DICOM image storage using hash-based directory structure and SQLite database.
-Thread-safe implementation for concurrent access.
-"""
-
 import hashlib
 import logging
 import os
@@ -22,7 +15,13 @@ class InstanceExistsError(Exception):
 
 class Storage:
     def __init__(self, db_path: str, schema_path: str, table_name: str):
-        """"""
+        """
+        Initialize storage with database.
+        Args:
+            db_path: Path to SQLite database
+            schema_path: Path to SQL schema file
+            table_name: Name of the main table to check for existence
+        """
         self.db_path = db_path
         self.schema_path = schema_path
         self.table_name = table_name
@@ -61,7 +60,11 @@ class Storage:
 
 
 class PACSStorage(Storage):
-    """PACS storage manager with hash-based file organization."""
+    """
+    PACS Storage Service.
+
+    Manages DICOM image storage using hash-based directory structure and SQLite database.
+    """
 
     def __init__(self, db_path: str = "/var/lib/pacs/pacs.db", storage_root: str = "/var/lib/pacs/storage"):
         """
@@ -158,6 +161,9 @@ class PACSStorage(Storage):
             return cursor.fetchone() is not None
 
     def store_file(self, sop_instance_uid: str, file_data: bytes) -> tuple[str, Path, int, str]:
+        """
+        Store file data on disk in hash-based directory structure.
+        """
         rel_path = self._compute_storage_path(sop_instance_uid)
         abs_path = self.storage_root / rel_path
 

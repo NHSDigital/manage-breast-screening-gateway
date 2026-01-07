@@ -7,6 +7,7 @@ Provides:
 
 import logging
 import os
+import threading
 
 from pynetdicom import AE, StoragePresentationContexts, evt
 from pynetdicom.sop_class import ModalityWorklistInformationFind  # type: ignore[attr-defined]
@@ -115,24 +116,44 @@ class MWLServer:
 
 
 def main():
-    """Main entry point for PACS server."""
+    """Main entry point for PACS and MWL servers."""
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
     )
 
-    ae_title = os.getenv("PACS_AET", "SCREENING_PACS")
-    port = int(os.getenv("PACS_PORT", "4244"))
-    storage_path = os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
-    db_path = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
+    # PACS configuration
+    pacs_aet = os.getenv("PACS_AET", "SCREENING_PACS")
+    pacs_port = int(os.getenv("PACS_PORT", "4244"))
+    pacs_storage_path = os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
+    pacs_db_path = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
 
-    server = PACSServer(ae_title, port, storage_path, db_path)
+    # MWL configuration
+    mwl_aet = os.getenv("MWL_AET", "MWL_SCP")
+    mwl_port = int(os.getenv("MWL_PORT", "4243"))
+    mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
+
+    # Create servers with block=True - each runs in its own thread so they won't block each other
+    pacs_server = PACSServer(pacs_aet, pacs_port, pacs_storage_path, pacs_db_path, block=True)
+    mwl_server = MWLServer(mwl_aet, mwl_port, mwl_db_path, block=True)
+
+    # Start servers in separate threads
+    pacs_thread = threading.Thread(target=pacs_server.start, name="PACSServer", daemon=True)
+    mwl_thread = threading.Thread(target=mwl_server.start, name="MWLServer", daemon=True)
+
+    pacs_thread.start()
+    mwl_thread.start()
+
+    logger.info("Both PACS and MWL servers started")
 
     try:
-        server.start()
+        # Keep main thread alive
+        pacs_thread.join()
+        mwl_thread.join()
     except KeyboardInterrupt:
         logger.info("Received shutdown signal")
-        server.stop()
+        pacs_server.stop()
+        mwl_server.stop()
 
 
 if __name__ == "__main__":

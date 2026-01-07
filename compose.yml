@@ -1,19 +1,26 @@
 services:
-  pacs:
+  gateway:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: pacs-server
+    container_name: gateway-server
     ports:
-      - "4244:4244"
+      - "4243:4243"  # MWL
+      - "4244:4244"  # PACS
     volumes:
       - pacs-storage:/var/lib/pacs/storage
       - pacs-db:/var/lib/pacs
     environment:
+      # PACS configuration
       - PACS_AET=SCREENING_PACS
       - PACS_PORT=4244
       - PACS_STORAGE_PATH=/var/lib/pacs/storage
       - PACS_DB_PATH=/var/lib/pacs/pacs.db
+      # MWL configuration
+      - MWL_AET=MWL_SCP
+      - MWL_PORT=4243
+      - MWL_DB_PATH=/var/lib/pacs/worklist.db
+      # Logging
       - LOG_LEVEL=INFO
     restart: unless-stopped
     healthcheck:

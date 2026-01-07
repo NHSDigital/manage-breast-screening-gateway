@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock, patch
+from typing import cast
+from unittest.mock import MagicMock, Mock, patch
 
 from pynetdicom import evt
 
@@ -54,8 +55,8 @@ class TestPACSServer:
         subject.start()
         subject.stop()
 
-        subject.ae.shutdown.assert_called_once()
-        subject.storage.close.assert_called_once()
+        cast(Mock, subject.ae).shutdown.assert_called_once()
+        cast(Mock, subject.storage).close.assert_called_once()
 
 
 @patch(f"{MWLServer.__module__}.WorklistStorage")
@@ -107,7 +108,7 @@ class TestMWLServer:
         subject.start()
         subject.stop()
 
-        subject.ae.shutdown.assert_called_once()
+        cast(Mock, subject.ae).shutdown.assert_called_once()
 
 
 def test_main(monkeypatch):
@@ -115,24 +116,45 @@ def test_main(monkeypatch):
     monkeypatch.setenv("PACS_PORT", "2222")
     monkeypatch.setenv("PACS_STORAGE_PATH", "/some/path")
     monkeypatch.setenv("PACS_DB_PATH", "/some/path/test.db")
+    monkeypatch.setenv("MWL_AET", "Custom MWL")
+    monkeypatch.setenv("MWL_PORT", "3333")
+    monkeypatch.setenv("MWL_DB_PATH", "/some/path/worklist.db")
 
-    with patch(f"{PACSServer.__module__}.PACSServer") as mock_server:
+    with (
+        patch(f"{PACSServer.__module__}.PACSServer") as mock_pacs,
+        patch(f"{MWLServer.__module__}.MWLServer") as mock_mwl,
+        patch(f"{PACSServer.__module__}.threading.Thread"),
+    ):
         main()
 
-        mock_server.assert_called_once_with("Custom AE Title", 2222, "/some/path", "/some/path/test.db")
+        mock_pacs.assert_called_once_with("Custom AE Title", 2222, "/some/path", "/some/path/test.db", block=True)
+        mock_mwl.assert_called_once_with("Custom MWL", 3333, "/some/path/worklist.db", block=True)
 
 
 def test_main_using_defaults():
-    with patch(f"{PACSServer.__module__}.PACSServer") as mock_server:
+    with (
+        patch(f"{PACSServer.__module__}.PACSServer") as mock_pacs,
+        patch(f"{MWLServer.__module__}.MWLServer") as mock_mwl,
+        patch(f"{PACSServer.__module__}.threading.Thread"),
+    ):
         main()
 
-        mock_server.assert_called_once_with("SCREENING_PACS", 4244, "/var/lib/pacs/storage", "/var/lib/pacs/pacs.db")
+        mock_pacs.assert_called_once_with(
+            "SCREENING_PACS", 4244, "/var/lib/pacs/storage", "/var/lib/pacs/pacs.db", block=True
+        )
+        mock_mwl.assert_called_once_with("MWL_SCP", 4243, "/var/lib/pacs/worklist.db", block=True)
 
 
 def test_main_keyboard_interrupt():
-    with patch(f"{PACSServer.__module__}.PACSServer") as mock_server:
-        mock_server.return_value.start.side_effect = KeyboardInterrupt()
+    with (
+        patch(f"{PACSServer.__module__}.PACSServer") as mock_pacs,
+        patch(f"{MWLServer.__module__}.MWLServer") as mock_mwl,
+        patch(f"{PACSServer.__module__}.threading.Thread") as mock_thread,
+    ):
+        # Simulate KeyboardInterrupt when joining threads
+        mock_thread.return_value.join.side_effect = KeyboardInterrupt()
 
         main()
 
-        mock_server.return_value.stop.assert_called_once()
+        cast(Mock, mock_pacs.return_value).stop.assert_called_once()
+        cast(Mock, mock_mwl.return_value).stop.assert_called_once()

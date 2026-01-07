@@ -13,6 +13,7 @@ from pynetdicom.sop_class import ModalityWorklistInformationFind  # type: ignore
 
 from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
+from services.mwl.c_find import CFindHandler
 from services.storage import PACSStorage, WorklistStorage
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,7 @@ class MWLServer:
         self.ae = AE(ae_title=self.ae_title)
         self.ae.add_supported_context(ModalityWorklistInformationFind)
 
-        handlers = [(evt.EVT_C_FIND)]
+        handlers = [(evt.EVT_C_FIND, CFindHandler(self.storage).call)]
 
         logger.info(f"MWL server listening on 0.0.0.0:{self.port}")
         logger.info(f"Database: {self.storage.db_path}")

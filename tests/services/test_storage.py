@@ -156,7 +156,7 @@ class TestWorkingStorage:
         mock_connection.execute.assert_any_call("PRAGMA synchronous=NORMAL")
         mock_connection.commit.assert_called_once()
 
-    def test_add_worklist_item(self, mock_db, tmp_dir):
+    def test_store_worklist_item(self, mock_db, tmp_dir):
         mock_connection = MagicMock()
         mock_db.connect.return_value = mock_connection
         subject = WorklistStorage(tmp_dir)
@@ -177,7 +177,7 @@ class TestWorkingStorage:
             "source_message_id": "MSGID123456",
         }
 
-        subject.add_worklist_item(**item)
+        subject.store_worklist_item(**item)
 
         mock_connection.execute.assert_called_once_with(
             """
@@ -203,6 +203,7 @@ class TestWorkingStorage:
                 item["source_message_id"],
             ),
         )
+        mock_connection.commit.assert_called_once()
 
     def test_find_worklist_items(self, mock_db, tmp_dir, result):
         mock_cursor = MagicMock()
@@ -326,6 +327,7 @@ class TestWorkingStorage:
         mock_connection.execute.assert_any_call(
             "SELECT source_message_id FROM worklist_items WHERE accession_number = ?", ("ACC123456",)
         )
+        mock_connection.commit.assert_called_once()
         assert result == "MSGID123456"
 
     def test_update_status_with_no_update(self, mock_db, tmp_dir):
@@ -351,6 +353,7 @@ class TestWorkingStorage:
             """,
             ("COMPLETED", None, "ACC123456"),
         )
+        mock_connection.commit.assert_called_once()
         assert result is None
 
     def test_update_status_with_mpps(self, mock_db, tmp_dir):
@@ -376,6 +379,7 @@ class TestWorkingStorage:
             """,
             ("COMPLETED", "some-uid", "ACC123456"),
         )
+        mock_connection.commit.assert_called_once()
         assert result == "MSGID123456"
 
     def test_update_study_instance_uid(self, mock_db, tmp_dir):
@@ -400,6 +404,7 @@ class TestWorkingStorage:
             """,
             (study_instance_uid, "ACC123456"),
         )
+        mock_connection.commit.assert_called_once()
 
         assert result is True
 
@@ -418,5 +423,6 @@ class TestWorkingStorage:
         mock_connection.execute.assert_called_once_with(
             "DELETE FROM worklist_items WHERE accession_number = ?", ("ACC123456",)
         )
+        mock_connection.commit.assert_called_once()
 
         assert result is True

@@ -186,7 +186,7 @@ class WorklistStorage(Storage):
         super().__init__(db_path, f"{Path(__file__).parent}/init_worklist_db.sql", "worklist_items")
         logger.info(f"Worklist storage initialized: db={db_path}")
 
-    def add_worklist_item(
+    def store_worklist_item(
         self,
         accession_number: str,
         patient_id: str,
@@ -249,6 +249,7 @@ class WorklistStorage(Storage):
                     source_message_id,
                 ),
             )
+            conn.commit()
 
         return accession_number
 
@@ -258,7 +259,7 @@ class WorklistStorage(Storage):
         scheduled_date: Optional[str] = None,
         patient_id: Optional[str] = None,
         status: str = "SCHEDULED",
-    ) -> List[Dict]:
+    ) -> List[sqlite3.Row]:
         """
         Query worklist items with optional filters.
 
@@ -334,6 +335,7 @@ class WorklistStorage(Storage):
             """,
                 (status, mpps_instance_uid, accession_number),
             )
+            conn.commit()
 
             if cursor.rowcount == 0:
                 return None
@@ -342,7 +344,7 @@ class WorklistStorage(Storage):
                 "SELECT source_message_id FROM worklist_items WHERE accession_number = ?", (accession_number,)
             ).fetchone()
 
-            return result.get("source_message_id")
+            return result["source_message_id"] if result is not None else None
 
     def update_study_instance_uid(self, accession_number: str, study_instance_uid: str) -> bool:
         """
@@ -365,6 +367,7 @@ class WorklistStorage(Storage):
             """,
                 (study_instance_uid, accession_number),
             )
+            conn.commit()
 
             return cursor.rowcount > 0
 
@@ -380,4 +383,5 @@ class WorklistStorage(Storage):
         """
         with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM worklist_items WHERE accession_number = ?", (accession_number,))
+            conn.commit()
             return cursor.rowcount > 0

@@ -8,7 +8,7 @@ The PACS server is a lightweight, production-ready DICOM storage solution that:
 - Receives medical images via DICOM C-STORE protocol
 - Stores the images using hash-based directory structure
 - Indexes metadata in SQLite database
-- Runs as a Docker container
+- Runs alongside the [MWL Server](../mwl/README.md) in the same Docker container (see [ADR-003](../adr/ADR-003_Multi_threaded_PACS_MWL_server.md))
 
 ## Architecture
 

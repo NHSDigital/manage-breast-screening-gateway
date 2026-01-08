@@ -5,14 +5,14 @@ from pydicom import Dataset
 
 from services.dicom import PENDING, SUCCESS
 from services.mwl.c_find import CFindHandler
-from services.storage import WorklistStorage
+from services.storage import MWLStorage
 
 
 @pytest.mark.integration
 class TestCFindReturnsWorklistItems:
     @pytest.fixture
     def storage(self, tmp_dir):
-        return WorklistStorage(f"{tmp_dir}/test.db")
+        return MWLStorage(f"{tmp_dir}/test.db")
 
     @pytest.fixture(autouse=True)
     def with_worklist_items(self, storage):

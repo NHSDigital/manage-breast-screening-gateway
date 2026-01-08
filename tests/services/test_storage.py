@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from services.storage import PACSStorage, WorklistStorage
+from services.storage import MWLStorage, PACSStorage
 
 
 @patch("services.storage.sqlite3")
@@ -140,7 +140,7 @@ class TestWorkingStorage:
     def test_init(self, mock_db, tmp_dir):
         mock_connection = MagicMock()
         mock_db.connect.return_value = mock_connection
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
 
         assert subject.db_path == tmp_dir
         assert subject.schema_path == f"{Path(__file__).parent.parent.parent}/src/services/init_worklist_db.sql"
@@ -159,7 +159,7 @@ class TestWorkingStorage:
     def test_store_worklist_item(self, mock_db, tmp_dir):
         mock_connection = MagicMock()
         mock_db.connect.return_value = mock_connection
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         item = {
@@ -211,7 +211,7 @@ class TestWorkingStorage:
         mock_connection = MagicMock()
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         results = subject.find_worklist_items()
@@ -231,7 +231,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         subject.find_worklist_items(patient_id="999123456")
@@ -278,7 +278,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         worklist_item = subject.get_worklist_item("ACC123456")
@@ -296,7 +296,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
 
         assert subject.get_worklist_item("ACC123456") is None
 
@@ -308,7 +308,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         result = subject.update_status("ACC123456", "COMPLETED")
@@ -338,7 +338,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         subject.update_status("ACC123456", "COMPLETED")
@@ -364,7 +364,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         result = subject.update_status("ACC123456", "COMPLETED", mpps_instance_uid="some-uid")
@@ -390,7 +390,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         result = subject.update_study_instance_uid("ACC123456", study_instance_uid)
@@ -415,7 +415,7 @@ class TestWorkingStorage:
         mock_connection.execute.return_value = mock_cursor
         mock_db.connect.return_value = mock_connection
 
-        subject = WorklistStorage(tmp_dir)
+        subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
         result = subject.delete_worklist_item("ACC123456")

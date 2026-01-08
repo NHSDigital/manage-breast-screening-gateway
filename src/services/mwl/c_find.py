@@ -12,7 +12,7 @@ from pydicom import Dataset
 from pynetdicom import evt
 
 from services.dicom import FAILURE, PENDING, SUCCESS
-from services.storage import WorklistStorage
+from services.storage import MWLStorage
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class CFindHandler:
     """Handler for C-FIND worklist queries."""
 
-    def __init__(self, storage: WorklistStorage):
+    def __init__(self, storage: MWLStorage):
         self.storage = storage
 
     def call(self, event: evt.Event) -> Iterator[Tuple[int, Dataset | None]]:

@@ -59,7 +59,7 @@ class TestPACSServer:
         cast(Mock, subject.storage).close.assert_called_once()
 
 
-@patch(f"{MWLServer.__module__}.WorklistStorage")
+@patch(f"{MWLServer.__module__}.MWLStorage")
 class TestMWLServer:
     def test_init(self, mock_storage):
         subject = MWLServer("CUSTOM_MWL", 11112, "/custom/path/worklist.db", False)

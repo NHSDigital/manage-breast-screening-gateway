@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, f"{Path(__file__).parent.parent}/src")
 
-from services.storage import WorklistStorage
+from services.storage import MWLStorage
 
 
 def main():
@@ -48,7 +48,7 @@ def main():
 
     # Initialize storage
     try:
-        storage = WorklistStorage(db_path=args.db_path)
+        storage = MWLStorage(db_path=args.db_path)
     except Exception as e:
         print(f"Error connecting to database: {e}", file=sys.stderr)
         return 1

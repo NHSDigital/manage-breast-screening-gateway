@@ -181,7 +181,7 @@ class PACSStorage(Storage):
         logger.info("PACS storage closed")
 
 
-class WorklistStorage(Storage):
+class MWLStorage(Storage):
     def __init__(self, db_path: str = "/var/lib/pacs/worklist.db"):
         """
         Initialize Worklist storage.

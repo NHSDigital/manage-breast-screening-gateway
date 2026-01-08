@@ -15,7 +15,7 @@ from pynetdicom.sop_class import ModalityWorklistInformationFind  # type: ignore
 from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
 from services.mwl.c_find import CFindHandler
-from services.storage import PACSStorage, WorklistStorage
+from services.storage import MWLStorage, PACSStorage
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class MWLServer:
         """
         self.ae_title = ae_title
         self.port = port
-        self.storage = WorklistStorage(db_path)
+        self.storage = MWLStorage(db_path)
         self.ae = None
         self.block = block
 

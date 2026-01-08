@@ -9,7 +9,7 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 - Provides scheduled procedure information via DICOM C-FIND protocol
 - Stores worklist items in SQLite database
 - Supports filtering by modality, date, and patient ID
-- Runs alongside ([PACS Server](../pacs/README.md)) in the same Docker container
+- Runs in a separate container alongside the [PACS Server](../pacs/README.md)
 
 ## Architecture
 
@@ -47,14 +47,17 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 
 ## Running the MWL Server
 
-The MWL server runs in the same container as the PACS server:
+The MWL server runs in a separate container:
 
 ```bash
-# Start both servers
+# Start both PACS and MWL servers
 docker compose up -d
 
+# Start only MWL server
+docker compose up -d mwl
+
 # View logs
-docker compose logs -f gateway
+docker compose logs -f mwl
 
 # Stop servers
 docker compose down
@@ -136,6 +139,30 @@ uv run pytest tests/integration/test_c_find_returns_worklist_items.py -v
 uv run pytest tests/integration/test_request_cfind_on_worklist.py -v
 ```
 
-## Multi-server architecture
+## Multi-container architecture
 
-The gateway container runs both PACS and MWL servers using separate threads. See [ADR-003: Multi-threaded PACS and MWL server architecture](../adr/ADR-003_Multi_threaded_PACS_MWL_server.md) for the architectural decision and trade-offs.
+The PACS and MWL servers run in separate containers. See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) for the architectural decision and trade-offs.
+
+**Docker Compose services:**
+```yaml
+services:
+  pacs:
+    container_name: pacs-server
+    command: ["uv", "run", "python", "-m", "pacs_main"]
+    ports:
+      - "4244:4244"
+
+  mwl:
+    container_name: mwl-server
+    command: ["uv", "run", "python", "-m", "mwl_main"]
+    ports:
+      - "4243:4243"
+```
+
+Each server:
+
+- Runs in its own container
+- Has its own Application Entity (AE)
+- Uses a separate SQLite database
+- Can be scaled and deployed independently
+- Handles different DICOM operations (C-STORE vs C-FIND)

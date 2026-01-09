@@ -5,8 +5,6 @@ import pytest
 
 from relay_listener import RelayListener, RelayURI
 
-pytest_plugin = "pytest_asyncio"
-
 
 class TestRelayListener:
     @pytest.fixture(autouse=True)
@@ -23,32 +21,6 @@ class TestRelayListener:
     def storage_instance(self, mock_mwl_storage):
         return mock_mwl_storage.return_value
 
-    @pytest.fixture
-    def payload(self):
-        return {
-            "action_id": "action-12345",
-            "action_type": "worklist.create_item",
-            "parameters": {
-                "worklist_item": {
-                    "participant": {
-                        "nhs_number": "999123456",
-                        "name": "SMITH^JANE",
-                        "birth_date": "19900202",
-                        "sex": "F",
-                    },
-                    "scheduled": {
-                        "date": "20240615",
-                        "time": "101500",
-                    },
-                    "procedure": {
-                        "modality": "MG",
-                        "study_description": "MAMMOGRAPHY",
-                    },
-                    "accession_number": "ACC999999",
-                }
-            },
-        }
-
     def test_relay_listener_initialization(self, storage_instance):
         subject = RelayListener(storage_instance)
 
@@ -60,7 +32,7 @@ class TestRelayListener:
         assert subject.relay_uri.shared_access_key == "test-key-value"
 
     @pytest.mark.asyncio
-    async def test_relay_listener_listen(self, storage_instance, payload, fake_relay):
+    async def test_relay_listener_listen(self, storage_instance, listener_payload, fake_relay):
         storage_instance.store_worklist_action.return_value = {"action_id": "action-12345", "status": "created"}
         subject = RelayListener(storage_instance)
         url = subject.relay_uri.connection_url()
@@ -69,7 +41,7 @@ class TestRelayListener:
 
         relay_message = json.dumps({"accept": {"address": "wss://accept-url"}})
 
-        client_payload = json.dumps(payload)
+        client_payload = json.dumps(listener_payload)
 
         with fake_relay(relay_message, client_payload) as client_ws:
             await subject.listen()
@@ -88,10 +60,10 @@ class TestRelayListener:
             source_message_id="action-12345",
         )
 
-    def test_process_action(self, storage_instance, payload):
+    def test_process_action(self, storage_instance, listener_payload):
         subject = RelayListener(storage_instance)
 
-        response = subject.process_action(payload)
+        response = subject.process_action(listener_payload)
         assert response == {"action_id": "action-12345", "status": "created"}
 
         storage_instance.store_worklist_item.assert_called_once_with(
@@ -107,13 +79,13 @@ class TestRelayListener:
             source_message_id="action-12345",
         )
 
-    def test_process_action_invalid_type(self, storage_instance, payload):
+    def test_process_action_invalid_type(self, storage_instance, listener_payload):
         subject = RelayListener(storage_instance)
 
-        payload["action_type"] = "worklist.unknown_action"
+        listener_payload["action_type"] = "worklist.unknown_action"
 
         with pytest.raises(ValueError):
-            response = subject.process_action(payload)
+            response = subject.process_action(listener_payload)
             assert response == {
                 "status": "error",
                 "action_id": "action-12345",

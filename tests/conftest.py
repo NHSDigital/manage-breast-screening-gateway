@@ -104,3 +104,30 @@ def fake_relay_contextmanager(relay_message, client_payload):
 @pytest.fixture
 def fake_relay():
     return fake_relay_contextmanager
+
+
+@pytest.fixture
+def listener_payload():
+    return {
+        "action_id": "action-12345",
+        "action_type": "worklist.create_item",
+        "parameters": {
+            "worklist_item": {
+                "participant": {
+                    "nhs_number": "999123456",
+                    "name": "SMITH^JANE",
+                    "birth_date": "19900202",
+                    "sex": "F",
+                },
+                "scheduled": {
+                    "date": "20240615",
+                    "time": "101500",
+                },
+                "procedure": {
+                    "modality": "MG",
+                    "study_description": "MAMMOGRAPHY",
+                },
+                "accession_number": "ACC999999",
+            }
+        },
+    }

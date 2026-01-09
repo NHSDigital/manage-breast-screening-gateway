@@ -1,5 +1,5 @@
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -61,7 +61,7 @@ class TestRelayListener:
         assert subject.relay_uri.shared_access_key == "test-key-value"
 
     @pytest.mark.asyncio
-    async def test_relay_listener_listen(self, storage_instance, payload):
+    async def test_relay_listener_listen(self, storage_instance, payload, fake_relay):
         storage_instance.store_worklist_action.return_value = {"action_id": "action-12345", "status": "created"}
         subject = RelayListener(storage_instance)
         url = subject.relay_uri.connection_url()
@@ -72,19 +72,7 @@ class TestRelayListener:
 
         client_payload = json.dumps(payload)
 
-        relay_ws = FakeWebSocket([relay_message])
-        client_ws = FakeWebSocket([])
-        client_ws.recv.return_value = client_payload
-
-        relay_cm = AsyncMock()
-        relay_cm.__aenter__.return_value = relay_ws
-        relay_cm.__aexit__.return_value = None
-
-        client_cm = AsyncMock()
-        client_cm.__aenter__.return_value = client_ws
-        client_cm.__aexit__.return_value = None
-
-        with patch("relay_listener.connect", side_effect=[relay_cm, client_cm]):
+        with fake_relay(relay_message, client_payload) as client_ws:
             await subject.listen()
 
         client_ws.send.assert_called_once_with(json.dumps({"status": "created", "action_id": "action-12345"}))
@@ -161,22 +149,3 @@ class TestRelayListener:
             "&sb-hc-token=SharedAccessSignature+sr%3Dhttp%253A%252F%252Ftest-namespace"
             "%252Ftest-connection%26sig%3DPMcelSnwGlYX2xFo9Y2aGCg%252BvJ6LsHujiRrA1L6VnP0%253D%26se%3D1003600%26skn%3Dtest-key-name"
         )
-
-
-class FakeWebSocket:
-    """Async iterator + websocket mock."""
-
-    def __init__(self, messages):
-        self._messages = messages
-        self.send = AsyncMock()
-        self.recv = AsyncMock()
-
-    def __aiter__(self):
-        self._iter = iter(self._messages)
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self._iter)
-        except StopIteration:
-            raise StopAsyncIteration

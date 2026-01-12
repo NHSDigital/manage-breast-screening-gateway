@@ -8,12 +8,14 @@
 
 
 src/services/storage.py:ipv4:74
-tests/integration/test_c_store_saves_metadata.py:ipv4:21
-tests/integration/test_c_store_saves_metadata.py:ipv4:41
-tests/integration/test_c_store_saves_metadata.py:ipv4:52
-tests/integration/test_c_store_saves_metadata.py:ipv4:65
-tests/services/dicom/test_c_store.py:ipv4:15
-tests/services/dicom/test_c_store.py:ipv4:48
+tests/services/dicom/test_c_store.py:ipv4:19
+tests/services/dicom/test_c_store.py:ipv4:62
+tests/integration/test_c_store_saves_metadata.py:ipv4:23
+tests/integration/test_c_store_saves_metadata.py:ipv4:38
+tests/integration/test_c_store_saves_metadata.py:ipv4:55
+tests/integration/test_c_store_saves_metadata.py:ipv4:73
+tests/integration/test_c_store_saves_metadata.py:ipv4:91
+tests/integration/test_c_store_saves_metadata.py:ipv4:108
 tests/services/test_storage.py:ipv4:37
 tests/services/test_storage.py:ipv4:40
 tests/services/test_storage.py:ipv4:52

@@ -1,12 +1,12 @@
 # MWL Server
 
-DICOM Modality Worklist (MWL) server for managing scheduled breast screening appointments and providing worklist information to imaging modalities.
+DICOM [Modality Worklist (MWL)](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_K) server for managing scheduled breast screening appointments and providing worklist information to imaging modalities.
 
 ## Overview
 
 The MWL server is a lightweight, production-ready DICOM worklist solution that:
 
-- Provides scheduled procedure information via DICOM C-FIND protocol
+- Provides scheduled procedure information via [DICOM C-FIND](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_C) protocol
 - Stores worklist items in SQLite database
 - Supports filtering by modality, date, and patient ID
 - Runs in a separate container alongside the [PACS Server](../pacs/README.md)
@@ -43,7 +43,7 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 2. **Worklist Query**: Modality sends C-FIND request to MWL server
 3. **Filtering**: MWL server filters by modality, date, patient ID, status
 4. **Response**: Server returns matching worklist items to modality
-5. **Status Updates**: MPPS updates procedure status (NB not yet implemented)
+5. **Status Updates**: [MPPS (Modality Performed Procedure Step)](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_F) updates procedure status (NB not yet implemented)
 
 ## Running the MWL Server
 
@@ -98,7 +98,7 @@ sps.Modality = 'MG'
 sps.ScheduledProcedureStepStartDate = '20260108'
 ds.ScheduledProcedureStepSequence = [sps]
 
-# Send C-FIND
+# Send C-FIND with Worklist Information Model ('W')
 assoc = ae.associate('localhost', 4243, ae_title='MWL_SCP')
 responses = assoc.send_c_find(ds, query_model='W')
 for (status, identifier) in responses:
@@ -144,6 +144,7 @@ uv run pytest tests/integration/test_request_cfind_on_worklist.py -v
 The PACS and MWL servers run in separate containers. See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) for the architectural decision and trade-offs.
 
 **Docker Compose services:**
+
 ```yaml
 services:
   pacs:

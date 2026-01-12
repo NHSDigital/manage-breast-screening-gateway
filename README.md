@@ -115,6 +115,14 @@ The PACS server provides C-STORE functionality for receiving medical images:
 
 See [PACS documentation](docs/pacs/README.md) for detailed information.
 
+### Relay Listener
+
+The Relay Listener handles incoming messages from the cloud service via Azure Relay:
+- Listens on configured Hybrid Connection
+- Processes worklist actions (e.g., create worklist item)
+
+See [Relay Listener documentation](docs/relay-listener/README.md) for details.
+
 ## Testing
 
 This project uses:

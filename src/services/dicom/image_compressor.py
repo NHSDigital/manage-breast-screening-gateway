@@ -9,14 +9,26 @@ from pydicom import Dataset
 from pydicom.pixels.utils import compress
 from pydicom.uid import JPEG2000, ExplicitVRLittleEndian
 
+from services.dicom.image_resizer import ImageResizer
+
 logger = logging.getLogger(__name__)
 
 
 class ImageCompressor:
-    def __init__(self, compression_ratio: int = 200):
+    def __init__(self, compression_ratio: int = 200, resizer: ImageResizer | None = None):
         self.compression_ratio = compression_ratio
+        self.resizer = resizer or ImageResizer()
 
     def compress(self, ds: Dataset) -> Dataset:
+        """
+        Resize and compress DICOM image.
+
+        Args:
+            ds: DICOM dataset
+
+        Returns:
+            Resized and compressed dataset, or original on failure
+        """
         try:
             if not hasattr(ds, "PixelData") or ds.PixelData is None:
                 logger.info("No pixel data found, skipping compression")
@@ -30,6 +42,10 @@ class ImageCompressor:
                 ds.decompress()
                 ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
 
+            # Resize to thumbnail before compression
+            ds = self.resizer.resize(ds)
+
+            # Compress with JPEG 2000
             compressed_ds = compress(
                 ds, transfer_syntax_uid=JPEG2000, encoding_plugin="pylibjpeg", j2k_cr=[self.compression_ratio]
             )

@@ -12,6 +12,7 @@ dependencies = [
   "pylibjpeg>=2.0.0",
   "pylibjpeg-libjpeg>=2.0.0",
   "pylibjpeg-openjpeg>=2.2.0",
+  "pillow>=11.0.0",
 ]
 
 [dependency-groups]

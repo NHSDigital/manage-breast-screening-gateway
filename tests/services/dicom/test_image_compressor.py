@@ -1,16 +1,15 @@
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+import numpy as np
 import pydicom
 from pydicom.uid import JPEG2000, ExplicitVRLittleEndian
 
 from services.dicom.image_compressor import ImageCompressor
+from services.dicom.image_resizer import ImageResizer
 
 
 class TestImageCompressor:
-    # Fixtures dataset_with_pixels and dataset_without_pixels
-    # are available from conftest.py
-
     def test_compress_applies_jpeg2000_compression(self, dataset_with_pixels):
         subject = ImageCompressor()
         compressed_ds = subject.compress(dataset_with_pixels)
@@ -65,7 +64,6 @@ class TestImageCompressor:
         assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
 
     def test_compress_preserves_metadata(self, dataset_with_pixels):
-        """Test that compression preserves dataset metadata."""
         dataset_with_pixels.PatientID = "123456"
         dataset_with_pixels.PatientName = "TEST^PATIENT"
         dataset_with_pixels.StudyDescription = "Test Study"
@@ -76,5 +74,25 @@ class TestImageCompressor:
         assert compressed_ds.PatientID == "123456"
         assert compressed_ds.PatientName == "TEST^PATIENT"
         assert compressed_ds.StudyDescription == "Test Study"
-        assert compressed_ds.Rows == 256
-        assert compressed_ds.Columns == 256
+
+    def test_resizer_is_called(self, dataset_with_pixels):
+        mock_resizer = Mock(spec=ImageResizer)
+        mock_resizer.resize.return_value = dataset_with_pixels
+
+        subject = ImageCompressor(resizer=mock_resizer)
+        subject.compress(dataset_with_pixels)
+
+        mock_resizer.resize.assert_called_once()
+
+    def test_compress_with_real_resizer(self, dataset_with_pixels):
+        dataset_with_pixels.Rows = 3000
+        dataset_with_pixels.Columns = 3000
+        dataset_with_pixels.PixelData = np.zeros((3000, 3000), dtype=np.uint16).tobytes()
+
+        resizer = ImageResizer(thumbnail_size=512)
+        subject = ImageCompressor(resizer=resizer)
+        compressed_ds = subject.compress(dataset_with_pixels)
+
+        assert compressed_ds.Rows == 512
+        assert compressed_ds.Columns == 512
+        assert compressed_ds.file_meta.TransferSyntaxUID == JPEG2000

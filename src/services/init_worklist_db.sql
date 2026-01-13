@@ -56,3 +56,7 @@ ON worklist_items(study_instance_uid);
 CREATE INDEX IF NOT EXISTS idx_worklist_patient_id
 ON worklist_items(patient_id);
 
+-- Index for MPPS instance UID lookups
+CREATE INDEX IF NOT EXISTS idx_worklist_mpps_instance_id
+ON worklist_items(mpps_instance_uid);
+

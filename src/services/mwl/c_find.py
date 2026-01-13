@@ -38,11 +38,11 @@ class CFindHandler:
 
         logger.info(f"C-FIND request from {requestor_aet}")
 
-        query_modality = self._get_query_value(identifier, "ScheduledProcedureStepSequence", "Modality")
-        query_date = self._get_query_value(
-            identifier, "ScheduledProcedureStepSequence", "ScheduledProcedureStepStartDate"
-        )
-        query_patient_id = identifier.get("PatientID", "")
+        query_patient_id = identifier.get("PatientID")
+
+        procedure_sequence = identifier.get("ScheduledProcedureStepSequence", [{}])
+        query_modality = procedure_sequence[0].get("Modality")
+        query_date = procedure_sequence[0].get("ScheduledProcedureStepStartDate")
 
         logger.debug(f"Query parameters: modality={query_modality}, date={query_date}, patient_id={query_patient_id}")
 
@@ -65,15 +65,6 @@ class CFindHandler:
         except Exception as e:
             logger.error(f"Error processing C-FIND request: {e}", exc_info=True)
             yield FAILURE, None
-
-    def _get_query_value(self, ds: Dataset, sequence_tag: str, item_tag: str) -> str:
-        try:
-            sequence = ds.get(sequence_tag, [])
-            if sequence and len(sequence) > 0:
-                return str(sequence[0].get(item_tag, ""))
-        except AttributeError, IndexError:
-            pass
-        return ""
 
     def _build_worklist_response(self, item: WorklistItem) -> Dataset:
         ds = Dataset()

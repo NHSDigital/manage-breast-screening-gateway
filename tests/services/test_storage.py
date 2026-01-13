@@ -295,10 +295,15 @@ class TestWorkingStorage:
         worklist_item = subject.get_worklist_item("ACC123456")
 
         mock_connection.execute.assert_called_once_with(
-            "SELECT * FROM worklist_items WHERE accession_number = ?",
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE accession_number = ?"
+            ),
             ("ACC123456",),
         )
-        assert worklist_item == result
+        assert worklist_item == WorklistItem(**result)
 
     def test_get_worklist_item_returns_none(self, mock_db, tmp_dir):
         mock_cursor = MagicMock()

@@ -267,7 +267,7 @@ class MWLStorage(Storage):
             status: Filter by status (default: "SCHEDULED")
 
         Returns:
-            List of worklist items as dictionaries
+            List of WorklistItem instances matching the criteria
         """
         query = (
             "SELECT accession_number, modality, patient_birth_date, patient_id, "
@@ -296,21 +296,29 @@ class MWLStorage(Storage):
 
             return [WorklistItem(**row) for row in cursor.fetchall()]
 
-    def get_worklist_item(self, accession_number: str) -> Optional[Dict]:
+    def get_worklist_item(self, accession_number: str) -> Optional[WorklistItem]:
         """
-        Get a single worklist item by accession number.
+        Get a single WorklistItem instance by accession number.
 
         Args:
             accession_number: The accession number to look up
 
         Returns:
-            Worklist item as dictionary, or None if not found
+            WorklistItem instance, or None if not found
         """
         with self._get_connection() as conn:
-            cursor = conn.execute("SELECT * FROM worklist_items WHERE accession_number = ?", (accession_number,))
+            cursor = conn.execute(
+                (
+                    "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                    "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                    "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                    "FROM worklist_items WHERE accession_number = ?"
+                ),
+                (accession_number,),
+            )
             row = cursor.fetchone()
 
-        return dict(row) if row else None
+        return WorklistItem(**row) if row else None
 
     def update_status(
         self, accession_number: str, status: str, mpps_instance_uid: Optional[str] = None

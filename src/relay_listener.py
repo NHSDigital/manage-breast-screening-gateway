@@ -21,7 +21,7 @@ from services.storage import MWLStorage
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.getenv("WORKLIST_DB_PATH", "/var/lib/worklist/worklist.db")
+DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 SAS_TOKEN_EXPIRY_SECONDS = 3600
 
 ACTIONS = {

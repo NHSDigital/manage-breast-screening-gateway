@@ -10,7 +10,7 @@ from services.storage import WorklistItem
 class TestRelayListener:
     @pytest.fixture(autouse=True)
     def setup(self, monkeypatch):
-        monkeypatch.setenv("WORKLIST_DB_PATH", "/tmp/test_worklist.db")
+        monkeypatch.setenv("MWL_DB_PATH", "/tmp/test_worklist.db")
         monkeypatch.setenv("AZURE_RELAY_NAMESPACE", "test-namespace")
         monkeypatch.setenv("AZURE_RELAY_HYBRID_CONNECTION", "test-connection")
         monkeypatch.setenv("AZURE_RELAY_KEY_NAME", "test-key-name")

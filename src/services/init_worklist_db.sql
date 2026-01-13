@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS worklist_items (
 
     -- DICOM identifiers
     study_instance_uid TEXT,
-    mpps_instance_uid TEXT,
+    mpps_instance_uid TEXT, -- Modality Performed Procedure Step (MPPS) UID
 
     -- Audit trail
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -57,6 +57,6 @@ CREATE INDEX IF NOT EXISTS idx_worklist_patient_id
 ON worklist_items(patient_id);
 
 -- Index for MPPS instance UID lookups
-CREATE INDEX IF NOT EXISTS idx_worklist_mpps_instance_id
+CREATE INDEX IF NOT EXISTS idx_worklist_mpps_instance_uid
 ON worklist_items(mpps_instance_uid);
 

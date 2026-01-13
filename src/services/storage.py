@@ -201,7 +201,9 @@ class WorklistItem:
     procedure_code: Optional[str] = field(default=None, doc="Code that identifies the requested procedure.")
     patient_sex: Optional[str] = field(default=None, doc="Sex of the patient.")
     study_description: Optional[str] = field(default=None, doc="Description of the study.")
-    mpps_instance_uid: Optional[str] = field(default=None, doc="MPPS Instance UID if available.")
+    mpps_instance_uid: Optional[str] = field(
+        default=None, doc="Modality Performed Procedure Step (MPPS) instance UID if available."
+    )
 
 
 class MWLStorage(Storage):

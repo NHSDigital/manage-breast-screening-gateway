@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 from pydicom.uid import generate_uid
 
-from services.storage import MWLStorage, PACSStorage, WorklistItem
+from services.storage import MWLStorage, PACSStorage, WorklistItem, WorklistItemNotFoundError
 
 
 @patch("services.storage.sqlite3")
@@ -424,6 +424,20 @@ class TestWorkingStorage:
 
         assert result is True
 
+    def test_update_study_instance_uid_raises(self, mock_db, tmp_dir):
+        study_instance_uid = "some-uid"
+        mock_connection = MagicMock()
+        mock_cursor = PropertyMock()
+        mock_cursor.rowcount = 0
+        mock_connection.execute.return_value = mock_cursor
+        mock_db.connect.return_value = mock_connection
+
+        subject = MWLStorage(tmp_dir)
+        mock_connection.reset_mock()
+
+        with pytest.raises(WorklistItemNotFoundError):
+            subject.update_study_instance_uid("ACC123456", study_instance_uid)
+
     def test_delete_worklist_item(self, mock_db, tmp_dir):
         mock_connection = MagicMock()
         mock_cursor = PropertyMock()
@@ -442,3 +456,16 @@ class TestWorkingStorage:
         mock_connection.commit.assert_called_once()
 
         assert result is True
+
+    def test_delete_worklist_item_raises(self, mock_db, tmp_dir):
+        mock_connection = MagicMock()
+        mock_cursor = PropertyMock()
+        mock_cursor.rowcount = 0
+        mock_connection.execute.return_value = mock_cursor
+        mock_db.connect.return_value = mock_connection
+
+        subject = MWLStorage(tmp_dir)
+        mock_connection.reset_mock()
+
+        with pytest.raises(WorklistItemNotFoundError):
+            subject.delete_worklist_item("ACC123456")

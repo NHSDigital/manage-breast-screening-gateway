@@ -206,6 +206,12 @@ class WorklistItem:
     )
 
 
+class WorklistItemNotFoundError(Exception):
+    """Raised when a worklist item is not found in storage."""
+
+    pass
+
+
 class MWLStorage(Storage):
     def __init__(self, db_path: str = "/var/lib/pacs/worklist.db"):
         """
@@ -379,7 +385,10 @@ class MWLStorage(Storage):
             )
             conn.commit()
 
-            return cursor.rowcount > 0
+            if cursor.rowcount == 0:
+                raise WorklistItemNotFoundError(f"Worklist item not found: {accession_number}")
+
+            return True
 
     def delete_worklist_item(self, accession_number: str) -> bool:
         """
@@ -389,9 +398,13 @@ class MWLStorage(Storage):
             accession_number: The accession number to delete
 
         Returns:
-            True if item was deleted, False if not found
+            True if item was deleted, raises WorklistItemNotFoundError if not found
         """
         with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM worklist_items WHERE accession_number = ?", (accession_number,))
             conn.commit()
-            return cursor.rowcount > 0
+
+            if cursor.rowcount == 0:
+                raise WorklistItemNotFoundError(f"Worklist item not found: {accession_number}")
+
+            return True

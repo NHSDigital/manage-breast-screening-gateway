@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS worklist_items (
     patient_sex TEXT,                        -- M/F/O
 
     -- Scheduling information
-    scheduled_date TEXT NOT NULL,            -- YYYYMMDD format
-    scheduled_time TEXT NOT NULL,            -- HHMMSS format
+    scheduled_date TEXT NOT NULL,            -- YYYYMMDD format in UTC
+    scheduled_time TEXT NOT NULL,            -- HHMMSS format in UTC
     modality TEXT NOT NULL,                  -- e.g., MG for mammography
 
     -- Procedure details

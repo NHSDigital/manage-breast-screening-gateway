@@ -7,6 +7,7 @@ from pydicom import Dataset
 
 from services.dicom import FAILURE, PENDING, SUCCESS
 from services.mwl.c_find import CFindHandler
+from services.storage import WorklistItem
 
 
 @pytest.fixture
@@ -60,7 +61,8 @@ class TestCFindHandler:
         mock_storage.find_worklist_items.assert_called_once()
 
     def test_call_with_single_result(self, handler, mock_storage, mock_event, sample_worklist_item):
-        mock_storage.find_worklist_items.return_value = [sample_worklist_item]
+        worklist_item = WorklistItem(**sample_worklist_item)
+        mock_storage.find_worklist_items.return_value = [worklist_item]
 
         results = list(handler.call(mock_event))
 
@@ -78,18 +80,18 @@ class TestCFindHandler:
 
     def test_call_with_multiple_results(self, handler, mock_storage, mock_event):
         items = [
-            {
-                "accession_number": f"ACC00{i}",
-                "patient_id": f"PT{i}",
-                "patient_name": f"TEST^PATIENT{i}",
-                "patient_birth_date": "19800101",
-                "patient_sex": "F",
-                "scheduled_date": "20260107",
-                "scheduled_time": "100000",
-                "modality": "MG",
-                "study_description": "Test",
-                "procedure_code": "PROC001",
-            }
+            WorklistItem(
+                accession_number=f"ACC00{i}",
+                patient_id=f"PT{i}",
+                patient_name=f"TEST^PATIENT{i}",
+                patient_birth_date="19800101",
+                patient_sex="F",
+                scheduled_date="20260107",
+                scheduled_time="100000",
+                modality="MG",
+                study_description="Test",
+                procedure_code="PROC001",
+            )
             for i in range(3)
         ]
         mock_storage.find_worklist_items.return_value = items
@@ -151,15 +153,15 @@ class TestCFindHandler:
         assert ds is None
 
     def test_build_worklist_response_missing_optional_fields(self, handler):
-        minimal_item = {
-            "accession_number": "ACC001",
-            "patient_id": "9876543210",
-            "patient_name": "TEST^PATIENT",
-            "patient_birth_date": "19800101",
-            "scheduled_date": "20260107",
-            "scheduled_time": "100000",
-            "modality": "MG",
-        }
+        minimal_item = WorklistItem(
+            accession_number="ACC001",
+            patient_id="9876543210",
+            patient_name="TEST^PATIENT",
+            patient_birth_date="19800101",
+            scheduled_date="20260107",
+            scheduled_time="100000",
+            modality="MG",
+        )
 
         ds = handler._build_worklist_response(minimal_item)
 

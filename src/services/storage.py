@@ -3,6 +3,7 @@ import logging
 import os
 import sqlite3
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -181,6 +182,28 @@ class PACSStorage(Storage):
         logger.info("PACS storage closed")
 
 
+@dataclass
+class WorklistItem:
+    accession_number: str = field(
+        doc="A departmental Information System generated number that identifies the Imaging Service Request.",
+    )
+    modality: str = field(doc="Code for type of equipment that will perform the procedure.")
+    patient_birth_date: str = field(doc="Date of Birth of the Patient.")
+    patient_id: str = field(doc="Patient NHS Number", hash=True)
+    patient_name: str = field(doc="Name of the patient. Lastname^Firstname.")
+    scheduled_date: str = field(doc="Date the procedure is scheduled for.")
+    scheduled_time: str = field(doc="Time the procedure is scheduled for.")
+    status: str = field(doc="Status of the worklist item", default="SCHEDULED")
+    source_message_id: Optional[str] = field(
+        default=None, doc="Message ID from system which created this worklist item", hash=True
+    )
+    study_instance_uid: Optional[str] = field(default=None, doc="Instance UID for the study", hash=True)
+    procedure_code: Optional[str] = field(default=None, doc="Code that identifies the requested procedure.")
+    patient_sex: Optional[str] = field(default=None, doc="Sex of the patient.")
+    study_description: Optional[str] = field(default=None, doc="Description of the study.")
+    mpps_instance_uid: Optional[str] = field(default=None, doc="MPPS Instance UID if available.")
+
+
 class MWLStorage(Storage):
     def __init__(self, db_path: str = "/var/lib/pacs/worklist.db"):
         """
@@ -194,35 +217,13 @@ class MWLStorage(Storage):
 
     def store_worklist_item(
         self,
-        accession_number: str,
-        patient_id: str,
-        patient_name: str,
-        patient_birth_date: str,
-        scheduled_date: str,
-        scheduled_time: str,
-        modality: str,
-        study_description: str = "",
-        patient_sex: str = "",
-        procedure_code: str = "",
-        study_instance_uid: str = "",
-        source_message_id: str = "",
+        worklist_item: WorklistItem,
     ) -> str:
         """
         Add a new worklist item.
 
         Args:
-            accession_number: Unique accession number (primary key)
-            patient_id: Patient identifier
-            patient_name: Patient name in DICOM format (e.g., "SMITH^JANE")
-            patient_birth_date: Birth date in YYYYMMDD format
-            scheduled_date: Scheduled date in YYYYMMDD format
-            scheduled_time: Scheduled time in HHMMSS format
-            modality: Modality code (e.g., "MG" for mammography)
-            study_description: Description of the study
-            patient_sex: Patient sex (M/F/O)
-            procedure_code: Procedure code
-            study_instance_uid: DICOM Study Instance UID
-            source_message_id: ID of the relay message that created this item
+            item: WorklistItem dataclass instance
 
         Returns:
             The accession number of the created item
@@ -232,32 +233,20 @@ class MWLStorage(Storage):
         """
         with self._get_connection() as conn:
             conn.execute(
-                """
-                INSERT INTO worklist_items (
-                    accession_number, patient_id, patient_name, patient_birth_date,
-                    patient_sex, scheduled_date, scheduled_time, modality,
-                    study_description, procedure_code, study_instance_uid,
-                    source_message_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
                 (
-                    accession_number,
-                    patient_id,
-                    patient_name,
-                    patient_birth_date,
-                    patient_sex,
-                    scheduled_date,
-                    scheduled_time,
-                    modality,
-                    study_description,
-                    procedure_code,
-                    study_instance_uid,
-                    source_message_id,
+                    "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
+                    "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
+                    "scheduled_time, source_message_id, study_description, study_instance_uid) "
+                    "VALUES (:accession_number, :modality, :patient_birth_date, "
+                    ":patient_id, :patient_name, :patient_sex, :procedure_code, "
+                    ":scheduled_date, :scheduled_time, :source_message_id, "
+                    ":study_description, :study_instance_uid)"
                 ),
+                worklist_item.__dict__,
             )
             conn.commit()
 
-        return accession_number
+        return worklist_item.accession_number
 
     def find_worklist_items(
         self,
@@ -265,7 +254,7 @@ class MWLStorage(Storage):
         scheduled_date: Optional[str] = None,
         patient_id: Optional[str] = None,
         status: str = "SCHEDULED",
-    ) -> List[sqlite3.Row]:
+    ) -> List[WorklistItem]:
         """
         Query worklist items with optional filters.
 
@@ -278,7 +267,12 @@ class MWLStorage(Storage):
         Returns:
             List of worklist items as dictionaries
         """
-        query = "SELECT * FROM worklist_items WHERE status = ?"
+        query = (
+            "SELECT accession_number, modality, patient_birth_date, patient_id, "
+            "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+            "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+            "FROM worklist_items WHERE status = ?"
+        )
         params = [status]
 
         if modality:
@@ -298,7 +292,7 @@ class MWLStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute(query, params)
 
-            return [row for row in cursor.fetchall()]
+            return [WorklistItem(**row) for row in cursor.fetchall()]
 
     def get_worklist_item(self, accession_number: str) -> Optional[Dict]:
         """

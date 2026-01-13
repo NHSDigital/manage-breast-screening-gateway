@@ -1,10 +1,12 @@
 import pytest
 from pydicom import Dataset
+from pydicom.uid import generate_uid
 from pynetdicom import AE
 from pynetdicom.sop_class import ModalityWorklistInformationFind
 
 from server import MWLServer
 from services.dicom import PENDING, SUCCESS
+from services.storage import WorklistItem
 
 
 @pytest.mark.integration
@@ -14,27 +16,37 @@ class TestRequestCFindOnWorklist:
         server = MWLServer("MWL_SCP", 4243, f"{tmp_dir}/test.db", block=False)
         storage = server.storage
         storage.store_worklist_item(
-            accession_number="ACC123456",
-            patient_id="999123456",
-            patient_name="SMITH^JANE",
-            patient_birth_date="19800101",
-            patient_sex="F",
-            scheduled_date="20240101",
-            scheduled_time="090000",
-            modality="MG",
-            study_description="MAMMOGRAPHY",
+            WorklistItem(
+                accession_number="ACC123456",
+                patient_id="999123456",
+                patient_name="SMITH^JANE",
+                patient_birth_date="19800101",
+                patient_sex="F",
+                scheduled_date="20240101",
+                scheduled_time="090000",
+                modality="MG",
+                study_description="MAMMOGRAPHY",
+                procedure_code="12345-6",
+                study_instance_uid=generate_uid(),
+                source_message_id="MSGID123456",
+            )
         )
         storage.update_status("ACC123456", "SCHEDULED")
         storage.store_worklist_item(
-            accession_number="ACC234567",
-            patient_id="999234567",
-            patient_name="JONES^MARY",
-            patient_birth_date="19900202",
-            patient_sex="F",
-            scheduled_date="20240102",
-            scheduled_time="094500",
-            modality="MG",
-            study_description="MAMMOGRAPHY",
+            WorklistItem(
+                accession_number="ACC234567",
+                patient_id="999234567",
+                patient_name="JONES^MARY",
+                patient_birth_date="19900202",
+                patient_sex="F",
+                scheduled_date="20240102",
+                scheduled_time="094500",
+                modality="MG",
+                study_description="MAMMOGRAPHY",
+                procedure_code="12345-6",
+                study_instance_uid=generate_uid(),
+                source_message_id="MSGID234567",
+            )
         )
         storage.update_status("ACC234567", "SCHEDULED")
 

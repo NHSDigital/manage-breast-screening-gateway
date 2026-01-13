@@ -3,8 +3,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+from pydicom.uid import generate_uid
 
-from services.storage import MWLStorage, PACSStorage
+from services.storage import MWLStorage, PACSStorage, WorklistItem
 
 
 @patch("services.storage.sqlite3")
@@ -133,7 +134,7 @@ class TestWorkingStorage:
             "study_description": "MAMMOGRAPHY",
             "procedure_code": "12345-6",
             "status": "SCHEDULED",
-            "study_instance_uid": "1.2.840.113619.2.55.3.604688432.781.1599761234.467",
+            "study_instance_uid": generate_uid(),
             "source_message_id": "MSGID123456",
         }
 
@@ -162,46 +163,34 @@ class TestWorkingStorage:
         subject = MWLStorage(tmp_dir)
         mock_connection.reset_mock()
 
-        item = {
-            "accession_number": "ACC123456",
-            "patient_id": "999123456",
-            "patient_name": "SMITH^JANE",
-            "patient_birth_date": "19800101",
-            "patient_sex": "F",
-            "scheduled_date": "20240101",
-            "scheduled_time": "090000",
-            "modality": "MG",
-            "study_description": "MAMMOGRAPHY",
-            "procedure_code": "12345-6",
-            "study_instance_uid": "1.2.840.113619.2.55.3.604688432.781.1599761234.467",
-            "source_message_id": "MSGID123456",
-        }
+        item = WorklistItem(
+            accession_number="ACC123456",
+            patient_id="999123456",
+            patient_name="SMITH^JANE",
+            patient_birth_date="19800101",
+            patient_sex="F",
+            scheduled_date="20240101",
+            scheduled_time="090000",
+            modality="MG",
+            study_description="MAMMOGRAPHY",
+            procedure_code="12345-6",
+            study_instance_uid=generate_uid(),
+            source_message_id="MSGID123456",
+        )
 
-        subject.store_worklist_item(**item)
+        subject.store_worklist_item(item)
 
         mock_connection.execute.assert_called_once_with(
-            """
-                INSERT INTO worklist_items (
-                    accession_number, patient_id, patient_name, patient_birth_date,
-                    patient_sex, scheduled_date, scheduled_time, modality,
-                    study_description, procedure_code, study_instance_uid,
-                    source_message_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
             (
-                item["accession_number"],
-                item["patient_id"],
-                item["patient_name"],
-                item["patient_birth_date"],
-                item["patient_sex"],
-                item["scheduled_date"],
-                item["scheduled_time"],
-                item["modality"],
-                item["study_description"],
-                item["procedure_code"],
-                item["study_instance_uid"],
-                item["source_message_id"],
+                "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
+                "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
+                "scheduled_time, source_message_id, study_description, study_instance_uid) "
+                "VALUES (:accession_number, :modality, :patient_birth_date, "
+                ":patient_id, :patient_name, :patient_sex, :procedure_code, "
+                ":scheduled_date, :scheduled_time, :source_message_id, "
+                ":study_description, :study_instance_uid)"
             ),
+            item.__dict__,
         )
         mock_connection.commit.assert_called_once()
 
@@ -217,12 +206,17 @@ class TestWorkingStorage:
         results = subject.find_worklist_items()
 
         mock_connection.execute.assert_called_once_with(
-            "SELECT * FROM worklist_items WHERE status = ? ORDER BY scheduled_date, scheduled_time",
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE status = ? ORDER BY scheduled_date, scheduled_time"
+            ),
             ["SCHEDULED"],
         )
 
         assert len(results) == 1
-        assert results[0] == result
+        assert results[0] == WorklistItem(**result)
 
     def test_find_worklist_items_with_filters(self, mock_db, tmp_dir):
         mock_cursor = MagicMock()
@@ -237,7 +231,12 @@ class TestWorkingStorage:
         subject.find_worklist_items(patient_id="999123456")
 
         mock_connection.execute.assert_called_once_with(
-            "SELECT * FROM worklist_items WHERE status = ? AND patient_id = ? ORDER BY scheduled_date, scheduled_time",
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE status = ? AND patient_id = ? ORDER BY scheduled_date, scheduled_time"
+            ),
             ["SCHEDULED", "999123456"],
         )
 
@@ -245,7 +244,12 @@ class TestWorkingStorage:
         subject.find_worklist_items(modality="CT")
 
         mock_connection.execute.assert_called_once_with(
-            "SELECT * FROM worklist_items WHERE status = ? AND modality = ? ORDER BY scheduled_date, scheduled_time",
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE status = ? AND modality = ? ORDER BY scheduled_date, scheduled_time"
+            ),
             ["SCHEDULED", "CT"],
         )
 
@@ -253,7 +257,13 @@ class TestWorkingStorage:
         subject.find_worklist_items(scheduled_date="20240101")
 
         mock_connection.execute.assert_called_once_with(
-            "SELECT * FROM worklist_items WHERE status = ? AND scheduled_date = ? ORDER BY scheduled_date, scheduled_time",
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE status = ? AND scheduled_date = ? "
+                "ORDER BY scheduled_date, scheduled_time"
+            ),
             ["SCHEDULED", "20240101"],
         )
 
@@ -262,10 +272,11 @@ class TestWorkingStorage:
 
         mock_connection.execute.assert_called_once_with(
             (
-                "SELECT * FROM worklist_items WHERE status = ? "
-                "AND modality = ? "
-                "AND scheduled_date = ? "
-                "AND patient_id = ? "
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE status = ? "
+                "AND modality = ? AND scheduled_date = ? AND patient_id = ? "
                 "ORDER BY scheduled_date, scheduled_time"
             ),
             ["SCHEDULED", "MG", "20240101", "999123456"],

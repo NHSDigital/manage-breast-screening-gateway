@@ -5,14 +5,13 @@ Handles DICOM C-FIND requests from modalities querying the worklist.
 """
 
 import logging
-import sqlite3
 from typing import Iterator, Tuple
 
 from pydicom import Dataset
 from pynetdicom import evt
 
 from services.dicom import FAILURE, PENDING, SUCCESS
-from services.storage import MWLStorage
+from services.storage import MWLStorage, WorklistItem
 
 logger = logging.getLogger(__name__)
 
@@ -76,37 +75,37 @@ class CFindHandler:
             pass
         return ""
 
-    def _build_worklist_response(self, item: sqlite3.Row) -> Dataset:
+    def _build_worklist_response(self, item: WorklistItem) -> Dataset:
         ds = Dataset()
         sps_item = Dataset()
 
         # Patient demographics
-        ds.PatientID = item["patient_id"]
-        ds.PatientName = item["patient_name"]
-        ds.PatientBirthDate = item["patient_birth_date"]
-        if "patient_sex" in item.keys():
-            ds.PatientSex = item["patient_sex"]
+        ds.PatientID = item.patient_id
+        ds.PatientName = item.patient_name
+        ds.PatientBirthDate = item.patient_birth_date
+        if item.patient_sex:
+            ds.PatientSex = item.patient_sex
 
         # Study information
-        ds.AccessionNumber = item["accession_number"]
-        if "study_instance_uid" in item.keys():
-            ds.StudyInstanceUID = item["study_instance_uid"]
+        ds.AccessionNumber = item.accession_number
+        if item.study_instance_uid:
+            ds.StudyInstanceUID = item.study_instance_uid
 
-        if "study_description" in item.keys():
-            ds.StudyDescription = item["study_description"]
+        if item.study_description:
+            ds.StudyDescription = item.study_description
             sps_item.ScheduledProcedureStepDescription = ds.StudyDescription
 
-        if "procedure_code" in item.keys():
-            ds.RequestedProcedureID = item["procedure_code"]
+        if item.procedure_code:
+            ds.RequestedProcedureID = item.procedure_code
             sps_item.ScheduledProcedureStepID = ds.RequestedProcedureID
 
         # Scheduled Procedure Step Sequence
-        sps_item.ScheduledProcedureStepStartDate = item["scheduled_date"]
-        sps_item.ScheduledProcedureStepStartTime = item["scheduled_time"]
-        sps_item.Modality = item["modality"]
+        sps_item.ScheduledProcedureStepStartDate = item.scheduled_date
+        sps_item.ScheduledProcedureStepStartTime = item.scheduled_time
+        sps_item.Modality = item.modality
 
         ds.ScheduledProcedureStepSequence = [sps_item]
 
-        logger.debug(f"Built worklist response for accession {item['accession_number']}")
+        logger.debug(f"Built worklist response for accession {item.accession_number}")
 
         return ds

@@ -42,7 +42,6 @@ class TestImageCompressor:
         assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
 
     def test_compress_already_compressed_dataset(self, dataset_with_pixels):
-        """Test compression handles already-compressed datasets gracefully."""
         subject = ImageCompressor(compression_ratio=100)
         compressed_once = subject.compress(dataset_with_pixels)
 
@@ -52,15 +51,19 @@ class TestImageCompressor:
         assert compressed_twice.file_meta.TransferSyntaxUID == JPEG2000
 
     @patch("services.dicom.image_compressor.compress")
-    def test_compress_failure_returns_original(self, mock_compress, dataset_with_pixels):
-        """Test compression failure returns original dataset."""
+    def test_compress_failure_returns_resized_uncompressed(self, mock_compress, dataset_with_pixels):
         mock_compress.side_effect = Exception("Compression failed!")
+
+        dataset_with_pixels.Rows = 1000
+        dataset_with_pixels.Columns = 1000
+        dataset_with_pixels.PixelData = np.zeros((1000, 1000), dtype=np.uint16).tobytes()
 
         subject = ImageCompressor()
         result = subject.compress(dataset_with_pixels)
 
-        # Should return original dataset on failure
-        assert result == dataset_with_pixels
+        # Should return resized but uncompressed dataset
+        assert result.Rows == 400
+        assert result.Columns == 400
         assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
 
     def test_compress_preserves_metadata(self, dataset_with_pixels):
@@ -96,3 +99,26 @@ class TestImageCompressor:
         assert compressed_ds.Rows == 512
         assert compressed_ds.Columns == 512
         assert compressed_ds.file_meta.TransferSyntaxUID == JPEG2000
+
+    def test_resize_failure_still_compresses(self, dataset_with_pixels):
+        mock_resizer = Mock(spec=ImageResizer)
+        mock_resizer.resize.side_effect = Exception("Resize failed!")
+
+        subject = ImageCompressor(resizer=mock_resizer)
+        result = subject.compress(dataset_with_pixels)
+
+        assert result.Rows == 256
+        assert result.Columns == 256
+        assert result.file_meta.TransferSyntaxUID == JPEG2000
+
+    def test_resize_and_compression_both_fail(self, dataset_with_pixels):
+        mock_resizer = Mock(spec=ImageResizer)
+        mock_resizer.resize.side_effect = Exception("Resize failed!")
+
+        with patch("services.dicom.image_compressor.compress", side_effect=Exception("Compression failed!")):
+            subject = ImageCompressor(resizer=mock_resizer)
+            result = subject.compress(dataset_with_pixels)
+
+            assert result.Rows == 256
+            assert result.Columns == 256
+            assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImageCompressor:
-    def __init__(self, compression_ratio: int = 30, resizer: ImageResizer | None = None):
+    def __init__(self, compression_ratio: int = 15, resizer: ImageResizer | None = None):
         self.compression_ratio = compression_ratio
         self.resizer = resizer or ImageResizer()
 

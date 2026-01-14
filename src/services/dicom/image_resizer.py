@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImageResizer:
-    def __init__(self, thumbnail_size: int = 512):
+    def __init__(self, thumbnail_size: int = 400):
         self.thumbnail_size = thumbnail_size
 
     def _calculate_thumbnail_dimensions(self, original_cols: int, original_rows: int) -> tuple[int, int]:

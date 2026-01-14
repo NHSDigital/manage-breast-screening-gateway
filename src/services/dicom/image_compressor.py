@@ -8,9 +8,12 @@ import os
 
 from pydicom import Dataset
 from pydicom.pixels.utils import compress
-from pydicom.uid import JPEG2000, ExplicitVRLittleEndian
+from pydicom.uid import JPEG2000, ExplicitVRBigEndian, ExplicitVRLittleEndian, ImplicitVRLittleEndian
 
 from services.dicom.image_resizer import ImageResizer
+
+# Uncompressed DICOM transfer syntaxes
+UNCOMPRESSED_TRANSFER_SYNTAXES = {ExplicitVRLittleEndian, ImplicitVRLittleEndian, ExplicitVRBigEndian}
 
 logger = logging.getLogger(__name__)
 
@@ -36,14 +39,11 @@ class ImageCompressor:
             logger.info("No pixel data found, skipping compression")
             return ds
 
-        original_transfer_syntax = ds.file_meta.TransferSyntaxUID
-
         # Decompress if already compressed
         if ds.file_meta.TransferSyntaxUID not in UNCOMPRESSED_TRANSFER_SYNTAXES:
             try:
-                logger.info(f"Decompressing from {original_transfer_syntax.name}")
+                logger.info(f"Decompressing from {ds.file_meta.TransferSyntaxUID.name}")
                 ds.decompress()
-                ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
             except Exception as e:
                 logger.error(f"Decompression failed: {e}", exc_info=True)
                 logger.warning("Continuing with compressed dataset")

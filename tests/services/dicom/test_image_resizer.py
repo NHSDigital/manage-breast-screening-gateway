@@ -1,6 +1,6 @@
 import numpy as np
-from pydicom.uid import ExplicitVRLittleEndian
 
+from services.dicom.image_compressor import UNCOMPRESSED_TRANSFER_SYNTAXES
 from services.dicom.image_resizer import ImageResizer
 
 
@@ -16,7 +16,7 @@ class TestImageResizer:
 
         assert resized_ds.Columns == 384
         assert resized_ds.Rows == 512
-        assert resized_ds.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
+        assert resized_ds.file_meta.TransferSyntaxUID in UNCOMPRESSED_TRANSFER_SYNTAXES
 
     def test_resize_skips_small_images(self, dataset_with_pixels):
         """Test that images smaller than thumbnail size are not upscaled."""

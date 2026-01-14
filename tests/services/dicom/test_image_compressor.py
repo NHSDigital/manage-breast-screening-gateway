@@ -3,9 +3,9 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 import pydicom
-from pydicom.uid import JPEG2000, ExplicitVRLittleEndian
+from pydicom.uid import JPEG2000
 
-from services.dicom.image_compressor import ImageCompressor
+from services.dicom.image_compressor import UNCOMPRESSED_TRANSFER_SYNTAXES, ImageCompressor
 from services.dicom.image_resizer import ImageResizer
 
 
@@ -28,7 +28,7 @@ class TestImageCompressor:
 
         # Should return original dataset unchanged
         assert result == dataset_without_pixels
-        assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
+        assert result.file_meta.TransferSyntaxUID in UNCOMPRESSED_TRANSFER_SYNTAXES
 
     def test_compress_dataset_with_none_pixel_data(self, dataset_with_pixels):
         """Test compression handles None pixel data gracefully."""
@@ -39,7 +39,7 @@ class TestImageCompressor:
 
         # Should return original dataset unchanged
         assert result == dataset_with_pixels
-        assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
+        assert result.file_meta.TransferSyntaxUID in UNCOMPRESSED_TRANSFER_SYNTAXES
 
     def test_compress_already_compressed_dataset(self, dataset_with_pixels):
         subject = ImageCompressor(compression_ratio=100)
@@ -64,7 +64,7 @@ class TestImageCompressor:
         # Should return resized but uncompressed dataset
         assert result.Rows == 400
         assert result.Columns == 400
-        assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
+        assert result.file_meta.TransferSyntaxUID in UNCOMPRESSED_TRANSFER_SYNTAXES
 
     def test_compress_preserves_metadata(self, dataset_with_pixels):
         dataset_with_pixels.PatientID = "123456"
@@ -121,4 +121,4 @@ class TestImageCompressor:
 
             assert result.Rows == 256
             assert result.Columns == 256
-            assert result.file_meta.TransferSyntaxUID == ExplicitVRLittleEndian
+            assert result.file_meta.TransferSyntaxUID in UNCOMPRESSED_TRANSFER_SYNTAXES

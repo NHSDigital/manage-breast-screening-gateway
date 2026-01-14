@@ -4,6 +4,7 @@ Provides resizing functionality for DICOM images while maintaining aspect ratio.
 """
 
 import logging
+import os
 
 import numpy as np
 from PIL import Image
@@ -13,8 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class ImageResizer:
-    def __init__(self, thumbnail_size: int = 400):
-        self.thumbnail_size = thumbnail_size
+    def __init__(self, thumbnail_size: int | None = None):
+        self.thumbnail_size = (
+            thumbnail_size if thumbnail_size is not None else int(os.getenv("DICOM_THUMBNAIL_SIZE", "400"))
+        )
 
     def _calculate_thumbnail_dimensions(self, original_cols: int, original_rows: int) -> tuple[int, int]:
         aspect_ratio = original_cols / original_rows

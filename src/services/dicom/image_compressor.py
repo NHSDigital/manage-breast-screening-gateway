@@ -4,6 +4,7 @@ Provides compression functionality for DICOM images using JPEG 2000 Lossy compre
 """
 
 import logging
+import os
 
 from pydicom import Dataset
 from pydicom.pixels.utils import compress
@@ -15,8 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 class ImageCompressor:
-    def __init__(self, compression_ratio: int = 15, resizer: ImageResizer | None = None):
-        self.compression_ratio = compression_ratio
+    def __init__(self, compression_ratio: int | None = None, resizer: ImageResizer | None = None):
+        self.compression_ratio = (
+            compression_ratio if compression_ratio is not None else int(os.getenv("DICOM_COMPRESSION_RATIO", "15"))
+        )
         self.resizer = resizer or ImageResizer()
 
     def compress(self, ds: Dataset) -> Dataset:

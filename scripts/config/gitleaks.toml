@@ -29,6 +29,10 @@ paths = [
   '''^venv/''',
   '''^ENV/''',
   '''^env/''',
+
+  # Build/cache artifacts
+  '''__pycache__/''',
+  '''^htmlcov/''',
 ]
 
 regexes = [

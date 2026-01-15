@@ -181,6 +181,69 @@ class PACSStorage(Storage):
         """Close storage (cleanup if needed)."""
         logger.info("PACS storage closed")
 
+    def get_pending_uploads(self, limit: int = 10, max_retries: int = 3) -> List[Dict]:
+        """Get stored instances pending upload"""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT sop_instance_uid, storage_path, accession_number,
+                       file_size, upload_attempt_count
+                FROM stored_instances
+                WHERE upload_status = 'PENDING'
+                  AND status = 'STORED'
+                  AND upload_attempt_count < ?
+                ORDER BY created_at ASC
+                LIMIT ?
+                """,
+                (max_retries, limit),
+            )
+            return [dict(row) for row in cursor.fetchall()]
+
+    def mark_upload_started(self, sop_instance_uid: str) -> None:
+        """Mark an instance as upload in progress"""
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE stored_instances
+                SET upload_status = 'UPLOADING',
+                    last_upload_attempt = CURRENT_TIMESTAMP,
+                    upload_attempt_count = upload_attempt_count + 1
+                WHERE sop_instance_uid = ?
+                """,
+                (sop_instance_uid,),
+            )
+            conn.commit()
+
+    def mark_upload_complete(self, sop_instance_uid: str) -> None:
+        """Mark an instance upload as complete"""
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE stored_instances
+                SET upload_status = 'COMPLETE',
+                    uploaded_at = CURRENT_TIMESTAMP,
+                    upload_error = NULL
+                WHERE sop_instance_uid = ?
+                """,
+                (sop_instance_uid,),
+            )
+            conn.commit()
+
+    def mark_upload_failed(self, sop_instance_uid: str, error: str, permanent: bool = False) -> None:
+        """Mark an instance upload as failed"""
+        status = "FAILED" if permanent else "PENDING"
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE stored_instances
+                SET upload_status = ?,
+                    upload_error = ?
+                WHERE sop_instance_uid = ?
+                """,
+                (status, error[:500], sop_instance_uid),
+            )
+            conn.commit()
+
 
 @dataclass
 class WorklistItem:
@@ -408,3 +471,15 @@ class MWLStorage(Storage):
                 raise WorklistItemNotFoundError(f"Worklist item not found: {accession_number}")
 
             return True
+
+    def get_source_message_id(self, accession_number: str) -> Optional[str]:
+        """
+        Get the source_message_id for a worklist item by accession number.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT source_message_id FROM worklist_items WHERE accession_number = ?",
+                (accession_number,),
+            )
+            row = cursor.fetchone()
+            return row["source_message_id"] if row and row["source_message_id"] else None

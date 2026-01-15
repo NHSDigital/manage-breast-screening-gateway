@@ -10,6 +10,7 @@ from pynetdicom.sop_class import (
 )
 
 from services.dicom import FAILURE, SUCCESS
+from services.dicom.image_compressor import ImageCompressor
 from services.storage import InstanceExistsError, PACSStorage
 
 logger = logging.getLogger(__name__)
@@ -21,8 +22,9 @@ class CStore:
         DigitalMammographyXRayImageStorageForProcessing,
     ]
 
-    def __init__(self, storage: PACSStorage):
+    def __init__(self, storage: PACSStorage, compressor: ImageCompressor | None = None):
         self.storage = storage
+        self.compressor = compressor or ImageCompressor()
 
     def call(self, event: Event) -> int:
         try:
@@ -46,9 +48,12 @@ class CStore:
             accession_number = ds.get("AccessionNumber", "")
             patient_name = str(ds.get("PatientName", ""))
 
+            # Compress dataset before storing
+            compressed_ds = self.compressor.compress(ds)
+
             self.storage.store_instance(
                 sop_instance_uid,
-                self.dataset_to_bytes(ds),
+                self.dataset_to_bytes(compressed_ds),
                 {
                     "accession_number": accession_number,
                     "patient_id": patient_id,

@@ -8,6 +8,11 @@ license = { text = "MIT" }
 dependencies = [
   "pydicom>=3.0.1",
   "pynetdicom>=3.0.4",
+  "numpy>=2.4.0,<3",
+  "pylibjpeg>=2.0.0",
+  "pylibjpeg-libjpeg>=2.0.0",
+  "pylibjpeg-openjpeg>=2.2.0",
+  "pillow>=11.0.0",
 ]
 
 [dependency-groups]
@@ -17,7 +22,6 @@ dev = [
   "ruff>=0.14.1,<0.15",
   "pyright>=1.1.390",
   "ipdb>=0.13.13,<0.14",
-  "numpy>=2.4.0,<3",
 ]
 
 [tool.uv]

@@ -67,6 +67,7 @@ def dataset_without_pixels(dicom_file_meta):
 
 class FakeWebSocket:
     """Async iterator + websocket mock."""
+
     def __init__(self, messages):
         self._messages = messages
         self.send = AsyncMock()

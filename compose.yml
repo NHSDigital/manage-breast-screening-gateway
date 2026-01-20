@@ -67,6 +67,29 @@ services:
       timeout: 5s
       retries: 3
 
+  upload:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: upload-service
+    command: ["uv", "run", "python", "-m", "upload_main"]
+    volumes:
+      - pacs-storage:/var/lib/pacs/storage
+      - pacs-db:/var/lib/pacs
+    environment:
+      - CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT:-http://host.docker.internal:8000/api/dicom/upload/}
+      - PACS_DB_PATH=/var/lib/pacs/pacs.db
+      - PACS_STORAGE_PATH=/var/lib/pacs/storage
+      - MWL_DB_PATH=/var/lib/pacs/worklist.db
+      - UPLOAD_POLL_INTERVAL=2
+      - UPLOAD_BATCH_SIZE=10
+      - MAX_UPLOAD_RETRIES=3
+      - LOG_LEVEL=INFO
+    depends_on:
+      pacs:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pacs-storage:
     driver: local

@@ -20,7 +20,7 @@ class TestCStoreSavesMetadata:
         dataset = Dataset()
         dataset.AccessionNumber = "ABC123"
         dataset.PatientID = "9990001112"
-        dataset.SOPInstanceUID = "1.2.3.4.5.6"
+        dataset.SOPInstanceUID = "1.2.3.4.5.6"  # gitleaks:allow
         file_meta = FileMetaDataset()
         file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
         file_meta.MediaStorageSOPClassUID = DigitalMammographyXRayImageStorageForProcessing
@@ -35,7 +35,7 @@ class TestCStoreSavesMetadata:
         return PACSStorage(f"{tmp_dir}/test.db", tmp_dir)
 
     def test_existing_sop_instance_uid(self, storage, mock_event):
-        sop_instance_uid = "1.2.3.4.5.6"
+        sop_instance_uid = "1.2.3.4.5.6"  # gitleaks:allow
         subject = CStore(storage)
         mock_event.dataset.file_meta = mock_event.file_meta
         storage.store_instance(
@@ -52,7 +52,7 @@ class TestCStoreSavesMetadata:
                 """
                     SELECT patient_id
                     FROM   stored_instances
-                    WHERE  sop_instance_uid = '1.2.3.4.5.6'
+                    WHERE  sop_instance_uid = '1.2.3.4.5.6'  -- gitleaks:allow
                 """
             )
             results = cursor.fetchall()
@@ -70,7 +70,7 @@ class TestCStoreSavesMetadata:
                     SELECT patient_id, accession_number,
                            source_aet, storage_path
                     FROM   stored_instances
-                    WHERE  sop_instance_uid = '1.2.3.4.5.6'
+                    WHERE  sop_instance_uid = '1.2.3.4.5.6'  -- gitleaks:allow
                 """
             )
             result = cursor.fetchone()
@@ -88,7 +88,7 @@ class TestCStoreSavesMetadata:
         # Customize the shared dataset for this test
         dataset_with_pixels.AccessionNumber = "DEF456"
         dataset_with_pixels.PatientID = "9990002223"
-        dataset_with_pixels.SOPInstanceUID = "1.2.3.4.5.7"
+        dataset_with_pixels.SOPInstanceUID = "1.2.3.4.5.7"  # gitleaks:allow
 
         # Wrap in PropertyMock to simulate DICOM event
         event = PropertyMock()
@@ -105,7 +105,7 @@ class TestCStoreSavesMetadata:
                 """
                     SELECT storage_path
                     FROM   stored_instances
-                    WHERE  sop_instance_uid = '1.2.3.4.5.7'
+                    WHERE  sop_instance_uid = '1.2.3.4.5.7'  -- gitleaks:allow
                 """
             )
             result = cursor.fetchone()

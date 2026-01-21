@@ -1,10 +1,10 @@
-# Gitleaks allowlist for false positives
-# Add file:line patterns for legitimate secrets that gitleaks flags incorrectly
+# Gitleaks allowlist for false positives in git history
 #
-# Format: path/to/file:rule_id:line_number
-# These are DICOM UIDs that match the IPv4 pattern
+# These are DICOM UIDs that match the IPv4 pattern in old commits.
+# Current files use inline `# gitleaks:allow` comments instead.
+#
+# Format: commit:path:rule_id:line_number
 
-# Git history fingerprints (for renamed/deleted files in old commits)
 064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:38
 064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:66
 064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:71
@@ -47,62 +47,3 @@ c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/services/test_storage.py:ipv4:55
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/services/test_storage.py:ipv4:88
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/services/test_storage.py:ipv4:107
 d9b882c916499c8cf2107879c83de2897fe99247:tests/integration/test_c_store_saves_metadata.py:ipv4:52
-
-# Source files
-src/services/storage.py:ipv4:89
-
-# Test files - test_c_store_saves_metadata.py
-tests/integration/test_c_store_saves_metadata.py:ipv4:23
-tests/integration/test_c_store_saves_metadata.py:ipv4:38
-tests/integration/test_c_store_saves_metadata.py:ipv4:55
-tests/integration/test_c_store_saves_metadata.py:ipv4:73
-tests/integration/test_c_store_saves_metadata.py:ipv4:91
-tests/integration/test_c_store_saves_metadata.py:ipv4:108
-
-# Test files - test_pacs_storage_upload.py
-tests/integration/test_pacs_storage_upload.py:ipv4:21
-tests/integration/test_pacs_storage_upload.py:ipv4:25
-tests/integration/test_pacs_storage_upload.py:ipv4:29
-tests/integration/test_pacs_storage_upload.py:ipv4:30
-tests/integration/test_pacs_storage_upload.py:ipv4:32
-tests/integration/test_pacs_storage_upload.py:ipv4:36
-tests/integration/test_pacs_storage_upload.py:ipv4:45
-tests/integration/test_pacs_storage_upload.py:ipv4:46
-tests/integration/test_pacs_storage_upload.py:ipv4:48
-tests/integration/test_pacs_storage_upload.py:ipv4:52
-tests/integration/test_pacs_storage_upload.py:ipv4:62
-tests/integration/test_pacs_storage_upload.py:ipv4:65
-tests/integration/test_pacs_storage_upload.py:ipv4:66
-tests/integration/test_pacs_storage_upload.py:ipv4:67
-tests/integration/test_pacs_storage_upload.py:ipv4:69
-tests/integration/test_pacs_storage_upload.py:ipv4:72
-
-# Test files - test_c_store.py
-tests/services/dicom/test_c_store.py:ipv4:19
-tests/services/dicom/test_c_store.py:ipv4:62
-
-# Test files - test_dicom_uploader.py
-tests/services/dicom/test_dicom_uploader.py:ipv4:18
-tests/services/dicom/test_dicom_uploader.py:ipv4:28
-
-# Test files - test_upload_processor.py
-tests/services/dicom/test_upload_processor.py:ipv4:52
-tests/services/dicom/test_upload_processor.py:ipv4:58
-tests/services/dicom/test_upload_processor.py:ipv4:74
-tests/services/dicom/test_upload_processor.py:ipv4:89
-tests/services/dicom/test_upload_processor.py:ipv4:90
-tests/services/dicom/test_upload_processor.py:ipv4:91
-tests/services/dicom/test_upload_processor.py:ipv4:95
-tests/services/dicom/test_upload_processor.py:ipv4:108
-tests/services/dicom/test_upload_processor.py:ipv4:113
-tests/services/dicom/test_upload_processor.py:ipv4:131
-tests/services/dicom/test_upload_processor.py:ipv4:150
-tests/services/dicom/test_upload_processor.py:ipv4:174
-
-# Test files - test_storage.py
-tests/services/test_storage.py:ipv4:38
-tests/services/test_storage.py:ipv4:41
-tests/services/test_storage.py:ipv4:53
-tests/services/test_storage.py:ipv4:56
-tests/services/test_storage.py:ipv4:90
-tests/services/test_storage.py:ipv4:108

@@ -86,7 +86,7 @@ class PACSStorage(Storage):
         Compute hash-based storage path for a SOP Instance UID.
 
         Uses first 2 chars of hash as first level, next 2 as second level.
-        Example: "1.2.3.4.5" -> hash -> "a1/b2/a1b2c3d4e5f6.dcm"
+        Example: "1.2.3.4.5" -> hash -> "a1/b2/a1b2c3d4e5f6.dcm"  # gitleaks:allow
 
         Args:
             sop_instance_uid: SOP Instance UID

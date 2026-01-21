@@ -16,7 +16,7 @@ class TestCStore:
         """Create a mock DICOM event using the shared dataset fixture."""
         # Customize the shared dataset for these tests
         dataset_with_pixels.AccessionNumber = "ABC123"
-        dataset_with_pixels.SOPInstanceUID = "1.2.3.4.5.6"
+        dataset_with_pixels.SOPInstanceUID = "1.2.3.4.5.6"  # gitleaks:allow
         dataset_with_pixels.PatientID = "9990001112"
         dataset_with_pixels.PatientName = "JANE^SMITH"
 
@@ -59,7 +59,7 @@ class TestCStore:
         # Verify store_instance was called with correct metadata
         # Note: bytes will be compressed, so we can't compare exact bytes
         call_args = mock_storage.store_instance.call_args
-        assert call_args[0][0] == "1.2.3.4.5.6"  # SOP Instance UID
+        assert call_args[0][0] == "1.2.3.4.5.6"  # gitleaks:allow
         assert call_args[0][2] == {  # Metadata
             "accession_number": "ABC123",
             "patient_id": "9990001112",

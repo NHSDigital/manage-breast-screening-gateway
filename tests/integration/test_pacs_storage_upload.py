@@ -18,22 +18,23 @@ def pacs_storage(tmp_path):
 class TestPACSStorageUpload:
     def test_get_pending_uploads(self, pacs_storage):
         """Test retrieving pending uploads from database."""
-        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})
+        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})  # gitleaks:allow
 
         pending = pacs_storage.get_pending_uploads()
         assert len(pending) == 1
-        assert pending[0]["sop_instance_uid"] == "1.2.3.4"
+        assert pending[0]["sop_instance_uid"] == "1.2.3.4"  # gitleaks:allow
 
     def test_mark_upload_complete(self, pacs_storage):
         """Test marking upload as complete."""
-        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})
-        pacs_storage.mark_upload_started("1.2.3.4")
+        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})  # gitleaks:allow
+        pacs_storage.mark_upload_started("1.2.3.4")  # gitleaks:allow
 
-        pacs_storage.mark_upload_complete("1.2.3.4")
+        pacs_storage.mark_upload_complete("1.2.3.4")  # gitleaks:allow
 
         with pacs_storage._get_connection() as conn:
             cursor = conn.execute(
-                "SELECT upload_status, uploaded_at FROM stored_instances WHERE sop_instance_uid = ?", ("1.2.3.4",)
+                "SELECT upload_status, uploaded_at FROM stored_instances WHERE sop_instance_uid = ?",
+                ("1.2.3.4",),  # gitleaks:allow
             )
             row = cursor.fetchone()
 
@@ -42,14 +43,15 @@ class TestPACSStorageUpload:
 
     def test_mark_upload_failed_with_retry(self, pacs_storage):
         """Test marking upload as failed but retriable."""
-        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})
-        pacs_storage.mark_upload_started("1.2.3.4")  # attempt_count = 1
+        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})  # gitleaks:allow
+        pacs_storage.mark_upload_started("1.2.3.4")  # gitleaks:allow
 
-        pacs_storage.mark_upload_failed("1.2.3.4", "Network error", permanent=False)
+        pacs_storage.mark_upload_failed("1.2.3.4", "Network error", permanent=False)  # gitleaks:allow
 
         with pacs_storage._get_connection() as conn:
             cursor = conn.execute(
-                "SELECT upload_status, upload_error FROM stored_instances WHERE sop_instance_uid = ?", ("1.2.3.4",)
+                "SELECT upload_status, upload_error FROM stored_instances WHERE sop_instance_uid = ?",
+                ("1.2.3.4",),  # gitleaks:allow
             )
             row = cursor.fetchone()
 
@@ -59,17 +61,20 @@ class TestPACSStorageUpload:
 
     def test_mark_upload_failed_max_retries(self, pacs_storage):
         """Test marking upload as permanently failed after max retries."""
-        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})
+        pacs_storage.store_instance("1.2.3.4", b"fake dicom", {})  # gitleaks:allow
         # Simulate 3 failed upload attempts
         for _ in range(3):
-            pacs_storage.mark_upload_started("1.2.3.4")
-            pacs_storage.mark_upload_failed("1.2.3.4", "Error", permanent=False)
-        pacs_storage.mark_upload_started("1.2.3.4")  # 4th attempt
+            pacs_storage.mark_upload_started("1.2.3.4")  # gitleaks:allow
+            pacs_storage.mark_upload_failed("1.2.3.4", "Error", permanent=False)  # gitleaks:allow
+        pacs_storage.mark_upload_started("1.2.3.4")  # gitleaks:allow
 
-        pacs_storage.mark_upload_failed("1.2.3.4", "Permanent error", permanent=True)
+        pacs_storage.mark_upload_failed("1.2.3.4", "Permanent error", permanent=True)  # gitleaks:allow
 
         with pacs_storage._get_connection() as conn:
-            cursor = conn.execute("SELECT upload_status FROM stored_instances WHERE sop_instance_uid = ?", ("1.2.3.4",))
+            cursor = conn.execute(
+                "SELECT upload_status FROM stored_instances WHERE sop_instance_uid = ?",
+                ("1.2.3.4",),  # gitleaks:allow
+            )
             row = cursor.fetchone()
 
         # Should be permanently FAILED

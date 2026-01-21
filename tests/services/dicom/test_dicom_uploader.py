@@ -1,3 +1,4 @@
+import io
 from unittest.mock import Mock, patch
 
 import requests
@@ -20,14 +21,14 @@ class TestDICOMUploader:
         assert result is True
         mock_post.assert_called_once()
 
-        # Verify multipart form upload
+        # Verify multipart form upload with BytesIO stream
         call_kwargs = mock_post.call_args[1]
         assert call_kwargs["headers"]["X-Source-Message-ID"] == "ACTION123"
         assert "files" in call_kwargs
         file_tuple = call_kwargs["files"]["file"]
         assert file_tuple[0] == "1.2.3.4.5.dcm"  # filename
-        assert file_tuple[1] == dicom_bytes  # content
-        assert file_tuple[2] == "application/dicom"  # content-type
+        assert isinstance(file_tuple[1], io.BytesIO)  # stream
+        assert file_tuple[1].getvalue() == dicom_bytes  # content
 
     @patch("services.dicom.dicom_uploader.requests.post")
     def test_upload_without_action_id(self, mock_post):

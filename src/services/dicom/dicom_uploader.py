@@ -4,6 +4,7 @@ Cloud DICOM uploader
 Uploads DICOM files to the Manage Breast Screening HTTP API endpoint.
 """
 
+import io
 import logging
 import os
 from typing import Optional
@@ -27,8 +28,10 @@ class DICOMUploader:
             "X-Source-Message-ID": action_id or "",
         }
 
+        # Wrap bytes in BytesIO stream - Django expects a file-like object
+        file_stream = io.BytesIO(dicom_bytes)
         files = {
-            "file": (f"{sop_instance_uid}.dcm", dicom_bytes, "application/dicom"),
+            "file": (f"{sop_instance_uid}.dcm", file_stream),
         }
 
         try:

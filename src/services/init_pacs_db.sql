@@ -17,6 +17,12 @@ CREATE TABLE IF NOT EXISTS stored_instances (
 
     status TEXT DEFAULT 'STORED' CHECK(status IN ('STORED', 'ARCHIVED', 'DELETED')),
 
+    upload_status TEXT DEFAULT 'PENDING' CHECK(upload_status IN ('PENDING', 'UPLOADING', 'COMPLETE', 'FAILED')),
+    upload_error TEXT,
+    upload_attempt_count INTEGER DEFAULT 0,
+    last_upload_attempt TEXT,
+    uploaded_at TEXT,
+
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     source_aet TEXT,                      -- AE Title of sender
 
@@ -28,3 +34,4 @@ CREATE INDEX IF NOT EXISTS idx_patient_id ON stored_instances(patient_id);
 CREATE INDEX IF NOT EXISTS idx_accession_number ON stored_instances(accession_number);
 CREATE INDEX IF NOT EXISTS idx_created_at ON stored_instances(created_at);
 CREATE INDEX IF NOT EXISTS idx_storage_hash ON stored_instances(storage_hash);
+CREATE INDEX IF NOT EXISTS idx_upload_status ON stored_instances(upload_status);

@@ -2,7 +2,6 @@ import logging
 from io import BytesIO
 
 from pydicom import Dataset, dcmwrite
-from pydicom.filebase import DicomFileLike
 from pynetdicom.events import Event
 from pynetdicom.sop_class import (
     DigitalMammographyXRayImageStorageForPresentation,  # type: ignore
@@ -72,10 +71,9 @@ class CStore:
             logger.error(e, exc_info=True)
             return FAILURE
 
-    # https://pydicom.github.io/pydicom/stable/auto_examples/memory_dataset.html
     def dataset_to_bytes(self, ds: Dataset) -> bytes:
         with BytesIO() as buffer:
-            memory_dataset = DicomFileLike(buffer)
-            dcmwrite(memory_dataset, ds)
-            memory_dataset.seek(0)
-            return memory_dataset.read()
+            # enforce_file_format=True ensures the 128-byte preamble and 'DICM' prefix are written
+            dcmwrite(buffer, ds, enforce_file_format=True)
+            buffer.seek(0)
+            return buffer.read()

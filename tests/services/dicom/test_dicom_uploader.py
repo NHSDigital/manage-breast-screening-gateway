@@ -16,7 +16,11 @@ class TestDICOMUploader:
         uploader = DICOMUploader(api_endpoint="http://test.com/api/upload")
 
         dicom_bytes = b"fake dicom data"
-        result = uploader.upload_dicom(sop_instance_uid="1.2.3.4.5", dicom_bytes=dicom_bytes, action_id="ACTION123")
+        result = uploader.upload_dicom(
+            sop_instance_uid="1.2.3.4.5",  # gitleaks:allow
+            dicom_bytes=dicom_bytes,
+            action_id="ACTION123",
+        )
 
         assert result is True
         mock_post.assert_called_once()
@@ -26,7 +30,7 @@ class TestDICOMUploader:
         assert call_kwargs["headers"]["X-Source-Message-ID"] == "ACTION123"
         assert "files" in call_kwargs
         file_tuple = call_kwargs["files"]["file"]
-        assert file_tuple[0] == "1.2.3.4.5.dcm"  # filename
+        assert file_tuple[0] == "1.2.3.4.5.dcm"  # gitleaks:allow
         assert isinstance(file_tuple[1], io.BytesIO)  # stream
         assert file_tuple[1].getvalue() == dicom_bytes  # content
 

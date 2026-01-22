@@ -35,10 +35,11 @@ class TestPACSStorage:
         subject = PACSStorage(tmp_dir, tmp_dir)
         mock_connection.reset_mock()
 
-        assert subject.instance_exists("1.2.3.4.5.6") is True
+        assert subject.instance_exists("1.2.3.4.5.6") is True  # gitleaks:allow
 
         mock_connection.execute.assert_called_once_with(
-            "SELECT 1 FROM stored_instances WHERE sop_instance_uid = ? AND status = 'STORED'", ("1.2.3.4.5.6",)
+            "SELECT 1 FROM stored_instances WHERE sop_instance_uid = ? AND status = 'STORED'",
+            ("1.2.3.4.5.6",),  # gitleaks:allow
         )
 
     def test_instance_exists_returns_false(self, mock_db, tmp_dir):
@@ -50,10 +51,10 @@ class TestPACSStorage:
         subject = PACSStorage(tmp_dir, tmp_dir)
         mock_connection.reset_mock()
 
-        assert subject.instance_exists("1.2.3.4.5.6") is False
+        assert subject.instance_exists("1.2.3.4.5.6") is False  # gitleaks:allow
 
     def test_store_instance_saves_to_filesystem(self, mock_db, tmp_dir):
-        sop_instance_uid = "1.2.3.4.5.6"
+        sop_instance_uid = "1.2.3.4.5.6"  # gitleaks:allow
         mock_connection = MagicMock()
         mock_db.connect.return_value = mock_connection
         subject = PACSStorage(tmp_dir, tmp_dir)
@@ -87,7 +88,7 @@ class TestPACSStorage:
         }
 
         subject.store_instance(
-            "1.2.3.4.5.6",
+            "1.2.3.4.5.6",  # gitleaks:allow
             b"foo",
             metadata,
         )
@@ -105,7 +106,7 @@ class TestPACSStorage:
                 )
             """,
             (
-                "1.2.3.4.5.6",
+                "1.2.3.4.5.6",  # gitleaks:allow
                 "ff/af/ffaff041ab509297.dcm",
                 3,
                 "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",

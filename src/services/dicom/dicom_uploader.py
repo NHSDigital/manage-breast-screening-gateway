@@ -20,22 +20,17 @@ class DICOMUploader:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
 
-    def upload_dicom(self, sop_instance_uid: str, dicom_bytes: bytes, action_id: Optional[str]) -> bool:
+    def upload_dicom(self, sop_instance_uid: str, dicom_stream: io.BufferedReader, action_id: Optional[str]) -> bool:
         if not action_id:
             logger.error(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
             return False
 
-        # Wrap bytes in BytesIO stream - Django expects a file-like object
-        file_stream = io.BytesIO(dicom_bytes)
         files = {
-            "file": (f"{sop_instance_uid}.dcm", file_stream),
+            "file": (f"{sop_instance_uid}.dcm", dicom_stream),
         }
 
         try:
-            logger.info(
-                f"Uploading {sop_instance_uid} to {self.api_endpoint}/{action_id} "
-                f"(size: {len(dicom_bytes)} bytes, action_id: {action_id})"
-            )
+            logger.info(f"Uploading {sop_instance_uid} to {self.api_endpoint}/{action_id}")
 
             response = requests.put(
                 f"{self.api_endpoint}/{action_id}",

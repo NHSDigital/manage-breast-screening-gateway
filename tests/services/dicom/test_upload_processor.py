@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, mock_open, patch
 
 import pytest
 
@@ -62,8 +62,9 @@ class TestUploadProcessor:
             },
         ]
         mock_uploader.upload_dicom.return_value = True
+        mo = mock_open(read_data=b"dicom data")
 
-        with patch.object(Path, "exists", return_value=True), patch.object(Path, "read_bytes", return_value=b"dicom"):
+        with patch.object(Path, "exists", return_value=True), patch("builtins.open", mo):
             result = processor.process_batch(limit=10)
 
         assert result == 2
@@ -79,16 +80,14 @@ class TestUploadProcessor:
         mock_mwl_storage.get_source_message_id.return_value = "ACTION123"
         mock_uploader.upload_dicom.return_value = True
 
-        with (
-            patch.object(Path, "exists", return_value=True),
-            patch.object(Path, "read_bytes", return_value=b"dicom data"),
-        ):
+        mo = mock_open(read_data=b"dicom data")
+        with patch.object(Path, "exists", return_value=True), patch("builtins.open", mo):
             result = processor.upload_instance(instance)
 
         assert result is True
         mock_pacs_storage.mark_upload_started.assert_called_once_with("1.2.3.4")  # gitleaks:allow
         mock_pacs_storage.mark_upload_complete.assert_called_once_with("1.2.3.4")  # gitleaks:allow
-        mock_uploader.upload_dicom.assert_called_once_with("1.2.3.4", b"dicom data", "ACTION123")  # gitleaks:allow
+        mock_uploader.upload_dicom.assert_called_once_with("1.2.3.4", mo(), "ACTION123")  # gitleaks:allow
 
     def test_upload_instance_file_not_found(self, processor, mock_pacs_storage):
         instance = {

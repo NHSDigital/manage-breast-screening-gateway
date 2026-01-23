@@ -21,6 +21,8 @@ class TestCStoreSavesMetadata:
         dataset.AccessionNumber = "ABC123"
         dataset.PatientID = "9990001112"
         dataset.SOPInstanceUID = "1.2.3.4.5.6"  # gitleaks:allow
+        dataset.StudyInstanceUID = "1.2.3.4.5.6.7"  # gitleaks:allow
+        dataset.SOPClassUID = "1.2.840.10008.5.1.4.1.1.1.2"  # gitleaks:allow
         file_meta = FileMetaDataset()
         file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
         file_meta.MediaStorageSOPClassUID = DigitalMammographyXRayImageStorageForProcessing
@@ -89,6 +91,8 @@ class TestCStoreSavesMetadata:
         dataset_with_pixels.AccessionNumber = "DEF456"
         dataset_with_pixels.PatientID = "9990002223"
         dataset_with_pixels.SOPInstanceUID = "1.2.3.4.5.7"  # gitleaks:allow
+        dataset_with_pixels.StudyInstanceUID = "1.2.3.4.5.7.8"  # gitleaks:allow
+        dataset_with_pixels.SOPClassUID = "1.2.840.10008.5.1.4.1.1.1.2"  # gitleaks:allow
 
         # Wrap in PropertyMock to simulate DICOM event
         event = PropertyMock()

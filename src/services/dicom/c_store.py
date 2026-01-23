@@ -10,6 +10,7 @@ from pynetdicom.sop_class import (
 
 from services.dicom import FAILURE, SUCCESS
 from services.dicom.image_compressor import ImageCompressor
+from services.dicom.validator import DicomValidationError, DicomValidator
 from services.storage import InstanceExistsError, PACSStorage
 
 logger = logging.getLogger(__name__)
@@ -21,9 +22,15 @@ class CStore:
         DigitalMammographyXRayImageStorageForProcessing,
     ]
 
-    def __init__(self, storage: PACSStorage, compressor: ImageCompressor | None = None):
+    def __init__(
+        self,
+        storage: PACSStorage,
+        compressor: ImageCompressor | None = None,
+        validator: DicomValidator | None = None,
+    ):
         self.storage = storage
         self.compressor = compressor or ImageCompressor()
+        self.validator = validator or DicomValidator()
 
     def call(self, event: Event) -> int:
         try:
@@ -47,12 +54,28 @@ class CStore:
             accession_number = ds.get("AccessionNumber", "")
             patient_name = str(ds.get("PatientName", ""))
 
+            # Validate dataset before compression
+            try:
+                self.validator.validate_dataset(ds)
+                self.validator.validate_pixel_data(ds)
+            except DicomValidationError as e:
+                logger.error(f"DICOM validation failed: {e}")
+                return FAILURE
+
             # Compress dataset before storing
             compressed_ds = self.compressor.compress(ds)
 
+            # Serialize and validate output
+            dicom_bytes = self.dataset_to_bytes(compressed_ds)
+            try:
+                self.validator.validate_bytes(dicom_bytes)
+            except DicomValidationError as e:
+                logger.error(f"Serialized DICOM invalid: {e}")
+                return FAILURE
+
             self.storage.store_instance(
                 sop_instance_uid,
-                self.dataset_to_bytes(compressed_ds),
+                dicom_bytes,
                 {
                     "accession_number": accession_number,
                     "patient_id": patient_id,

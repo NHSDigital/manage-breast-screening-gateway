@@ -22,11 +22,8 @@ class DICOMUploader:
 
     def upload_dicom(self, sop_instance_uid: str, dicom_bytes: bytes, action_id: Optional[str]) -> bool:
         if not action_id:
-            logger.warning(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
-
-        headers = {
-            "X-Source-Message-ID": action_id or "",
-        }
+            logger.error(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
+            return False
 
         # Wrap bytes in BytesIO stream - Django expects a file-like object
         file_stream = io.BytesIO(dicom_bytes)
@@ -36,19 +33,18 @@ class DICOMUploader:
 
         try:
             logger.info(
-                f"Uploading {sop_instance_uid} to {self.api_endpoint} "
+                f"Uploading {sop_instance_uid} to {self.api_endpoint}/{action_id} "
                 f"(size: {len(dicom_bytes)} bytes, action_id: {action_id})"
             )
 
-            response = requests.post(
-                self.api_endpoint,
+            response = requests.put(
+                f"{self.api_endpoint}/{action_id}",
                 files=files,
-                headers=headers,
                 timeout=self.timeout,
                 verify=self.verify_ssl,
             )
 
-            if response.status_code in (200, 201, 204):
+            if response.status_code == 201:
                 logger.info(f"Successfully uploaded {sop_instance_uid} (status: {response.status_code})")
                 return True
             else:

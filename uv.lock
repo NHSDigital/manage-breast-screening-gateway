@@ -192,11 +192,10 @@ dependencies = [
     { name = "pillow" },
     { name = "pydicom" },
     { name = "pylibjpeg" },
-    { name = "pylibjpeg-libjpeg" },
     { name = "pylibjpeg-openjpeg" },
     { name = "pynetdicom" },
-    { name = "websockets" },
     { name = "requests" },
+    { name = "websockets" },
 ]
 
 [package.dev-dependencies]
@@ -215,11 +214,10 @@ requires-dist = [
     { name = "pillow", specifier = ">=11.0.0" },
     { name = "pydicom", specifier = ">=3.0.1" },
     { name = "pylibjpeg", specifier = ">=2.0.0" },
-    { name = "pylibjpeg-libjpeg", specifier = ">=2.0.0" },
-    { name = "pylibjpeg-openjpeg", specifier = ">=2.2.0" },
+    { name = "pylibjpeg-openjpeg", specifier = ">=2.5.0" },
     { name = "pynetdicom", specifier = ">=3.0.4" },
-    { name = "websockets", specifier = "==15.0.1" },
     { name = "requests", specifier = ">=2.32.0" },
+    { name = "websockets", specifier = "==15.0.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -413,15 +411,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/1a/39/51c543a27592f3e9a
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3c/31/86c111e81c113e74ac1b0afde27755088b2db394579370c893d252d9615a/pylibjpeg-2.1.0-py3-none-any.whl", hash = "sha256:25df9496a69e64e98c887fddee12a1271e275b5f74ba804f9bf98a08bb80993e", size = 25472, upload-time = "2025-09-01T23:08:22.28Z" },
 ]
-
-[[package]]
-name = "pylibjpeg-libjpeg"
-version = "2.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/39/d44c4124d8e97a3d5b5e87da5d5f096e010eb83670351bc0e9c77c0febd5/pylibjpeg_libjpeg-2.3.0.tar.gz", hash = "sha256:ffb736acee1dfd446f387d45dfec83a144c7971e5cde290d9aafefa5dee99dd0", size = 671494, upload-time = "2024-10-27T02:36:21.316Z" }
 
 [[package]]
 name = "pylibjpeg-openjpeg"

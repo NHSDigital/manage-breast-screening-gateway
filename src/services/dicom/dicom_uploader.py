@@ -20,6 +20,11 @@ class DICOMUploader:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
 
+    def headers(self) -> dict:
+        return {
+            "Authorization": f"Bearer {os.getenv('CLOUD_API_TOKEN', '')}",
+        }
+
     def upload_dicom(self, sop_instance_uid: str, dicom_stream: io.BufferedReader, action_id: Optional[str]) -> bool:
         if not action_id:
             logger.error(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
@@ -37,6 +42,7 @@ class DICOMUploader:
                 files=files,
                 timeout=self.timeout,
                 verify=self.verify_ssl,
+                headers=self.headers(),
             )
 
             if response.status_code == 201:

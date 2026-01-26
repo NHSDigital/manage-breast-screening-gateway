@@ -35,7 +35,11 @@ class TestDICOMUploader:
 
         assert result is True
         mock_put.assert_called_once_with(
-            "http://test.com/api/upload/ACTION123", files=mock_put.call_args[1]["files"], timeout=30, verify=True
+            "http://test.com/api/upload/ACTION123",
+            files=mock_put.call_args[1]["files"],
+            timeout=30,
+            verify=True,
+            headers=uploader.headers(),
         )
 
         call_kwargs = mock_put.call_args[1]

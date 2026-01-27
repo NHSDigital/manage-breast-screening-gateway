@@ -16,39 +16,36 @@ logger = logging.getLogger(__name__)
 
 class DICOMUploader:
     def __init__(self, api_endpoint: str | None = None, timeout: int = 30, verify_ssl: bool = True):
-        self.api_endpoint = api_endpoint or os.getenv("CLOUD_API_ENDPOINT", "http://localhost:8000/api/dicom/upload/")
+        self.api_endpoint = api_endpoint or os.getenv("CLOUD_API_ENDPOINT", "http://localhost:8000/api/v1/dicom")
         self.timeout = timeout
         self.verify_ssl = verify_ssl
 
-    def upload_dicom(self, sop_instance_uid: str, dicom_bytes: bytes, action_id: Optional[str]) -> bool:
-        if not action_id:
-            logger.warning(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
-
-        headers = {
-            "X-Source-Message-ID": action_id or "",
+    def headers(self) -> dict:
+        return {
+            "Authorization": f"Bearer {os.getenv('CLOUD_API_TOKEN', '')}",
         }
 
-        # Wrap bytes in BytesIO stream - Django expects a file-like object
-        file_stream = io.BytesIO(dicom_bytes)
+    def upload_dicom(self, sop_instance_uid: str, dicom_stream: io.BufferedReader, action_id: Optional[str]) -> bool:
+        if not action_id:
+            logger.error(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
+            return False
+
         files = {
-            "file": (f"{sop_instance_uid}.dcm", file_stream),
+            "file": (f"{sop_instance_uid}.dcm", dicom_stream),
         }
 
         try:
-            logger.info(
-                f"Uploading {sop_instance_uid} to {self.api_endpoint} "
-                f"(size: {len(dicom_bytes)} bytes, action_id: {action_id})"
-            )
+            logger.info(f"Uploading {sop_instance_uid} to {self.api_endpoint}/{action_id}")
 
-            response = requests.post(
-                self.api_endpoint,
+            response = requests.put(
+                f"{self.api_endpoint}/{action_id}",
                 files=files,
-                headers=headers,
                 timeout=self.timeout,
                 verify=self.verify_ssl,
+                headers=self.headers(),
             )
 
-            if response.status_code in (200, 201, 204):
+            if response.status_code == 201:
                 logger.info(f"Successfully uploaded {sop_instance_uid} (status: {response.status_code})")
                 return True
             else:

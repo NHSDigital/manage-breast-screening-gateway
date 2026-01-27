@@ -97,12 +97,9 @@ class UploadProcessor:
                 self._mark_failed(sop_instance_uid, error, attempt_count + 1)
                 return False
 
-            dicom_bytes = dicom_path.read_bytes()
-            logger.debug(f"Read {len(dicom_bytes)} bytes from {dicom_path}")
-
             action_id = self.mwl_storage.get_source_message_id(accession_number) if accession_number else None
 
-            if self.uploader.upload_dicom(sop_instance_uid, dicom_bytes, action_id):
+            if self.uploader.upload_dicom(sop_instance_uid, open(dicom_path, "rb"), action_id):
                 self.pacs_storage.mark_upload_complete(sop_instance_uid)
                 logger.info(f"Successfully uploaded {sop_instance_uid}")
                 return True

@@ -11,6 +11,8 @@ services:
       - pacs-storage:/var/lib/pacs/storage
       - pacs-db:/var/lib/pacs
     environment:
+      - CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT}
+      - CLOUD_API_TOKEN=${CLOUD_API_TOKEN}
       - PACS_AET=SCREENING_PACS
       - PACS_PORT=4244
       - PACS_STORAGE_PATH=/var/lib/pacs/storage

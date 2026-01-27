@@ -207,10 +207,10 @@ class TestEndToEndRelayToUpload:
         mock_response = Mock()
         mock_response.status_code = 201
 
-        with patch("services.dicom.dicom_uploader.requests.post") as mock_post:
-            mock_post.return_value = mock_response
+        with patch("services.dicom.dicom_uploader.requests.put") as mock_put:
+            mock_put.return_value = mock_response
 
-            uploader = DICOMUploader(api_endpoint="http://test-manage-api/upload")
+            uploader = DICOMUploader(api_endpoint="http://test-manage-api/dicom")
             processor = UploadProcessor(
                 pacs_storage=pacs_storage,
                 mwl_storage=mwl_storage,
@@ -222,15 +222,15 @@ class TestEndToEndRelayToUpload:
             assert processed == 1
 
             # Verify the upload was called with correct parameters
-            mock_post.assert_called_once()
-            call_kwargs = mock_post.call_args
+            mock_put.assert_called_once()
+            call_args = mock_put.call_args
 
-            # Verify X-Source-Message-ID header contains the action_id from relay
-            headers = call_kwargs.kwargs.get("headers", call_kwargs[1].get("headers", {}))
-            assert headers.get("X-Source-Message-ID") == TEST_ACTION_ID
+            # Verify URL contains the action_id from relay
+            url = call_args[0][0]
+            assert url == f"http://test-manage-api/dicom/{TEST_ACTION_ID}"
 
             # Verify the file was included
-            files = call_kwargs.kwargs.get("files", call_kwargs[1].get("files", {}))
+            files = call_args.kwargs.get("files", {})
             assert "file" in files
             filename, _ = files["file"]
             assert stored_sop_instance_uid in filename

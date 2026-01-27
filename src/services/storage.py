@@ -181,6 +181,38 @@ class PACSStorage(Storage):
         """Close storage (cleanup if needed)."""
         logger.info("PACS storage closed")
 
+    def get_instance(self, sop_instance_uid: str) -> Optional[Dict]:
+        """Get a stored instance by SOP Instance UID."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT sop_instance_uid, storage_path, accession_number, patient_id,
+                       patient_name, file_size, status, upload_status, upload_error,
+                       upload_attempt_count, created_at
+                FROM stored_instances
+                WHERE sop_instance_uid = ?
+                """,
+                (sop_instance_uid,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
+    def get_instance_by_accession(self, accession_number: str) -> Optional[Dict]:
+        """Get a stored instance by accession number."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                SELECT sop_instance_uid, storage_path, accession_number, patient_id,
+                       patient_name, file_size, status, upload_status, upload_error,
+                       upload_attempt_count, created_at
+                FROM stored_instances
+                WHERE accession_number = ?
+                """,
+                (accession_number,),
+            )
+            row = cursor.fetchone()
+            return dict(row) if row else None
+
     def get_pending_uploads(self, limit: int = 10, max_retries: int = 3) -> List[Dict]:
         """Get stored instances pending upload"""
         with self._get_connection() as conn:

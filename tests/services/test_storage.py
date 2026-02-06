@@ -470,3 +470,27 @@ class TestWorkingStorage:
 
         with pytest.raises(WorklistItemNotFoundError):
             subject.delete_worklist_item("ACC123456")
+
+    def test_mpps_instance_exists(self, mock_db, tmp_dir):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = (1,)
+        mock_connection = MagicMock()
+        mock_connection.execute.return_value = mock_cursor
+        mock_db.connect.return_value = mock_connection
+
+        subject = MWLStorage(tmp_dir)
+        mock_connection.reset_mock()
+
+        assert subject.mpps_instance_exists(generate_uid()) is True
+
+    def test_mpps_instance_not_exists(self, mock_db, tmp_dir):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = None
+        mock_connection = MagicMock()
+        mock_connection.execute.return_value = mock_cursor
+        mock_db.connect.return_value = mock_connection
+
+        subject = MWLStorage(tmp_dir)
+        mock_connection.reset_mock()
+
+        assert subject.mpps_instance_exists(generate_uid()) is False

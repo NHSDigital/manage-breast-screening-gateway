@@ -515,3 +515,9 @@ class MWLStorage(Storage):
             )
             row = cursor.fetchone()
             return row["source_message_id"] if row and row["source_message_id"] else None
+
+    def mpps_instance_exists(self, mpps_instance_uid: str) -> bool:
+        """Check if an MPPS instance UID already exists in any worklist item."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT 1 FROM worklist_items WHERE mpps_instance_uid = ?", (mpps_instance_uid,))
+            return cursor.fetchone() is not None

@@ -2,6 +2,10 @@ from typing import cast
 from unittest.mock import MagicMock, Mock, patch
 
 from pynetdicom import evt
+from pynetdicom.sop_class import (  # pyright: ignore[reportAttributeAccessIssue]
+    ModalityPerformedProcedureStep,
+    ModalityWorklistInformationFind,
+)
 
 from server import MWLServer, PACSServer
 
@@ -94,13 +98,18 @@ class TestMWLServer:
         assert subject.ae == mock_ae_instance
 
         mock_ae.assert_called_once_with(ae_title="MWL_SCP")
-        mock_ae_instance.add_supported_context.assert_called_once()
+        mock_ae_instance.add_supported_context.assert_any_call(
+            ModalityWorklistInformationFind,
+        )
+        mock_ae_instance.add_supported_context.assert_any_call(
+            ModalityPerformedProcedureStep,
+        )
         mock_ae_instance.start_server.assert_called_once()
         args, kwargs = mock_ae_instance.start_server.call_args
         assert args[0] == ("0.0.0.0", 4243)
         assert kwargs["block"] is True
         assert "evt_handlers" in kwargs
-        assert len(kwargs["evt_handlers"]) == 1
+        assert len(kwargs["evt_handlers"]) == 2
 
     @patch(f"{MWLServer.__module__}.AE")
     def test_stop(self, *_):

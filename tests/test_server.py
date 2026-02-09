@@ -109,7 +109,7 @@ class TestMWLServer:
         assert args[0] == ("0.0.0.0", 4243)
         assert kwargs["block"] is True
         assert "evt_handlers" in kwargs
-        assert len(kwargs["evt_handlers"]) == 2
+        assert len(kwargs["evt_handlers"]) == 3
 
     @patch(f"{MWLServer.__module__}.AE")
     def test_stop(self, *_):

@@ -17,6 +17,7 @@ from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
 from services.mwl.c_find import CFindHandler
 from services.mwl.n_create import NCreate
+from services.mwl.n_set import NSet
 from services.storage import MWLStorage, PACSStorage
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,7 @@ class MWLServer:
         handlers = [
             (evt.EVT_C_FIND, CFindHandler(self.storage).call),
             (evt.EVT_N_CREATE, NCreate(self.storage).call),
+            (evt.EVT_N_SET, NSet(self.storage).call),
         ]
 
         logger.info(f"MWL server listening on 0.0.0.0:{self.port}")

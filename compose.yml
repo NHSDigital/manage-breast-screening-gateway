@@ -79,7 +79,8 @@ services:
       - pacs-storage:/var/lib/pacs/storage
       - pacs-db:/var/lib/pacs
     environment:
-      - CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT:-http://host.docker.internal:8000/api/dicom/upload/}
+      - CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT:-http://host.docker.internal:8000/api/v1/dicom}
+      - CLOUD_API_TOKEN=${CLOUD_API_TOKEN:-testtoken}
       - PACS_DB_PATH=/var/lib/pacs/pacs.db
       - PACS_STORAGE_PATH=/var/lib/pacs/storage
       - MWL_DB_PATH=/var/lib/pacs/worklist.db

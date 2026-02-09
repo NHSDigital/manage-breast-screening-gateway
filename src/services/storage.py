@@ -521,3 +521,18 @@ class MWLStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute("SELECT 1 FROM worklist_items WHERE mpps_instance_uid = ?", (mpps_instance_uid,))
             return cursor.fetchone() is not None
+
+    def get_worklist_item_by_mpps_instance_uid(self, mpps_instance_uid: str) -> Optional[WorklistItem]:
+        """Get a worklist item by its associated MPPS instance UID."""
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                (
+                    "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                    "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                    "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                    "FROM worklist_items WHERE mpps_instance_uid = ?"
+                ),
+                (mpps_instance_uid,),
+            )
+            row = cursor.fetchone()
+            return WorklistItem(**row) if row else None

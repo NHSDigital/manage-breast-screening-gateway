@@ -494,3 +494,39 @@ class TestWorkingStorage:
         mock_connection.reset_mock()
 
         assert subject.mpps_instance_exists(generate_uid()) is False
+
+    def test_get_worklist_item_by_mpps_instance_uid(self, mock_db, tmp_dir, result):
+        mpps_instance_uid = "some-mpps-uid"
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = result
+        mock_connection = MagicMock()
+        mock_connection.execute.return_value = mock_cursor
+        mock_db.connect.return_value = mock_connection
+
+        subject = MWLStorage(tmp_dir)
+        mock_connection.reset_mock()
+
+        worklist_item = subject.get_worklist_item_by_mpps_instance_uid(mpps_instance_uid)
+
+        mock_connection.execute.assert_called_once_with(
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE mpps_instance_uid = ?"
+            ),
+            (mpps_instance_uid,),
+        )
+        assert worklist_item == WorklistItem(**result)
+
+    def test_get_worklist_item_by_mpps_instance_uid_returns_none(self, mock_db, tmp_dir):
+        mpps_instance_uid = "some-mpps-uid"
+        mock_cursor = MagicMock()
+        mock_cursor.fetchone.return_value = None
+        mock_connection = MagicMock()
+        mock_connection.execute.return_value = mock_cursor
+        mock_db.connect.return_value = mock_connection
+
+        subject = MWLStorage(tmp_dir)
+
+        assert subject.get_worklist_item_by_mpps_instance_uid(mpps_instance_uid) is None

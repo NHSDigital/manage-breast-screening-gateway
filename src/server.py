@@ -15,9 +15,9 @@ from pynetdicom.sop_class import (
 
 from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
+from services.mwl.c_find import CFind
 from services.mwl.n_create import NCreate
 from services.mwl.n_set import NSet
-from services.mwl.c_find import CFind
 from services.storage import MWLStorage, PACSStorage
 
 logger = logging.getLogger(__name__)

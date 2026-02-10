@@ -45,8 +45,7 @@ class CFind:
         query_date = procedure_sequence[0].get("ScheduledProcedureStepStartDate")
 
         logger.debug(
-            "Query parameters: modality=%s, date=%s, patient_id=%s",
-            query_modality, query_date, query_patient_id
+            "Query parameters: modality=%s, date=%s, patient_id=%s", query_modality, query_date, query_patient_id
         )
 
         try:
@@ -54,7 +53,6 @@ class CFind:
                 modality=query_modality if query_modality else None,
                 scheduled_date=query_date if query_date else None,
                 patient_id=query_patient_id if query_patient_id else None,
-                status="SCHEDULED",
             )
 
             logger.info("Found %s matching worklist items", len(items))

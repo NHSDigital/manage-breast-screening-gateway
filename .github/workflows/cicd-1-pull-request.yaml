@@ -1,0 +1,22 @@
+name: "CI/CD: Pull Request"
+
+on:
+  pull_request:
+
+concurrency:
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  commit-stage:
+    uses: ./.github/workflows/stage-1-commit.yaml
+    secrets: inherit
+
+  test-stage:
+    needs: commit-stage
+    uses: ./.github/workflows/stage-2-test.yaml
+    secrets: inherit

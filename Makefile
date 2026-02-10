@@ -13,8 +13,11 @@ help: # Print help @Others
 	perl -e '$(HELP_SCRIPT)' $(MAKEFILE_LIST)
 
 # ---------------------------------------------------------------------------
-# Cleaning & Utility
+# Operations
 # ---------------------------------------------------------------------------
+package: # Create release package @Operations
+	./scripts/bash/package_release.sh
+
 clean: # Clean-up project resources @Operations
 	@echo "Cleaning up..."
 	rm -rf .pytest_cache __pycache__ .coverage htmlcov/ .mypy_cache .ruff_cache
@@ -32,10 +35,11 @@ dependencies: # Install dependencies @Pipeline
 
 githooks-config: # Install pre-commit hooks @Configuration
 	@if ! command -v pre-commit >/dev/null 2>&1; then \
-		echo "Installing pre-commit..."; \
-		pip install pre-commit; \
+		PC_VERSION=$$(awk '/^pre-commit / {print $$2}' .tool-versions); \
+		echo "Installing pre-commit==$${PC_VERSION}..."; \
+		pip install "pre-commit==$${PC_VERSION}"; \
 	fi
-	pre-commit install -c scripts/config/pre-commit.yaml
+	pre-commit install -c .pre-commit-config.yaml
 
 githooks-run: # Run git hooks @Operations
 	pre-commit run \
@@ -44,8 +48,9 @@ githooks-run: # Run git hooks @Operations
 
 _install-uv:
 	@if ! uv --version >/dev/null 2>&1; then \
-		echo "Installing uv..."; \
-		pip install uv==0.9.7; \
+		UV_VERSION=$$(awk '/^uv / {print $$2}' .tool-versions); \
+		echo "Installing uv==$${UV_VERSION}..."; \
+		pip install "uv==$${UV_VERSION}"; \
 	else \
 		echo "uv already installed"; \
 	fi

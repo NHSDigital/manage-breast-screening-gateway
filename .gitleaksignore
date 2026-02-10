@@ -5,37 +5,56 @@
 #
 # Format: commit:path:rule_id:line_number
 
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:38
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:66
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:71
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:75
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:85
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:89
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:99
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/integration/test_upload_listener.py:ipv4:102
-064a96209818176322c8f84ab3781f78fc43d7c5:tests/services/dicom/test_cloud_uploader.py:ipv4:18
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:38
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:66
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:71
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:75
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:85
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:89
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:99
-caf78850d3de96da17abb731305cfed073fa0986:tests/integration/test_upload_listener.py:ipv4:102
-caf78850d3de96da17abb731305cfed073fa0986:tests/services/dicom/test_cloud_uploader.py:ipv4:18
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:95
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:124
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:130
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:134
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:145
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:149
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:161
-fda868296050b269384b6bd072136c0c474c61ec:tests/integration/test_pacs_storage_upload.py:ipv4:164
+# Commit 19d6a04 — tests/services/test_storage.py
 19d6a0432e5d103823c45938f4a4edfa65239fd4:tests/services/test_storage.py:ipv4:136
 19d6a0432e5d103823c45938f4a4edfa65239fd4:tests/services/test_storage.py:ipv4:176
+
+# Commit 3f3067b — tests/services/dicom/test_c_store.py
 3f3067bbd4f38ad6ce996ef50e57f624a591b3e0:tests/services/dicom/test_c_store.py:ipv4:15
 3f3067bbd4f38ad6ce996ef50e57f624a591b3e0:tests/services/dicom/test_c_store.py:ipv4:48
+
+# Commit 6e612df — test_c_store_saves_metadata.py, test_c_store.py
+6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/integration/test_c_store_saves_metadata.py:ipv4:91
+6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/integration/test_c_store_saves_metadata.py:ipv4:108
+6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/services/dicom/test_c_store.py:ipv4:19
+6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/services/dicom/test_c_store.py:ipv4:62
+
+# Commit 9a6a5be — test_pacs_storage_upload.py, test_dicom_uploader.py, test_upload_processor.py
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:21
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:25
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:29
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:30
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:32
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:36
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:45
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:46
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:48
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:52
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:62
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:65
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:66
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:67
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:69
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/integration/test_pacs_storage_upload.py:ipv4:72
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_dicom_uploader.py:ipv4:18
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_dicom_uploader.py:ipv4:28
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:52
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:58
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:74
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:89
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:90
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:91
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:95
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:108
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:113
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:131
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:150
+9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:174
+
+# Commit b7f3d0e — src/services/storage.py (DICOM UID in code comment)
 b7f3d0e812393af74600b5c0e8374d89066384d7:src/services/storage.py:ipv4:72
+
+# Commit c7095cc — test_c_store_saves_metadata.py, test_storage.py, storage.py
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:src/services/storage.py:ipv4:74
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/integration/test_c_store_saves_metadata.py:ipv4:21
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/integration/test_c_store_saves_metadata.py:ipv4:41
@@ -46,11 +65,17 @@ c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/services/test_storage.py:ipv4:52
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/services/test_storage.py:ipv4:55
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/services/test_storage.py:ipv4:88
 c7095ccbf4f5458f19746dd3ae69c9f5e3e63aa6:tests/services/test_storage.py:ipv4:107
+
+# Commit d26fc7a — test_c_store_saves_metadata.py, test_c_store.py
+d26fc7acc73f720f4f23241c3eb8543cc1a82965:tests/integration/test_c_store_saves_metadata.py:ipv4:91
+d26fc7acc73f720f4f23241c3eb8543cc1a82965:tests/integration/test_c_store_saves_metadata.py:ipv4:108
+d26fc7acc73f720f4f23241c3eb8543cc1a82965:tests/services/dicom/test_c_store.py:ipv4:19
+d26fc7acc73f720f4f23241c3eb8543cc1a82965:tests/services/dicom/test_c_store.py:ipv4:62
+
+# Commit d9b882c — test_c_store_saves_metadata.py
 d9b882c916499c8cf2107879c83de2897fe99247:tests/integration/test_c_store_saves_metadata.py:ipv4:52
 
-# Commit feafe758d7c1e85472cc81c5c275aae9ec078cef (gitleaks fix branch)
-feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_dicom_uploader.py:ipv4:19
-feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_dicom_uploader.py:ipv4:29
+# Commit feafe75 — test_pacs_storage_upload.py, test_dicom_uploader.py, test_upload_processor.py
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/integration/test_pacs_storage_upload.py:ipv4:21
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/integration/test_pacs_storage_upload.py:ipv4:25
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/integration/test_pacs_storage_upload.py:ipv4:29
@@ -67,6 +92,8 @@ feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/integration/test_pacs_storage_upl
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/integration/test_pacs_storage_upload.py:ipv4:67
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/integration/test_pacs_storage_upload.py:ipv4:69
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/integration/test_pacs_storage_upload.py:ipv4:72
+feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_dicom_uploader.py:ipv4:19
+feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_dicom_uploader.py:ipv4:29
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_processor.py:ipv4:52
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_processor.py:ipv4:58
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_processor.py:ipv4:74
@@ -79,9 +106,3 @@ feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_proces
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_processor.py:ipv4:131
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_processor.py:ipv4:150
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_processor.py:ipv4:174
-
-# Commit 6e612df4d168fa8388ba7d6a5c6cd2428bb25767
-6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/integration/test_c_store_saves_metadata.py:ipv4:91
-6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/integration/test_c_store_saves_metadata.py:ipv4:108
-6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/services/dicom/test_c_store.py:ipv4:19
-6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/services/dicom/test_c_store.py:ipv4:62

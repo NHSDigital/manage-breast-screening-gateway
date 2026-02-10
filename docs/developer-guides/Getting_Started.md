@@ -145,7 +145,7 @@ If hooks are failing:
 pip install --upgrade pre-commit
 
 # Re-install hooks
-pre-commit install -c scripts/config/pre-commit.yaml
+pre-commit install -c .pre-commit-config.yaml
 ```
 
 ### Python version issues

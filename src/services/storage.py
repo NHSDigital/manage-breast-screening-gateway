@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from services.mwl import MWLStatus
+
 logger = logging.getLogger(__name__)
 
 
@@ -288,7 +290,7 @@ class WorklistItem:
     patient_name: str = field(doc="Name of the patient. Lastname^Firstname.")
     scheduled_date: str = field(doc="Date the procedure is scheduled for.")
     scheduled_time: str = field(doc="Time the procedure is scheduled for.")
-    status: str = field(doc="Status of the worklist item", default="SCHEDULED")
+    status: str = field(doc="Status of the worklist item", default=MWLStatus.SCHEDULED.value)
     source_message_id: Optional[str] = field(
         default=None, doc="Message ID from system which created this worklist item", hash=True
     )
@@ -429,7 +431,7 @@ class MWLStorage(Storage):
 
         Args:
             accession_number: The accession number to update
-            status: New status (SCHEDULED, IN_PROGRESS, COMPLETED, DISCONTINUED)
+            status: New status (SCHEDULED, IN PROGRESS, COMPLETED, DISCONTINUED)
             mpps_instance_uid: Optional MPPS instance UID
 
         Returns:
@@ -515,3 +517,27 @@ class MWLStorage(Storage):
             )
             row = cursor.fetchone()
             return row["source_message_id"] if row and row["source_message_id"] else None
+
+    def mpps_instance_exists(self, mpps_instance_uid: str) -> bool:
+        """Check if an MPPS instance UID already exists in any worklist item."""
+        with self._get_connection() as conn:
+            cursor = conn.execute("SELECT 1 FROM worklist_items WHERE mpps_instance_uid = ?", (mpps_instance_uid,))
+            return cursor.fetchone() is not None
+
+    def get_worklist_item_by_mpps_instance_uid(self, mpps_instance_uid: str | None) -> Optional[WorklistItem]:
+        """Get a worklist item by its associated MPPS instance UID."""
+        if mpps_instance_uid is None:
+            return None
+
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                (
+                    "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                    "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                    "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                    "FROM worklist_items WHERE mpps_instance_uid = ?"
+                ),
+                (mpps_instance_uid,),
+            )
+            row = cursor.fetchone()
+            return WorklistItem(**row) if row else None

@@ -1,5 +1,10 @@
 """Modality Worklist (MWL) services for DICOM worklist management."""
 
-from services.mwl.c_find import CFindHandler
+from enum import Enum
 
-__all__ = ["CFindHandler"]
+
+class MWLStatus(Enum):
+    SCHEDULED = "SCHEDULED"
+    IN_PROGRESS = "IN PROGRESS"
+    COMPLETED = "COMPLETED"
+    DISCONTINUED = "DISCONTINUED"

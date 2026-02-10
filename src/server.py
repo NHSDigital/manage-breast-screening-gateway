@@ -8,11 +8,16 @@ Provides:
 import logging
 
 from pynetdicom import AE, StoragePresentationContexts, evt
-from pynetdicom.sop_class import ModalityWorklistInformationFind  # type: ignore[attr-defined]
+from pynetdicom.sop_class import (
+    ModalityPerformedProcedureStep,  # type: ignore[attr-defined]
+    ModalityWorklistInformationFind,  # type: ignore[attr-defined]
+)
 
 from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
 from services.mwl.c_find import CFindHandler
+from services.mwl.n_create import NCreate
+from services.mwl.n_set import NSet
 from services.storage import MWLStorage, PACSStorage
 
 logger = logging.getLogger(__name__)
@@ -98,8 +103,13 @@ class MWLServer:
 
         self.ae = AE(ae_title=self.ae_title)
         self.ae.add_supported_context(ModalityWorklistInformationFind)
+        self.ae.add_supported_context(ModalityPerformedProcedureStep)
 
-        handlers = [(evt.EVT_C_FIND, CFindHandler(self.storage).call)]
+        handlers = [
+            (evt.EVT_C_FIND, CFindHandler(self.storage).call),
+            (evt.EVT_N_CREATE, NCreate(self.storage).call),
+            (evt.EVT_N_SET, NSet(self.storage).call),
+        ]
 
         logger.info(f"MWL server listening on 0.0.0.0:{self.port}")
         logger.info(f"Database: {self.storage.db_path}")

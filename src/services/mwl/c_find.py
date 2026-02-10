@@ -16,7 +16,7 @@ from services.storage import MWLStorage, WorklistItem
 logger = logging.getLogger(__name__)
 
 
-class CFindHandler:
+class CFind:
     """Handler for C-FIND worklist queries."""
 
     def __init__(self, storage: MWLStorage):
@@ -44,7 +44,10 @@ class CFindHandler:
         query_modality = procedure_sequence[0].get("Modality")
         query_date = procedure_sequence[0].get("ScheduledProcedureStepStartDate")
 
-        logger.debug(f"Query parameters: modality={query_modality}, date={query_date}, patient_id={query_patient_id}")
+        logger.debug(
+            "Query parameters: modality=%s, date=%s, patient_id=%s",
+            query_modality, query_date, query_patient_id
+        )
 
         try:
             items = self.storage.find_worklist_items(
@@ -54,7 +57,7 @@ class CFindHandler:
                 status="SCHEDULED",
             )
 
-            logger.info(f"Found {len(items)} matching worklist items")
+            logger.info("Found %s matching worklist items", len(items))
 
             for item in items:
                 response_ds = self._build_worklist_response(item)
@@ -63,7 +66,7 @@ class CFindHandler:
             yield SUCCESS, None
 
         except Exception as e:
-            logger.error(f"Error processing C-FIND request: {e}", exc_info=True)
+            logger.error("Error processing C-FIND request: %s", e, exc_info=True)
             yield FAILURE, None
 
     def _build_worklist_response(self, item: WorklistItem) -> Dataset:
@@ -97,6 +100,6 @@ class CFindHandler:
 
         ds.ScheduledProcedureStepSequence = [sps_item]
 
-        logger.debug(f"Built worklist response for accession {item.accession_number}")
+        logger.debug("Built worklist response for accession %s", item.accession_number)
 
         return ds

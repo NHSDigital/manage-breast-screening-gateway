@@ -5,7 +5,7 @@ from pydicom import Dataset
 from pydicom.uid import generate_uid
 
 from services.dicom import PENDING, SUCCESS
-from services.mwl.c_find import CFindHandler
+from services.mwl.c_find import CFind
 from services.storage import MWLStorage, WorklistItem
 
 
@@ -63,7 +63,7 @@ class TestCFindReturnsWorklistItems:
         return event
 
     def test_cfind_returns_scheduled_items(self, event, storage):
-        results = list(CFindHandler(storage).call(event))
+        results = list(CFind(storage).call(event))
         assert len(results) == 3
 
         status, ds = results[0]
@@ -99,7 +99,7 @@ class TestCFindReturnsWorklistItems:
     def test_cfind_filters_by_scheduled_date(self, event, storage):
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartDate = "20240101"
 
-        results = list(CFindHandler(storage).call(event))
+        results = list(CFind(storage).call(event))
 
         assert len(results) == 2
 
@@ -137,7 +137,7 @@ class TestCFindReturnsWorklistItems:
 
         event.identifier.ScheduledProcedureStepSequence[0].Modality = "MG"
 
-        results = list(CFindHandler(storage).call(event))
+        results = list(CFind(storage).call(event))
 
         assert len(results) == 3
 
@@ -156,7 +156,7 @@ class TestCFindReturnsWorklistItems:
     def test_cfind_filters_by_patient_id(self, event, storage):
         event.identifier.PatientID = "999234567"
 
-        results = list(CFindHandler(storage).call(event))
+        results = list(CFind(storage).call(event))
 
         assert len(results) == 2
 

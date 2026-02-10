@@ -15,9 +15,9 @@ from pynetdicom.sop_class import (
 
 from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
-from services.mwl.c_find import CFindHandler
 from services.mwl.n_create import NCreate
 from services.mwl.n_set import NSet
+from services.mwl.c_find import CFind
 from services.storage import MWLStorage, PACSStorage
 
 logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ class MWLServer:
         self.ae.add_supported_context(ModalityPerformedProcedureStep)
 
         handlers = [
-            (evt.EVT_C_FIND, CFindHandler(self.storage).call),
+            (evt.EVT_C_FIND, CFind(self.storage).call),
             (evt.EVT_N_CREATE, NCreate(self.storage).call),
             (evt.EVT_N_SET, NSet(self.storage).call),
         ]

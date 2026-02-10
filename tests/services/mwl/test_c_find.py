@@ -6,7 +6,7 @@ import pytest
 from pydicom import Dataset
 
 from services.dicom import FAILURE, PENDING, SUCCESS
-from services.mwl.c_find import CFindHandler
+from services.mwl.c_find import CFind
 from services.storage import WorklistItem
 
 
@@ -17,7 +17,7 @@ def mock_storage():
 
 @pytest.fixture
 def handler(mock_storage):
-    return CFindHandler(mock_storage)
+    return CFind(mock_storage)
 
 
 @pytest.fixture
@@ -46,8 +46,8 @@ def sample_worklist_item():
     }
 
 
-class TestCFindHandler:
-    """Tests for CFindHandler class."""
+class TestCFind:
+    """Tests for CFind class."""
 
     def test_call_with_no_results(self, handler, mock_storage, mock_event):
         mock_storage.find_worklist_items.return_value = []

@@ -98,7 +98,7 @@ class TestNCreate:
 
         status, ds = NCreate(storage).call(event)
 
-        assert status == INVALID_ATTRIBUTE
+        assert status == MISSING_ATTRIBUTE
         assert ds is None
 
     def test_ncreate_processing_failure(self, storage, event):
@@ -107,4 +107,12 @@ class TestNCreate:
         status, ds = NCreate(storage).call(event)
 
         assert status == PROCESSING_FAILURE
+        assert ds is None
+
+    def test_ncreate_missing_accession_number(self, storage, event):
+        del event.attribute_list.ScheduledStepAttributesSequence[0].AccessionNumber
+
+        status, ds = NCreate(storage).call(event)
+
+        assert status == MISSING_ATTRIBUTE
         assert ds is None

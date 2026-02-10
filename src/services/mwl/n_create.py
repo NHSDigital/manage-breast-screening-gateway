@@ -45,20 +45,22 @@ class NCreate:
             scheduled_step_sequence = getattr(attr_list, "ScheduledStepAttributesSequence", [])
             if len(scheduled_step_sequence) == 0:
                 logger.warning("MPPS N-CREATE: Missing ScheduledStepAttributesSequence in request")
-                return INVALID_ATTRIBUTE, None
+                return MISSING_ATTRIBUTE, None
 
             sps = attr_list.ScheduledStepAttributesSequence[0]
-            accession_number = sps.get("AccessionNumber", UNKNOWN)
+            accession_number = sps.get("AccessionNumber")
 
             logger.info("MPPS N-CREATE: Started procedure for Accession Number: %w", accession_number)
 
-            # Update database to record that this study acquisition has been started
-            if accession_number != UNKNOWN:
-                source_message_id = self.storage.update_status(accession_number, "IN_PROGRESS", ds.SOPInstanceUID)
-                if source_message_id:
-                    logger.info(f"Worklist item updated: {accession_number} -> IN_PROGRESS")
-                else:
-                    logger.warning(f"Could not find accession {accession_number} in database")
+            if not accession_number:
+                logger.warning("MPPS N-CREATE: Missing Accession Number in ScheduledStepAttributesSequence")
+                return MISSING_ATTRIBUTE, None
+
+            source_message_id = self.storage.update_status(accession_number, "IN_PROGRESS", ds.SOPInstanceUID)
+            if source_message_id:
+                logger.info(f"Worklist item updated: {accession_number} -> IN_PROGRESS")
+            else:
+                logger.warning(f"Could not find accession {accession_number} in database")
 
         except Exception as e:
             logger.error(f"Error in handle_create: {str(e)}", exc_info=True)

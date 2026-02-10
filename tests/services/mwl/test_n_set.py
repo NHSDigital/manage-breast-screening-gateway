@@ -6,6 +6,8 @@ from pydicom.uid import generate_uid
 from pynetdicom.sop_class import ModalityPerformedProcedureStep  # pyright: ignore[reportAttributeAccessIssue]
 
 from services.dicom import (
+    INVALID_ATTRIBUTE,
+    MISSING_ATTRIBUTE,
     PROCESSING_FAILURE,
     SUCCESS,
     UNKNOWN_SOP_INSTANCE,
@@ -32,12 +34,21 @@ class TestNSet:
         # No PerformedProcedureStepStatus set
         status, ds = NSet(mock_storage).call(event)
 
-        assert status == PROCESSING_FAILURE
+        assert status == MISSING_ATTRIBUTE
+        assert ds is None
+
+    def test_invalid_status_returns_invalid_attribute(self, mock_storage, event, requested_sop_instance_uid):
+        event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
+        event.attribute_list.PerformedProcedureStepStatus = "INVALID_STATUS"
+
+        status, ds = NSet(mock_storage).call(event)
+
+        assert status == INVALID_ATTRIBUTE
         assert ds is None
 
     def test_unknown_sop_instance_returns_unknown(self, mock_storage, event, requested_sop_instance_uid):
         event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
-        event.attribute_list.PerformedProcedureStepStatus = "IN PROGRESS"
+        event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
 
         mock_storage.get_worklist_item_by_mpps_instance_uid.return_value = None
 

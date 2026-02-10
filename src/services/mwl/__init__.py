@@ -2,10 +2,6 @@
 
 from enum import Enum
 
-from services.mwl.c_find import CFindHandler
-
-__all__ = ["CFindHandler"]
-
 
 class MWLStatus(Enum):
     SCHEDULED = "SCHEDULED"

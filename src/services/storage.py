@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from services.mwl import MWLStatus
+
 logger = logging.getLogger(__name__)
 
 
@@ -288,7 +290,7 @@ class WorklistItem:
     patient_name: str = field(doc="Name of the patient. Lastname^Firstname.")
     scheduled_date: str = field(doc="Date the procedure is scheduled for.")
     scheduled_time: str = field(doc="Time the procedure is scheduled for.")
-    status: str = field(doc="Status of the worklist item", default="SCHEDULED")
+    status: str = field(doc="Status of the worklist item", default=MWLStatus.SCHEDULED.value)
     source_message_id: Optional[str] = field(
         default=None, doc="Message ID from system which created this worklist item", hash=True
     )
@@ -429,7 +431,7 @@ class MWLStorage(Storage):
 
         Args:
             accession_number: The accession number to update
-            status: New status (SCHEDULED, IN_PROGRESS, COMPLETED, DISCONTINUED)
+            status: New status (SCHEDULED, IN PROGRESS, COMPLETED, DISCONTINUED)
             mpps_instance_uid: Optional MPPS instance UID
 
         Returns:

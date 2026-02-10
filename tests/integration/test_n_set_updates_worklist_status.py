@@ -45,7 +45,7 @@ class TestNSetUpdatesWorklistStatus:
     def test_n_set_updates_worklist_status(self, tmp_dir, worklist_item, mpps_instance_uid):
         storage = MWLStorage(f"{tmp_dir}/test.db")
         accession_number = storage.store_worklist_item(worklist_item)
-        storage.update_status(accession_number, "IN_PROGRESS", mpps_instance_uid)
+        storage.update_status(accession_number, "IN PROGRESS", mpps_instance_uid)
 
         ae = AE(ae_title="MODALITY_SCU")
         ae.add_requested_context(ModalityPerformedProcedureStep)

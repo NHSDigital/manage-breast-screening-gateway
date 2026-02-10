@@ -73,4 +73,4 @@ class TestNCreateUpdatesWorklistStatus:
 
         assert updated_item is not None
         assert updated_item.mpps_instance_uid == mpps_instance_uid
-        assert updated_item.status == "IN_PROGRESS"
+        assert updated_item.status == "IN PROGRESS"

@@ -5,11 +5,10 @@ from pynetdicom.events import Event
 from pynetdicom.sop_class import ModalityPerformedProcedureStep  # pyright: ignore[reportAttributeAccessIssue]
 
 from services.dicom import DUPLICATE_SOP_INSTANCE, INVALID_ATTRIBUTE, MISSING_ATTRIBUTE, PROCESSING_FAILURE, SUCCESS
+from services.mwl import MWLStatus
 from services.storage import MWLStorage
 
 logger = logging.getLogger(__name__)
-
-UNKNOWN = "UNKNOWN"
 
 
 class NCreate:
@@ -31,11 +30,14 @@ class NCreate:
                 return DUPLICATE_SOP_INSTANCE, None
 
             attr_list = event.attribute_list
+            status = getattr(attr_list, "PerformedProcedureStepStatus", None)
 
-            if "PerformedProcedureStepStatus" not in attr_list:
+            if not status:
+                logger.warning("MPPS N-CREATE: Missing PerformedProcedureStepStatus in request")
                 return MISSING_ATTRIBUTE, None
 
-            if attr_list.PerformedProcedureStepStatus.upper() != "IN PROGRESS":
+            if status.upper() != MWLStatus.IN_PROGRESS.value:
+                logger.warning("MPPS N-CREATE: Invalid PerformedProcedureStepStatus value: %s", status)
                 return INVALID_ATTRIBUTE, None
 
             ds.SOPClassUID = ModalityPerformedProcedureStep
@@ -50,20 +52,22 @@ class NCreate:
             sps = attr_list.ScheduledStepAttributesSequence[0]
             accession_number = sps.get("AccessionNumber")
 
-            logger.info("MPPS N-CREATE: Started procedure for Accession Number: %w", accession_number)
+            logger.info("MPPS N-CREATE: Started procedure for Accession Number: %s", accession_number)
 
             if not accession_number:
                 logger.warning("MPPS N-CREATE: Missing Accession Number in ScheduledStepAttributesSequence")
                 return MISSING_ATTRIBUTE, None
 
-            source_message_id = self.storage.update_status(accession_number, "IN_PROGRESS", ds.SOPInstanceUID)
+            source_message_id = self.storage.update_status(
+                accession_number, MWLStatus.IN_PROGRESS.value, ds.SOPInstanceUID
+            )
             if source_message_id:
-                logger.info(f"Worklist item updated: {accession_number} -> IN_PROGRESS")
+                logger.info("Worklist item updated: %s -> %s", accession_number, MWLStatus.IN_PROGRESS.value)
             else:
-                logger.warning(f"Could not find accession {accession_number} in database")
+                logger.warning("Could not find accession %s in database", accession_number)
 
         except Exception as e:
-            logger.error(f"Error in handle_create: {str(e)}", exc_info=True)
+            logger.error("Error in handle_create: %s", str(e), exc_info=True)
             return PROCESSING_FAILURE, None
 
         # Success - return the created dataset

@@ -59,7 +59,7 @@ class TestNCreate:
         assert ds.PerformedProcedureStepStatus == "IN PROGRESS"
 
         storage.mpps_instance_exists.assert_called_once_with(sop_instance_uid)
-        storage.update_status.assert_called_once_with("ACC123", "IN_PROGRESS", sop_instance_uid)
+        storage.update_status.assert_called_once_with("ACC123", "IN PROGRESS", sop_instance_uid)
 
     def test_ncreate_missing_sop_instance_uid(self, storage, event):
         event.request.AffectedSOPInstanceUID = None

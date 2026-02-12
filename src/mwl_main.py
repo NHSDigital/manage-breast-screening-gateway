@@ -3,11 +3,22 @@
 import logging
 import os
 
+from dotenv import load_dotenv
+
 from server import MWLServer
+
+load_dotenv()
 
 
 def main():
-    """Main entry point for MWL server."""
+    """
+    Main entry point for MWL server.
+
+    Environment variables:
+    MWL_AET: AE Title for the MWL server (default: MWL_SCP)
+    MWL_PORT: Port to listen on (default: 4243)
+    MWL_DB_PATH: Path to the SQLite database file (default: /var/lib/pacs/worklist.db)
+    """
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),

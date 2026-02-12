@@ -3,11 +3,23 @@
 import logging
 import os
 
+from dotenv import load_dotenv
+
 from server import PACSServer
+
+load_dotenv()
 
 
 def main():
-    """Main entry point for PACS server."""
+    """
+    Main entry point for PACS server.
+
+    Environment variables:
+    PACS_AET: AE Title for the PACS server (default: SCREENING_PACS)
+    PACS_PORT: Port to listen on (default: 4244)
+    PACS_STORAGE_PATH: Path to store incoming DICOM files (default: /var/lib/pacs/storage)
+    PACS_DB_PATH: Path to the SQLite database file (default: /var/lib/pacs/pacs.db)
+    """
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),

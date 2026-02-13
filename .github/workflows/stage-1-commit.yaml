@@ -1,0 +1,42 @@
+name: "Stage 1: Commit"
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan-secrets:
+    name: Secret scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          # Fetch full history so gitleaks can scan all commits on the branch,
+          # but not all branches/tags (which would let unrelated bad commits block PRs).
+          fetch-depth: 0
+
+      - name: Scan secrets
+        uses: ./.github/actions/scan-secrets
+
+  analyze:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@8c78abb9b62512e3c45dea6559ffd924ed8549c8 # v3.28.0
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@8c78abb9b62512e3c45dea6559ffd924ed8549c8 # v3.28.0

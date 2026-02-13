@@ -1,0 +1,32 @@
+name: "CI/CD: Main Branch"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+  security-events: write
+
+jobs:
+  commit-stage:
+    uses: ./.github/workflows/stage-1-commit.yaml
+    secrets: inherit
+
+  test-stage:
+    needs: commit-stage
+    uses: ./.github/workflows/stage-2-test.yaml
+    secrets: inherit
+
+  build-stage:
+    needs: test-stage
+    uses: ./.github/workflows/stage-3-build.yaml
+    secrets: inherit

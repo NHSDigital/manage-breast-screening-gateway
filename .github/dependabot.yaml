@@ -21,3 +21,14 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+
+  # Pre-commit hooks
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "pre-commit"

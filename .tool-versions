@@ -1,4 +1,8 @@
+# Single source of truth for tool versions.
+# Workflows and Makefile read python, uv, and pre-commit dynamically from here.
+# When updating ruff, also update rev in .pre-commit-config.yaml.
 python 3.14.0
 uv 0.9.7
+ruff 0.14.1
 pre-commit 3.6.0
 gitleaks 8.18.4

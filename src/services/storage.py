@@ -358,7 +358,6 @@ class MWLStorage(Storage):
         modality: Optional[str] = None,
         scheduled_date: Optional[str] = None,
         patient_id: Optional[str] = None,
-        status: str = "SCHEDULED",
     ) -> List[WorklistItem]:
         """
         Query worklist items with optional filters.
@@ -367,7 +366,6 @@ class MWLStorage(Storage):
             modality: Filter by modality (e.g., "MG")
             scheduled_date: Filter by scheduled date (YYYYMMDD)
             patient_id: Filter by patient ID
-            status: Filter by status (default: "SCHEDULED")
 
         Returns:
             List of WorklistItem instances matching the criteria
@@ -376,21 +374,25 @@ class MWLStorage(Storage):
             "SELECT accession_number, modality, patient_birth_date, patient_id, "
             "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
             "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
-            "FROM worklist_items WHERE status = ?"
+            "FROM worklist_items"
         )
-        params = [status]
+        where_clauses = []
+        params = []
 
         if modality:
-            query += " AND modality = ?"
+            where_clauses.append("modality = ?")
             params.append(modality)
 
         if scheduled_date:
-            query += " AND scheduled_date = ?"
+            where_clauses.append("scheduled_date = ?")
             params.append(scheduled_date)
 
         if patient_id:
-            query += " AND patient_id = ?"
+            where_clauses.append("patient_id = ?")
             params.append(patient_id)
+
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
 
         query += " ORDER BY scheduled_date, scheduled_time"
 

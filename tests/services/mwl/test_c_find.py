@@ -6,7 +6,7 @@ import pytest
 from pydicom import Dataset
 
 from services.dicom import FAILURE, PENDING, SUCCESS
-from services.mwl.c_find import CFindHandler
+from services.mwl.c_find import CFind
 from services.storage import WorklistItem
 
 
@@ -17,7 +17,7 @@ def mock_storage():
 
 @pytest.fixture
 def handler(mock_storage):
-    return CFindHandler(mock_storage)
+    return CFind(mock_storage)
 
 
 @pytest.fixture
@@ -46,8 +46,8 @@ def sample_worklist_item():
     }
 
 
-class TestCFindHandler:
-    """Tests for CFindHandler class."""
+class TestCFind:
+    """Tests for CFind class."""
 
     def test_call_with_no_results(self, handler, mock_storage, mock_event):
         mock_storage.find_worklist_items.return_value = []
@@ -116,9 +116,7 @@ class TestCFindHandler:
 
         list(handler.call(mock_event))
 
-        mock_storage.find_worklist_items.assert_called_once_with(
-            modality="MG", scheduled_date=None, patient_id=None, status="SCHEDULED"
-        )
+        mock_storage.find_worklist_items.assert_called_once_with(modality="MG", scheduled_date=None, patient_id=None)
 
     def test_call_with_date_filter(self, handler, mock_storage, mock_event):
         sps_item = Dataset()
@@ -129,7 +127,7 @@ class TestCFindHandler:
         list(handler.call(mock_event))
 
         mock_storage.find_worklist_items.assert_called_once_with(
-            modality=None, scheduled_date="20260107", patient_id=None, status="SCHEDULED"
+            modality=None, scheduled_date="20260107", patient_id=None
         )
 
     def test_call_with_patient_id_filter(self, handler, mock_storage, mock_event):
@@ -139,7 +137,7 @@ class TestCFindHandler:
         list(handler.call(mock_event))
 
         mock_storage.find_worklist_items.assert_called_once_with(
-            modality=None, scheduled_date=None, patient_id="9876543210", status="SCHEDULED"
+            modality=None, scheduled_date=None, patient_id="9876543210"
         )
 
     def test_call_handles_storage_exception(self, handler, mock_storage, mock_event):

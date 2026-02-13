@@ -211,9 +211,9 @@ class TestWorkingStorage:
                 "SELECT accession_number, modality, patient_birth_date, patient_id, "
                 "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                 "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
-                "FROM worklist_items WHERE status = ? ORDER BY scheduled_date, scheduled_time"
+                "FROM worklist_items ORDER BY scheduled_date, scheduled_time"
             ),
-            ["SCHEDULED"],
+            [],
         )
 
         assert len(results) == 1
@@ -236,9 +236,9 @@ class TestWorkingStorage:
                 "SELECT accession_number, modality, patient_birth_date, patient_id, "
                 "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                 "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
-                "FROM worklist_items WHERE status = ? AND patient_id = ? ORDER BY scheduled_date, scheduled_time"
+                "FROM worklist_items WHERE patient_id = ? ORDER BY scheduled_date, scheduled_time"
             ),
-            ["SCHEDULED", "999123456"],
+            ["999123456"],
         )
 
         mock_connection.reset_mock()
@@ -249,9 +249,9 @@ class TestWorkingStorage:
                 "SELECT accession_number, modality, patient_birth_date, patient_id, "
                 "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                 "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
-                "FROM worklist_items WHERE status = ? AND modality = ? ORDER BY scheduled_date, scheduled_time"
+                "FROM worklist_items WHERE modality = ? ORDER BY scheduled_date, scheduled_time"
             ),
-            ["SCHEDULED", "CT"],
+            ["CT"],
         )
 
         mock_connection.reset_mock()
@@ -262,10 +262,10 @@ class TestWorkingStorage:
                 "SELECT accession_number, modality, patient_birth_date, patient_id, "
                 "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                 "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
-                "FROM worklist_items WHERE status = ? AND scheduled_date = ? "
+                "FROM worklist_items WHERE scheduled_date = ? "
                 "ORDER BY scheduled_date, scheduled_time"
             ),
-            ["SCHEDULED", "20240101"],
+            ["20240101"],
         )
 
         mock_connection.reset_mock()
@@ -276,11 +276,11 @@ class TestWorkingStorage:
                 "SELECT accession_number, modality, patient_birth_date, patient_id, "
                 "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                 "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
-                "FROM worklist_items WHERE status = ? "
-                "AND modality = ? AND scheduled_date = ? AND patient_id = ? "
+                "FROM worklist_items "
+                "WHERE modality = ? AND scheduled_date = ? AND patient_id = ? "
                 "ORDER BY scheduled_date, scheduled_time"
             ),
-            ["SCHEDULED", "MG", "20240101", "999123456"],
+            ["MG", "20240101", "999123456"],
         )
 
     def test_get_worklist_item(self, mock_db, tmp_dir, result):

@@ -3,14 +3,30 @@
 import logging
 import os
 
+from dotenv import load_dotenv
+
 from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_listener import UploadListener
 from services.dicom.upload_processor import UploadProcessor
 from services.storage import MWLStorage, PACSStorage
 
+load_dotenv()
+
 
 def main():
-    """Main entry point for upload listener service."""
+    """
+    Main entry point for upload listener service.
+
+    Environment variables:
+    CLOUD_API_ENDPOINT: URL of the cloud API endpoint to upload to (default: http://localhost:8000/api/dicom/upload)
+    CLOUD_API_KEY: API key for authenticating with the cloud API (default: none)
+    MAX_UPLOAD_RETRIES: Maximum number of upload retries before giving up (default: 3)
+    MWL_DB_PATH: Path to the MWL SQLite database file (default: /var/lib/pacs/worklist.db)
+    PACS_DB_PATH: Path to the PACS SQLite database file (default: /var/lib/pacs/pacs.db)
+    PACS_STORAGE_PATH: Path to the directory where DICOM files are stored (default: /var/lib/pacs/storage)
+    UPLOAD_POLL_INTERVAL: Time in seconds between polling for new uploads (default: 2)
+    UPLOAD_BATCH_SIZE: Number of pending uploads to process in each batch (default: 10)
+    """
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
@@ -20,8 +36,10 @@ def main():
     batch_size = int(os.getenv("UPLOAD_BATCH_SIZE", "10"))
     max_retries = int(os.getenv("MAX_UPLOAD_RETRIES", "3"))
 
-    pacs_storage = PACSStorage()
-    mwl_storage = MWLStorage()
+    pacs_storage = PACSStorage(
+        os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db"), os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
+    )
+    mwl_storage = MWLStorage(os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db"))
     uploader = DICOMUploader()
 
     processor = UploadProcessor(

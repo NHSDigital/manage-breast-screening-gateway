@@ -82,6 +82,24 @@ make test-lint
 make test-unit ARGS="-v"
 ```
 
+### Running locally with Docker
+
+```bash
+docker compose up --build
+```
+
+### Running an individual service locally
+
+```bash
+cp .env.development .env
+```
+
+Edit `.env` to set the required environment variables for the service you want to run, e.g. `PACS_DB_PATH` for the PACS server.
+
+```bash
+PYTHONPATH=./src uv run python -m pacs_main
+```
+
 ### Code Quality
 
 Pre-commit hooks run automatically on commit:

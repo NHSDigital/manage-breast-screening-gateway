@@ -14,10 +14,13 @@ import os
 import time
 import urllib.parse
 
+from dotenv import load_dotenv
 from websockets.asyncio.client import connect
 
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.storage import MWLStorage
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +33,17 @@ ACTIONS = {
 
 
 class RelayListener:
-    """Socket Listener for Azure Relay."""
+    """
+    Socket Listener for Azure Relay.
+
+    Listens for incoming messages from Azure Relay and processes worklist actions.
+    Environment variables:
+    AZURE_RELAY_NAMESPACE: Azure Relay namespace (default: relay-test.servicebus.windows.net)
+    AZURE_RELAY_HYBRID_CONNECTION: Azure Relay hybrid connection name (default: relay-test-hc)
+    AZURE_RELAY_KEY_NAME: Azure Relay shared access key name (default: RootManageSharedAccessKey)
+    AZURE_RELAY_SHARED_ACCESS_KEY: Azure Relay shared access key (default: none)
+    MWL_DB_PATH: Path to the MWL SQLite database file (default: /var/lib/pacs/worklist.db)
+    """
 
     def __init__(self, storage: MWLStorage):
         self.storage = storage

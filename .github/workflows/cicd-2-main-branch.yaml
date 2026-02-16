@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      # TODO: Remove testing branch before merge to main
       - DTOSS-12157-create-application-package-script
     tags:
       - 'v*'
@@ -60,13 +61,29 @@ jobs:
           version: ${{ steps.tool-versions.outputs.uv }}
           enable-cache: true
 
-      - name: Python Semantic Release
+      - name: Run semantic-release
         id: release
-        uses: python-semantic-release/python-semantic-release@350c48fcb3ffcdfd2e0a235206bc2ecea6b69df0 # v10.5.3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          push: "false"
-          commit: "false"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          uv pip install python-semantic-release --system
+
+          # Run semantic-release: create tag + GitHub Release via API (no git push)
+          OUTPUT=$(semantic-release version --no-commit --no-push --vcs-release 2>&1) || true
+          echo "$OUTPUT"
+
+          # Parse version from output
+          VERSION=$(echo "$OUTPUT" | grep -oP '(?<=to: )\d+\.\d+\.\d+(-\S+)?' || true)
+
+          if [[ -n "$VERSION" ]]; then
+            echo "new_release_published=true" >> "$GITHUB_OUTPUT"
+            echo "new_release_version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "Released version: $VERSION"
+          else
+            echo "new_release_published=false" >> "$GITHUB_OUTPUT"
+            echo "new_release_version=" >> "$GITHUB_OUTPUT"
+            echo "No new release needed"
+          fi
 
   build-stage:
     needs: [test-stage, release-stage]
@@ -82,4 +99,5 @@ jobs:
     uses: ./.github/workflows/stage-3-build.yaml
     with:
       version: ${{ needs.release-stage.outputs.new_release_version }}
+      new_release_published: ${{ needs.release-stage.outputs.new_release_published == 'true' }}
     secrets: inherit

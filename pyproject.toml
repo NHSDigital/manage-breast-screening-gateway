@@ -25,6 +25,7 @@ dev = [
   "pyright>=1.1.390",
   "ipdb>=0.13.13,<0.14",
   "pytest-asyncio>=1.3.0,<1.4.0",
+  "python-semantic-release>=10.5.3",
 ]
 
 [tool.uv]
@@ -34,6 +35,35 @@ package = false
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.semantic_release]
+version_variable = ["pyproject.toml:version"]
+upload_to_release = true
+build_command = "true" # We use our own build script in Stage 3
+
+[tool.semantic_release.branches.main]
+match = "main"
+
+
+[tool.semantic_release.changelog]
+template_dir = "templates"
+exclude_commit_patterns = [
+  "chore\\(release\\):",
+  "chore\\(deps-dev\\):",
+  "chore\\(deps\\):",
+]
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+
+[tool.semantic_release.commit_author]
+env = "GIT_COMMIT_AUTHOR"
+default = "github-actions <email@address.com>"
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["build", "chore", "ci", "docs", "feat", "fix", "perf", "style", "refactor", "test"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

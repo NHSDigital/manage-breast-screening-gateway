@@ -2,9 +2,19 @@ name: "Stage 3: Build"
 
 on:
   workflow_call:
+    inputs:
+      version:
+        description: "Version to build (overrides detection)"
+        required: false
+        type: string
+      new_release_published:
+        description: "Whether a new release was published by the release stage"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
   attestations: write
 
@@ -15,16 +25,24 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
 
       - name: Determine version
         id: version
         run: |
-          SHORT_HASH="$(git rev-parse --short HEAD)"
-          echo "short_hash=${SHORT_HASH}" >> "$GITHUB_OUTPUT"
-          echo "artifact_name=gateway-${SHORT_HASH}.zip" >> "$GITHUB_OUTPUT"
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="$(git rev-parse --short HEAD)"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=gateway-${VERSION}.zip" >> "$GITHUB_OUTPUT"
 
       - name: Build package
-        run: ./scripts/bash/package_release.sh "${{ runner.temp }}/dist"
+        run: ./scripts/bash/package_release.sh "${{ runner.temp }}/dist" "${{ steps.version.outputs.version }}"
 
       - name: Read tool versions
         id: tool-versions
@@ -57,6 +75,24 @@ jobs:
           import relay_listener
           print('All service modules imported successfully')
           "
+
+      - name: Create or Update Release
+        if: github.ref_type == 'tag' || inputs.new_release_published
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          # Create the release if it doesn't exist. If it does, ignore the error.
+          gh release create "$VERSION" \
+            --title "$VERSION" \
+            --generate-notes \
+            2>/dev/null || echo "Release already exists, uploading assets..."
+
+          # Upload or overwrite assets
+          gh release upload "$VERSION" \
+            ${{ runner.temp }}/dist/gateway-*.zip \
+            ${{ runner.temp }}/dist/gateway-*.zip.sha256 \
+            --clobber
 
       - name: Upload artifact
         uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0

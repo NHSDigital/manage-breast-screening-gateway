@@ -76,7 +76,8 @@ jobs:
       (
         github.ref_type == 'tag' ||
         needs.release-stage.outputs.new_release_published == 'true' ||
-        (github.ref == 'refs/heads/main' && needs.release-stage.result == 'skipped')
+        (github.ref == 'refs/heads/main' && needs.release-stage.result == 'skipped') ||
+        github.ref == 'refs/heads/DTOSS-12157-create-application-package-script'
       )
     uses: ./.github/workflows/stage-3-build.yaml
     with:

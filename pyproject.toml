@@ -37,9 +37,16 @@ build-backend = "hatchling.build"
 
 [tool.semantic_release]
 version_variable = ["pyproject.toml:version"]
-branches = ["main", "DTOSS-12157-create-application-package-script"]
 upload_to_release = true
 build_command = "true" # We use our own build script in Stage 3
+
+[tool.semantic_release.branches.main]
+match = "main"
+
+[tool.semantic_release.branches.testing]
+match = "DTOSS-12157-create-application-package-script"
+prerelease = true
+prerelease_token = "rc"
 
 [tool.semantic_release.changelog]
 template_dir = "templates"

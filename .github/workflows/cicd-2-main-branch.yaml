@@ -68,21 +68,22 @@ jobs:
         run: |
           uv pip install python-semantic-release --system
 
-          # Run semantic-release: create tag + GitHub Release via API (no git push)
-          OUTPUT=$(semantic-release version --no-commit --no-push --vcs-release 2>&1) || true
-          echo "$OUTPUT"
-
-          # Parse version from output
-          VERSION=$(echo "$OUTPUT" | grep -oP '(?<=to: )\d+\.\d+\.\d+(-\S+)?' || true)
+          # Detect next version (--print exits without side effects)
+          VERSION=$(semantic-release version --print 2>/dev/null) || true
 
           if [[ -n "$VERSION" ]]; then
+            echo "Next version detected: $VERSION"
+
+            # Create and push the tag (no commit needed, tag push is not blocked by branch protection)
+            git tag "v$VERSION"
+            git push origin "v$VERSION"
+
             echo "new_release_published=true" >> "$GITHUB_OUTPUT"
-            echo "new_release_version=$VERSION" >> "$GITHUB_OUTPUT"
-            echo "Released version: $VERSION"
+            echo "new_release_version=v$VERSION" >> "$GITHUB_OUTPUT"
           else
+            echo "No new release needed"
             echo "new_release_published=false" >> "$GITHUB_OUTPUT"
             echo "new_release_version=" >> "$GITHUB_OUTPUT"
-            echo "No new release needed"
           fi
 
   build-stage:

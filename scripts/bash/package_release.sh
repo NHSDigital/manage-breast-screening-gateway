@@ -45,15 +45,17 @@ if [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]]; then
     echo ""
 fi
 
-# ── Version from Git ──────────────────────────────────────────────────────────
+# ── Version from Git or Argument ──────────────────────────────────────────────
 
 SHORT_HASH="$(git -C "$REPO_ROOT" rev-parse --short HEAD)"
-ARTIFACT_NAME="gateway-${SHORT_HASH}.zip"
+VERSION_NAME="${2:-$SHORT_HASH}"
+ARTIFACT_NAME="gateway-${VERSION_NAME}.zip"
 
 echo "========================================"
 echo "Packaging Gateway Release"
 echo "========================================"
 echo "Commit:  ${SHORT_HASH}"
+echo "Version: ${VERSION_NAME}"
 echo "Output:  ${OUTPUT_DIR}/${ARTIFACT_NAME}"
 echo ""
 

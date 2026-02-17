@@ -114,6 +114,16 @@ Run manually:
 make githooks-run
 ```
 
+## Deployment
+
+### Windows Service
+
+The gateway is designed to run as a set of Windows Services on-premises.
+
+- **Deployment Guide**: [docs/deployment/windows-service-deploy.md](docs/deployment/windows-service-deploy.md)
+- **Deployment Script**: `scripts/powershell/deploy.ps1`
+- **Strategy**: Blue/Green with automatic rollback and health checks.
+
 ## Architecture
 
 This gateway implements a lightweight DICOM service architecture:

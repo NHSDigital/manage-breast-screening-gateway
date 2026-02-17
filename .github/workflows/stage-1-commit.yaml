@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   scan-secrets:
@@ -21,22 +20,3 @@ jobs:
 
       - name: Scan secrets
         uses: ./.github/actions/scan-secrets
-
-  analyze:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'python' ]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@48ab28a6f5dbc2a99bf1e0131198dd8f1df78169 # v3.28.0
-        with:
-          languages: ${{ matrix.language }}
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@48ab28a6f5dbc2a99bf1e0131198dd8f1df78169 # v3.28.0

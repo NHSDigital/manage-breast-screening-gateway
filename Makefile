@@ -2,7 +2,8 @@ include scripts/shared.mk
 
 .DEFAULT_GOAL := help
 
-.PHONY: clean config dependencies githooks-config githooks-run help test test-lint test-unit _install-uv
+.PHONY: clean config dependencies githooks-config githooks-run help test test-lint test-unit _install-uv \
+	up down restart logs build rebuild run-pacs run-mwl run-listener run-upload ps shell docker-clean
 .SILENT: help
 
 # ---------------------------------------------------------------------------
@@ -70,3 +71,42 @@ test-lint: # Lint files @Testing
 	uv run ruff check .
 	uv run ruff format --check .
 	uv run pyright
+
+up: # Start all services
+	docker compose up -d
+
+down: # Stop all services
+	docker compose down
+
+restart: down up # Restart all services
+
+logs: # Tail logs from all services (use SVC=<name> for specific service)
+	docker compose logs -f $(SVC)
+
+build: # Build Docker images
+	docker compose build
+
+rebuild: # Rebuild and restart services
+	docker compose up -d --build
+
+run-pacs: # Start PACS server only
+	docker compose up -d pacs
+
+run-mwl: # Start MWL server only
+	docker compose up -d mwl
+
+run-listener: # Start relay listener only
+	docker compose up -d listener
+
+run-upload: # Start upload service only
+	docker compose up -d upload
+
+ps: # Show running services
+	docker compose ps
+
+shell: # Open shell in a service container (use SVC=pacs|mwl|listener|upload)
+	docker compose exec $(SVC) /bin/sh
+
+docker-clean: down # Stop services and remove volumes
+	docker compose down -v
+	docker system prune -f

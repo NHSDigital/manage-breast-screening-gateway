@@ -1,11 +1,10 @@
 """
 End-to-end integration test
 
-This test verifies the complete flow from receiving a worklist item via Azure Relay
+This test verifies the complete flow from receiving a worklist item via Azure Service Bus
 through to uploading the DICOM image to the Manage service.
 """
 
-import json
 from unittest.mock import Mock, patch
 
 import pytest
@@ -14,8 +13,8 @@ from pydicom import Dataset
 from pynetdicom import AE
 from pynetdicom.sop_class import ModalityWorklistInformationFind
 
-from relay_listener import RelayListener
 from server import MWLServer, PACSServer
+from service_bus_listener import ServiceBusCommandListener
 from services.dicom import PENDING, SUCCESS
 from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_processor import UploadProcessor
@@ -27,11 +26,11 @@ TEST_ACTION_ID = "action-e2e-test-001"  # gitleaks:allow
 
 
 @pytest.mark.integration
-class TestEndToEndRelayToUpload:
+class TestEndToEndServiceBusToUpload:
     """
     End-to-end test covering the complete flow:
 
-    1. Relay message received with worklist item
+    1. Service Bus message received with worklist item
     2. Worklist item stored in MWL database
     3. C-FIND returns the scheduled worklist item
     4. C-STORE receives and validates DICOM image
@@ -47,8 +46,8 @@ class TestEndToEndRelayToUpload:
         return PACSStorage(f"{tmp_dir}/pacs.db", tmp_dir)
 
     @pytest.fixture
-    def relay_payload(self):
-        """Relay message payload that creates a worklist item."""
+    def service_bus_payload(self):
+        """Service Bus message payload that creates a worklist item."""
         return {
             "action_id": TEST_ACTION_ID,
             "action_type": "worklist.create_item",
@@ -95,38 +94,31 @@ class TestEndToEndRelayToUpload:
         server.block = False
         return server
 
-    @pytest.mark.asyncio
-    async def test_full_flow_relay_to_upload(
+    def test_full_flow_service_bus_to_upload(
         self,
         mwl_storage,
         pacs_storage,
         mwl_server,
         pacs_server,
-        relay_payload,
-        fake_relay,
+        service_bus_payload,
     ):
         """
         Complete end-to-end test of the screening gateway flow.
 
         This test verifies that:
-        1. A relay message creates a worklist item
+        1. A Service Bus message creates a worklist item
         2. The worklist item can be queried via C-FIND
         3. A DICOM image sent via C-STORE is validated and stored
         4. The upload processor sends the image with the correct action_id
         """
 
-        # ===== STEP 1: Receive relay message and create worklist item =====
-        listener = RelayListener(mwl_storage)
-        relay_message = json.dumps({"accept": {"address": "wss://accept-url"}})
-
-        with fake_relay(relay_message, json.dumps(relay_payload)) as ws_client:
-            await listener.listen()
+        # ===== STEP 1: Process Service Bus message and create worklist item =====
+        listener = ServiceBusCommandListener(mwl_storage)
+        result = listener.process_action(service_bus_payload)
 
         # Verify worklist item was created
-        ws_client.send.assert_called_once()
-        response = json.loads(ws_client.send.call_args[0][0])
-        assert response["status"] == "created"
-        assert response["action_id"] == TEST_ACTION_ID
+        assert result["status"] == "created"
+        assert result["action_id"] == TEST_ACTION_ID
 
         worklist_items = mwl_storage.find_worklist_items()
         assert len(worklist_items) == 1
@@ -225,7 +217,7 @@ class TestEndToEndRelayToUpload:
             mock_put.assert_called_once()
             call_args = mock_put.call_args
 
-            # Verify URL contains the action_id from relay
+            # Verify URL contains the action_id from Service Bus message
             url = call_args[0][0]
             assert url == f"http://test-manage-api/dicom/{TEST_ACTION_ID}"
 

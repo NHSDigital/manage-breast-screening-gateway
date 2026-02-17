@@ -12,7 +12,7 @@ dependencies = [
   "pylibjpeg>=2.0.0",
   "pylibjpeg-openjpeg>=2.5.0",
   "pillow>=11.0.0",
-  "websockets==15.0.1",
+  "websockets==16.0",
   "requests>=2.32.0",
   "python-dotenv>=1.2.1",
 ]

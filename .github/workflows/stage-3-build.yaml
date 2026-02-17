@@ -68,6 +68,6 @@ jobs:
           retention-days: 90
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@520d128f165991a6c774bcb264f323e3d70747f4 # v2.2.0
+        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
         with:
           subject-path: ${{ runner.temp }}/dist/${{ steps.version.outputs.artifact_name }}

@@ -1,5 +1,5 @@
-ENV_CONFIG=dev
-ENVIRONMENT=dev
+ENV_CONFIG=review
+ENVIRONMENT=review
 AZURE_SUBSCRIPTION="Breast Screening - Manage Breast Screening - Dev"
 HUB_SUBSCRIPTION="Digital Screening DToS - DevOps"
 HUB=dev

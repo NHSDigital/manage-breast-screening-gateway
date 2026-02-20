@@ -11,6 +11,7 @@ param userGroupPrincipalID string
 var hubMap = {
   dev:                  'dev'
   int:                  'dev'
+  review:               'dev'
   nft:                  'dev'
   preprod:              'prod'
   prod:                 'prod'

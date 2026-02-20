@@ -11,6 +11,9 @@ preprod: # Target the preprod environment - make preprod <action>
 prod: # Target the prod environment - make prod <action>
 	$(eval include infrastructure/environments/prod/variables.sh)
 
+review: # Target the review environment - make review <action>
+	$(eval include infrastructure/environments/review/variables.sh)
+
 ci: # Skip manual approvals when running in CI - make ci <env> <action>
 	$(eval AUTO_APPROVE=-auto-approve)
 	$(eval SKIP_AZURE_LOGIN=true)

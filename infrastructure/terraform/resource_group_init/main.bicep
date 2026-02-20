@@ -81,6 +81,7 @@ resource readerAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleID.reader)
     principalId: managedIdentiyGHtoADO.outputs.miPrincipalID
+    principalType: 'ServicePrincipal'
     description: '${miGHtoADOname} Reader access to subscription'
   }
 }
@@ -134,6 +135,7 @@ resource monitoringContributorAssignment 'Microsoft.Authorization/roleAssignment
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleID.monitoringContributor)
     principalId: managedIdentiyADOtoAZ.outputs.miPrincipalID
+    principalType: 'ServicePrincipal'
     description: '${miADOtoAZname} Monitoring Contributor access to subscription'
   }
 }
@@ -144,6 +146,7 @@ resource networkContributorAssignment 'Microsoft.Authorization/roleAssignments@2
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleID.networkContributor)
     principalId: managedIdentiyADOtoAZ.outputs.miPrincipalID
+    principalType: 'ServicePrincipal'
     description: '${miADOtoAZname} Network Contributor access to subscription'
   }
 }

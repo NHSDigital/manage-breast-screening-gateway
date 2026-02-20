@@ -71,6 +71,7 @@ resource miRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' =
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', role.roleId)
     principalId: miPrincipalId
+    principalType: 'ServicePrincipal'
     description: '${miName} ${role.description}'
     // Conditionally include the 'condition' property only if it exists in the role object
     condition: role.?condition

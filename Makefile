@@ -1,4 +1,5 @@
 include scripts/shared.mk
+include scripts/terraform/terraform.mk
 
 .DEFAULT_GOAL := help
 

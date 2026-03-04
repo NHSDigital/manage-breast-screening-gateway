@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from services.mwl.create_worklist_item import CreateWorklistItem
-from services.storage import WorklistItem
+from services.storage import DuplicateWorklistItemError, WorklistItem
 
 
 @patch(f"{CreateWorklistItem.__module__}.MWLStorage")
@@ -39,6 +39,18 @@ class TestCreateWorklistItem:
         assert "Missing action_id" in response["error"]
 
         mock_storage_instance.store_worklist_item.assert_not_called()
+
+    def test_call_duplicate_worklist_item(self, mock_mwl_storage, listener_payload):
+        mock_storage_instance = mock_mwl_storage.return_value
+        mock_storage_instance.store_worklist_item.side_effect = DuplicateWorklistItemError(
+            "Worklist item already exists: ACC999999"
+        )
+        subject = CreateWorklistItem(mock_storage_instance)
+
+        response = subject.call(listener_payload)
+        assert response == {"status": "duplicate", "action_id": "action-12345"}
+
+        mock_storage_instance.store_worklist_item.assert_called_once()
 
     def test_call_storage_exception(self, mock_mwl_storage, listener_payload):
         mock_storage_instance = mock_mwl_storage.return_value

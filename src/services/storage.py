@@ -309,6 +309,12 @@ class WorklistItemNotFoundError(Exception):
     pass
 
 
+class DuplicateWorklistItemError(Exception):
+    """Raised when a worklist item with the same accession number already exists."""
+
+    pass
+
+
 class MWLStorage(Storage):
     def __init__(self, db_path: str = "/var/lib/pacs/worklist.db"):
         """
@@ -336,20 +342,23 @@ class MWLStorage(Storage):
         Raises:
             sqlite3.IntegrityError: If accession number already exists
         """
-        with self._get_connection() as conn:
-            conn.execute(
-                (
-                    "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
-                    "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
-                    "scheduled_time, source_message_id, study_description, study_instance_uid) "
-                    "VALUES (:accession_number, :modality, :patient_birth_date, "
-                    ":patient_id, :patient_name, :patient_sex, :procedure_code, "
-                    ":scheduled_date, :scheduled_time, :source_message_id, "
-                    ":study_description, :study_instance_uid)"
-                ),
-                worklist_item.__dict__,
-            )
-            conn.commit()
+        try:
+            with self._get_connection() as conn:
+                conn.execute(
+                    (
+                        "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
+                        "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
+                        "scheduled_time, source_message_id, study_description, study_instance_uid) "
+                        "VALUES (:accession_number, :modality, :patient_birth_date, "
+                        ":patient_id, :patient_name, :patient_sex, :procedure_code, "
+                        ":scheduled_date, :scheduled_time, :source_message_id, "
+                        ":study_description, :study_instance_uid)"
+                    ),
+                    worklist_item.__dict__,
+                )
+                conn.commit()
+        except sqlite3.IntegrityError:
+            raise DuplicateWorklistItemError(f"Worklist item already exists: {worklist_item.accession_number}")
 
         return worklist_item.accession_number
 

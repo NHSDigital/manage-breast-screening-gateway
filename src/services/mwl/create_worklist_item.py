@@ -1,6 +1,6 @@
 import logging
 
-from services.storage import MWLStorage, WorklistItem
+from services.storage import DuplicateWorklistItemError, MWLStorage, WorklistItem
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,11 @@ class CreateWorklistItem:
             )
             logger.info(f"Created worklist item: {item.get('accession_number')}")
             return {"status": "created", "action_id": action_id}
+        except DuplicateWorklistItemError:
+            logger.warning(
+                f"Duplicate worklist item ignored: accession_number={item.get('accession_number')!r}, action_id={action_id!r}"
+            )
+            return {"status": "duplicate", "action_id": action_id}
         except Exception as e:
             logger.error(f"Failed to create worklist item: {e}")
             return {"status": "error", "action_id": action_id, "error": str(e)}

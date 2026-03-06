@@ -10,13 +10,6 @@ locals {
   relay_namespace_name = "relay-manbrs-${var.env_config}"
 }
 
-data "azurerm_relay_namespace" "gateway" {
-  count = var.enable_arc_servers ? 1 : 0
-
-  name                = local.relay_namespace_name
-  resource_group_name = local.relay_namespace_rg
-}
-
 # Discover all Arc-enabled machines registered in the Arc resource group.
 # Each machine's name is the SiteCode set during onboarding (e.g. gw-RVJ-01).
 data "azurerm_resources" "arc_machines" {

@@ -4,7 +4,8 @@ include scripts/terraform/terraform.mk
 .DEFAULT_GOAL := help
 
 .PHONY: clean config dependencies githooks-config githooks-run help test test-lint test-unit _install-uv \
-	up down restart logs build rebuild run-pacs run-mwl run-listener run-upload ps shell docker-clean
+	up down restart logs build rebuild run-pacs run-mwl run-listener run-upload ps shell docker-clean \
+	review dev preprod prod
 .SILENT: help
 
 # ---------------------------------------------------------------------------

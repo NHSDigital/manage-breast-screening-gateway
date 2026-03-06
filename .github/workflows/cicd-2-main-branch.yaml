@@ -8,9 +8,7 @@ on:
       - 'v*'
   workflow_dispatch:
 
-concurrency:
-  group: cicd-${{ github.ref }}
-  cancel-in-progress: true
+concurrency: cicd-${{ github.ref }}
 
 permissions:
   contents: write
@@ -97,4 +95,15 @@ jobs:
     with:
       version: ${{ needs.release-stage.outputs.new_release_version }}
       new_release_published: ${{ needs.release-stage.outputs.new_release_published == 'true' }}
+    secrets: inherit
+
+  deploy-stage:
+    name: Deploy stage
+    needs: [commit-stage, test-stage]
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy.yaml
+    with:
+      environments: '["review"]'
+      commit_sha: ${{ github.sha }}
     secrets: inherit

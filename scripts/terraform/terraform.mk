@@ -2,6 +2,9 @@ REGION=UK South
 APP_SHORT_NAME=mbsgw
 STORAGE_ACCOUNT_RG=rg-dtos-state-files
 
+review: # Target the review environment - make review <action>
+	$(eval include infrastructure/environments/review/variables.sh)
+
 dev: # Target the dev environment - make dev <action>
 	$(eval include infrastructure/environments/dev/variables.sh)
 
@@ -10,9 +13,6 @@ preprod: # Target the preprod environment - make preprod <action>
 
 prod: # Target the prod environment - make prod <action>
 	$(eval include infrastructure/environments/prod/variables.sh)
-
-review: # Target the review environment - make review <action>
-	$(eval include infrastructure/environments/review/variables.sh)
 
 ci: # Skip manual approvals when running in CI - make ci <env> <action>
 	$(eval AUTO_APPROVE=-auto-approve)
@@ -61,8 +61,6 @@ terraform-plan: terraform-init # Plan Terraform changes - make <env> terraform-p
 terraform-apply: terraform-init # Apply Terraform changes - make <env> terraform-apply
 	terraform -chdir=infrastructure/terraform apply -var-file ../environments/${ENV_CONFIG}/variables.tfvars ${AUTO_APPROVE}
 
-terraform-destroy: terraform-init # Destroy Terraform resources - make <env> terraform-destroy
-	terraform -chdir=infrastructure/terraform destroy -var-file ../environments/${ENV_CONFIG}/variables.tfvars ${AUTO_APPROVE}
 
 terraform-validate: terraform-init-no-backend # Validate Terraform changes - make <env> terraform-validate
 	terraform -chdir=infrastructure/terraform validate

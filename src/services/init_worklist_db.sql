@@ -59,4 +59,3 @@ ON worklist_items(patient_id);
 -- Index for MPPS instance UID lookups
 CREATE INDEX IF NOT EXISTS idx_worklist_mpps_instance_uid
 ON worklist_items(mpps_instance_uid);
-

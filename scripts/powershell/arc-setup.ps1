@@ -6,7 +6,16 @@ param(
     [string]$ResourceGroup,
     [string]$Location,
     [string]$ServicePrincipalId,
-    [string]$ServicePrincipalSecret
+    [string]$ServicePrincipalSecret,
+    # Site identity - controls the Arc resource name and Azure tags.
+    # SiteCode becomes the Arc machine name in Azure (e.g. gw-RVJ-01).
+    # Defaults to the machine hostname when not supplied (test/dev use).
+    [string]$SiteCode       = "",       # e.g. gw-RVJ-01 (ODS code + instance)
+    [string]$SiteName       = "",       # e.g. North-Bristol-NHS-Trust (no spaces)
+    [string]$NHSRegion      = "",       # nw|neyh|mids|eoe|lon|se|sw
+    [string]$PacsVendor     = "",       # sectra|fujifilm|agfa|philips|carestream
+    [string]$SiteType       = "static", # static|mobile
+    [string]$DeploymentRing = "ring0"   # ring0|ring1|ring2|ring3|ring4
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,6 +34,13 @@ function Write-Log {
 try {
     Write-Log "=========================================" "INFO"
     Write-Log "Azure Arc Combined Setup Started" "INFO"
+    Write-Log "=========================================" "INFO"
+    Write-Log "SiteCode       : $(if ($SiteCode) { $SiteCode } else { '(hostname)' })" "INFO"
+    Write-Log "SiteName       : $(if ($SiteName) { $SiteName } else { '(not set)' })" "INFO"
+    Write-Log "NHSRegion      : $(if ($NHSRegion) { $NHSRegion } else { '(not set)' })" "INFO"
+    Write-Log "PacsVendor     : $(if ($PacsVendor) { $PacsVendor } else { '(not set)' })" "INFO"
+    Write-Log "SiteType       : $SiteType" "INFO"
+    Write-Log "DeploymentRing : $DeploymentRing" "INFO"
     Write-Log "=========================================" "INFO"
 
     $CorrelationId = [guid]::NewGuid().ToString()
@@ -121,20 +137,38 @@ try {
     $azcmagentExe = "$env:ProgramW6432\AzureConnectedMachineAgent\azcmagent.exe"
     if (-Not (Test-Path $azcmagentExe)) { throw "azcmagent.exe not found at $azcmagentExe" }
 
-    Write-Log "Subscription : $SubscriptionId" "INFO"
+    Write-Log "Subscription  : $SubscriptionId" "INFO"
     Write-Log "Resource Group: $ResourceGroup" "INFO"
     Write-Log "Location      : $Location" "INFO"
 
-    & "$azcmagentExe" connect `
-        --service-principal-id     "$ServicePrincipalId" `
-        --service-principal-secret "$ServicePrincipalSecret" `
-        --resource-group           "$ResourceGroup" `
-        --tenant-id                "$TenantId" `
-        --location                 "$Location" `
-        --subscription-id          "$SubscriptionId" `
-        --cloud                    "$env:CLOUD" `
-        --tags                     'ArcSQLServerExtensionDeployment=Disabled' `
-        --correlation-id           "$CorrelationId"
+    # Build tags - all site metadata is stamped onto the Arc resource for Terraform
+    # discovery and ADO pipeline targeting. SiteName must not contain spaces.
+    $tags  = "ArcSQLServerExtensionDeployment=Disabled"
+    $tags += " Programme=BreastScreening"
+    $tags += " SiteType=$SiteType"
+    $tags += " DeploymentRing=$DeploymentRing"
+    if ($SiteCode)   { $tags += " SiteCode=$SiteCode" }
+    if ($SiteName)   { $tags += " SiteName=$SiteName" }
+    if ($NHSRegion)  { $tags += " NHSRegion=$NHSRegion" }
+    if ($PacsVendor) { $tags += " PacsVendor=$PacsVendor" }
+
+    # Build connect arguments. --resource-name sets the Azure resource name,
+    # overriding the default (hostname). Required for meaningful HC naming in Terraform.
+    $connectArgs = @(
+        'connect',
+        '--service-principal-id',     $ServicePrincipalId,
+        '--service-principal-secret', $ServicePrincipalSecret,
+        '--resource-group',           $ResourceGroup,
+        '--tenant-id',                $TenantId,
+        '--location',                 $Location,
+        '--subscription-id',          $SubscriptionId,
+        '--cloud',                    $env:CLOUD,
+        '--correlation-id',           $CorrelationId,
+        '--tags',                     $tags
+    )
+    if ($SiteCode) { $connectArgs += @('--resource-name', $SiteCode) }
+
+    & "$azcmagentExe" @connectArgs
 
     if ($LASTEXITCODE -ne 0) { throw "Connection failed with exit code $LASTEXITCODE" }
     Write-Log "Successfully connected to Azure Arc!" "SUCCESS"

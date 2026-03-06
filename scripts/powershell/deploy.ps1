@@ -393,12 +393,11 @@ try {
 
 foreach ($svc in $services) {
     $batPath = Join-Path $versionDir "start-$($svc.Name).bat"
-    $scriptPath = Join-Path "src" $svc.Script
     $batContent = @(
         '@echo off',
-        'cd /d "%~dp0"',
-        'set "PYTHONPATH=src"',
-        ('".venv\Scripts\python.exe" "' + $scriptPath + '"')
+        "cd /d `"$BaseInstallPath`"",
+        'set "PYTHONPATH=current\src"',
+        ('"current\.venv\Scripts\python.exe" "current\src\' + $svc.Script + '"')
     ) -join "`r`n"
     [System.IO.File]::WriteAllText($batPath, $batContent, [System.Text.Encoding]::ASCII)
 }
@@ -476,7 +475,7 @@ foreach ($svc in $services) {
     }
 
     Invoke-Nssm -NssmPath $nssmExe -Arguments @("install", $svc.Name, "$batPath") -Description "install $($svc.Name)"
-    Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "AppDirectory", "$currentJunction") -Description "set AppDirectory"
+    Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "AppDirectory", "$BaseInstallPath") -Description "set AppDirectory"
     Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "Description", "Manage Breast Screening Gateway - $($svc.Name)") -Description "set Description"
     Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "Start", "SERVICE_AUTO_START") -Description "set Start"
 
@@ -535,7 +534,7 @@ if ($cutoverFailed) {
             $batPath = Join-Path $currentJunction "start-$($svc.Name).bat"
             if (Test-Path $batPath) {
                 & $nssmExe set $svc.Name Application "$batPath" 2>&1 | Out-Null
-                & $nssmExe set $svc.Name AppDirectory "$currentJunction" 2>&1 | Out-Null
+                & $nssmExe set $svc.Name AppDirectory "$BaseInstallPath" 2>&1 | Out-Null
             }
         }
 

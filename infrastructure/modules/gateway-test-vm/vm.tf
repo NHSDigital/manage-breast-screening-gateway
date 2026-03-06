@@ -123,6 +123,23 @@ resource "azurerm_virtual_machine_run_command" "arc_setup" {
     value = var.arc_onboarding_spn_client_id
   }
 
+  # Site identity tags — stamped onto the Arc resource for Terraform HC discovery
+  # and ADO pipeline ring targeting. ring0 = test VM only.
+  parameter {
+    name  = "SiteCode"
+    value = "${var.app_short_name}-${var.env_config}"
+  }
+
+  parameter {
+    name  = "SiteType"
+    value = "static"
+  }
+
+  parameter {
+    name  = "DeploymentRing"
+    value = "ring0"
+  }
+
   protected_parameter {
     name  = "ServicePrincipalSecret"
     value = data.azurerm_key_vault_secret.arc_onboarding_spn_secret.value

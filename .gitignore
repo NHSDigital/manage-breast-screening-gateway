@@ -13,6 +13,13 @@ lines-of-code-report.json
 
 # Please, add your custom content below!
 
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+infrastructure/modules/dtos-devops-templates/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -60,4 +67,3 @@ mediafiles/
 # Documentation
 .structurizr
 workspace.json
-

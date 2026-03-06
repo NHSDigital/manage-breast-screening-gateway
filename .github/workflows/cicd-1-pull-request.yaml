@@ -4,11 +4,12 @@ on:
   pull_request:
 
 concurrency:
-  group: cicd-${{ github.ref }}
+  group: pr-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
+  id-token: write
   security-events: write
 
 jobs:
@@ -19,4 +20,15 @@ jobs:
   test-stage:
     needs: commit-stage
     uses: ./.github/workflows/stage-2-test.yaml
+    secrets: inherit
+
+  deploy-stage:
+    name: Deploy stage
+    needs: [commit-stage, test-stage]
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy.yaml
+    with:
+      environments: '["review"]'
+      commit_sha: ${{ github.event.pull_request.head.sha }}
     secrets: inherit

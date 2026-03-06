@@ -33,7 +33,7 @@ foreach ($pattern in $ServicePatterns) {
     $services = Get-Service -Name $pattern -ErrorAction SilentlyContinue
     foreach ($svc in $services) {
         Write-Host "Processing Service: $($svc.Name)" -ForegroundColor Yellow
-        
+
         if ($svc.Status -eq 'Running') {
             Write-Host "  Stopping service..." -ForegroundColor Gray
             Stop-Service -Name $svc.Name -Force -ErrorAction SilentlyContinue
@@ -61,7 +61,7 @@ foreach ($path in $Paths) {
             Write-Host "  Removing junction..." -ForegroundColor Gray
             Remove-Item -Path $current -Force -ErrorAction SilentlyContinue
         }
-        
+
         try {
             Remove-Item -Path $path -Recurse -Force
             Write-Host "  Directory removed successfully." -ForegroundColor Green

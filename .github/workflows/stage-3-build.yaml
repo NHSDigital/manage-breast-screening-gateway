@@ -93,7 +93,12 @@ jobs:
           PRERELEASE_FLAG=""
           [[ "$IS_PRERELEASE" == "true" ]] && PRERELEASE_FLAG="--prerelease"
 
-          # Create the release if it doesn't exist. If it does, ignore the error.
+          # Pre-releases are recreated on every push so the git tag always points
+          # to the current commit (raw.githubusercontent.com uses the tag as a ref).
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            gh release delete "$VERSION" --yes 2>/dev/null || true
+          fi
+
           gh release create "$VERSION" \
             --title "$VERSION" \
             $PRERELEASE_FLAG \

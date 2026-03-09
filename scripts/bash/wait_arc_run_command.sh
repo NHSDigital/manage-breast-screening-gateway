@@ -2,6 +2,9 @@
 # Poll an Arc Run Command until it completes, printing output on completion.
 # Usage: wait_arc_run_command.sh <machine-name> <resource-group> <run-command-name>
 #
+# Uses az rest GET (same API as the PUT submission) to avoid CLI extension
+# version issues and to surface HTTP errors rather than suppressing them.
+#
 # provisioningState: Succeeded only means ARM accepted the resource.
 # instanceView.executionState carries the actual script execution status.
 
@@ -14,16 +17,15 @@ CMD_NAME=$3
 SLEEP_TIME=20
 TIMEOUT_SECONDS=1800
 
+SUB_ID=$(az account show --query id -o tsv)
+CMD_URL="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${RG}/providers/Microsoft.HybridCompute/machines/${MACHINE}/runCommands/${CMD_NAME}?api-version=2024-07-10"
+
 echo "Waiting for Arc Run Command '$CMD_NAME' on '$MACHINE'..."
 
 START_TIME=$(date +%s)
 
 while true; do
-  CMD_JSON=$(az connectedmachine run-command show \
-    --resource-group "$RG" \
-    --machine-name "$MACHINE" \
-    --run-command-name "$CMD_NAME" \
-    --output json 2>/dev/null)
+  CMD_JSON=$(az rest --method GET --url "$CMD_URL" --output json)
 
   PROVISIONING_STATE=$(echo "$CMD_JSON" | jq -r '.provisioningState // "Unknown"')
   EXEC_STATE=$(echo "$CMD_JSON"        | jq -r '.instanceView.executionState // "Unknown"')

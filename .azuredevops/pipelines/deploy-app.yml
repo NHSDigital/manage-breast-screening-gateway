@@ -44,4 +44,5 @@ stages:
                       export ARM_CLIENT_ID="$servicePrincipalId"
                       export ARM_OIDC_TOKEN="$idToken"
                       export ARM_USE_OIDC=true
+                      export ARM_USE_AZUREAD=true
                       make ci ${{ parameters.environment }} deploy-app RELEASE_TAG="${{ parameters.releaseTag }}"

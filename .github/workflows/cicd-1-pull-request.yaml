@@ -9,9 +9,10 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write  # needed to create pre-releases
+  contents: write       # needed to create pre-releases
   id-token: write
   security-events: write
+  attestations: write   # needed by stage-3-build (attest-build-provenance)
 
 jobs:
   commit-stage:

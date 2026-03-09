@@ -90,7 +90,7 @@ $envContent = [System.Text.Encoding]::UTF8.GetString($envBytes)
 [System.IO.File]::WriteAllText("$Base\.env", $envContent, [System.Text.Encoding]::UTF8)
 Write-Output "Written .env to $Base"
 $dst = "$env:TEMP\deploy.ps1"
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/NHSDigital/manage-breast-screening-gateway/main/scripts/powershell/deploy.ps1" -OutFile $dst -UseBasicParsing
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/NHSDigital/manage-breast-screening-gateway/$ReleaseTag/scripts/powershell/deploy.ps1" -OutFile $dst -UseBasicParsing
 Write-Output "Downloaded deploy.ps1"
 & $dst -Bootstrap -ReleaseTag $ReleaseTag -BaseInstallPath $Base -PythonVersion $PythonVersion
 PSEOF

@@ -124,7 +124,7 @@ PSEOF
     --url "https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${ARC_RG}/providers/Microsoft.HybridCompute/machines/${MACHINE}/runCommands/deploy-gateway-app?api-version=2024-07-10" \
     --body "$BODY" \
     --output json)
-  echo "Run command submitted: $(echo "$PUT_RESPONSE" | jq -r '.provisioningState // "unknown"')"
+  echo "Run command submitted: $(echo "$PUT_RESPONSE" | jq -r '.properties.provisioningState // "unknown"')"
 
   scripts/bash/wait_arc_run_command.sh "$MACHINE" "$ARC_RG" "deploy-gateway-app" || FAILED=1
   [[ $FAILED -eq 1 ]] && echo "ERROR: Deploy failed for $MACHINE" && break

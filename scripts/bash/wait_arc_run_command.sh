@@ -27,8 +27,8 @@ START_TIME=$(date +%s)
 while true; do
   CMD_JSON=$(az rest --method GET --url "$CMD_URL" --output json)
 
-  PROVISIONING_STATE=$(echo "$CMD_JSON" | jq -r '.provisioningState // "Unknown"')
-  EXEC_STATE=$(echo "$CMD_JSON"        | jq -r '.instanceView.executionState // "Unknown"')
+  PROVISIONING_STATE=$(echo "$CMD_JSON" | jq -r '.properties.provisioningState // "Unknown"')
+  EXEC_STATE=$(echo "$CMD_JSON"        | jq -r '.properties.instanceView.executionState // "Unknown"')
 
   CURRENT_TIME=$(date +%s)
   ELAPSED=$((CURRENT_TIME - START_TIME))
@@ -45,9 +45,9 @@ while true; do
   fi
 
   if $TERMINAL; then
-    EXIT_CODE=$(echo "$CMD_JSON" | jq -r '.instanceView.exitCode // -1')
-    OUTPUT=$(echo "$CMD_JSON"    | jq -r '.instanceView.output // ""')
-    ERROR_OUT=$(echo "$CMD_JSON" | jq -r '.instanceView.error // ""')
+    EXIT_CODE=$(echo "$CMD_JSON" | jq -r '.properties.instanceView.exitCode // -1')
+    OUTPUT=$(echo "$CMD_JSON"    | jq -r '.properties.instanceView.output // ""')
+    ERROR_OUT=$(echo "$CMD_JSON" | jq -r '.properties.instanceView.error // ""')
 
     [[ -n "$OUTPUT"    ]] && echo "=== Script output ===" && echo "$OUTPUT"
     [[ -n "$ERROR_OUT" ]] && echo "=== Script error ===" && echo "$ERROR_OUT"
@@ -58,7 +58,7 @@ while true; do
     else
       echo "Arc Run Command '$CMD_NAME' on '$MACHINE' failed: provisioningState=$PROVISIONING_STATE, executionState=$EXEC_STATE, exitCode=$EXIT_CODE"
       echo "=== Full instanceView ==="
-      echo "$CMD_JSON" | jq '.instanceView'
+      echo "$CMD_JSON" | jq '.properties.instanceView'
       exit 1
     fi
   fi
@@ -66,7 +66,7 @@ while true; do
   if (( ELAPSED > TIMEOUT_SECONDS )); then
     echo "ERROR: Timeout (${TIMEOUT_SECONDS}s) waiting for '$CMD_NAME' on '$MACHINE'"
     echo "=== Full instanceView at timeout ==="
-    echo "$CMD_JSON" | jq '.instanceView'
+    echo "$CMD_JSON" | jq '.properties.instanceView'
     exit 2
   fi
 

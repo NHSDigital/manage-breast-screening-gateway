@@ -113,6 +113,9 @@ PSEOF
   sleep 5
 
   # Submit via REST API — CLI does not reliably support protectedParameters
+  # NOTE: Arc Run Command drops protectedParameters for inline source.script.
+  # EnvContentB64 is passed as a regular parameter (base64-encoded, not plain text).
+  # TODO: migrate to Key Vault + Arc MSI for production environments.
   BODY=$(jq -n \
     --arg loc    "$LOCATION" \
     --arg script "$DEPLOY_SCRIPT" \
@@ -125,10 +128,8 @@ PSEOF
         source: { script: $script },
         parameters: [
           { name: "ReleaseTag",     value: $tag   },
-          { name: "PythonVersion",  value: $pyver }
-        ],
-        protectedParameters: [
-          { name: "EnvContentB64", value: $envb64 }
+          { name: "PythonVersion",  value: $pyver },
+          { name: "EnvContentB64",  value: $envb64 }
         ],
         runAsSystem:      true,
         timeoutInSeconds: 1800

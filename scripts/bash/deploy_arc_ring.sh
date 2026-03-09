@@ -89,6 +89,15 @@ $envBytes = [System.Convert]::FromBase64String($EnvContentB64)
 $envContent = [System.Text.Encoding]::UTF8.GetString($envBytes)
 [System.IO.File]::WriteAllText("$Base\.env", $envContent, [System.Text.Encoding]::UTF8)
 Write-Output "Written .env to $Base"
+# Refresh PATH from registry and add the Chocolatey Python install path explicitly.
+# Arc Run Command runs as SYSTEM whose PATH may not include Python even after install,
+# because Chocolatey adds it to the installing user's PATH, not SYSTEM's.
+# Child processes (deploy.ps1) inherit this updated PATH.
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+            [System.Environment]::GetEnvironmentVariable("Path", "User")
+$pyMajorMinor = (($PythonVersion -split '\.')[0..1]) -join ''
+$pyPath = "C:\Python$pyMajorMinor"
+if (Test-Path $pyPath) { $env:Path += ";$pyPath" }
 $dst = "$env:TEMP\deploy.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/NHSDigital/manage-breast-screening-gateway/$ReleaseTag/scripts/powershell/deploy.ps1" -OutFile $dst -UseBasicParsing
 Write-Output "Downloaded deploy.ps1"

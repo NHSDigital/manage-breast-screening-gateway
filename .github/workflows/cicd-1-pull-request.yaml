@@ -48,7 +48,7 @@ jobs:
 
   deploy-app-stage:
     name: Deploy app stage
-    needs: [build-for-deploy]
+    needs: [build-for-deploy, deploy-stage]
     if: contains(github.event.pull_request.labels.*.name, 'deploy')
     permissions:
       id-token: write

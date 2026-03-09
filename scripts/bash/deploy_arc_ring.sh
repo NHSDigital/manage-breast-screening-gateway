@@ -18,6 +18,7 @@ APP_SHORT_NAME="mbsgw"
 ARC_RG="rg-${APP_SHORT_NAME}-${ENVIRONMENT}-uks-arc-enabled-servers"
 # Use forward slashes — Python handles these fine on Windows and avoids .env escaping issues
 BASE_PATH="C:/Program Files/NHS/ManageBreastScreeningGateway"
+PYTHON_VERSION=$(awk '/^python / {print $2}' .tool-versions)
 
 echo "--- Ring: ${RING} | Environment: ${ENVIRONMENT} | Release: ${RELEASE_TAG} ---"
 
@@ -80,7 +81,7 @@ LOG_LEVEL=INFO"
   # PowerShell: decode .env, write it, download deploy.ps1 from GitHub, run it.
   # Passed as the run command script — protectedParameters keep secrets out of logs.
   read -r -d '' DEPLOY_SCRIPT << 'PSEOF' || true
-param([string]$EnvContentB64, [string]$ReleaseTag)
+param([string]$EnvContentB64, [string]$ReleaseTag, [string]$PythonVersion)
 $ErrorActionPreference = 'Stop'
 $Base = "C:\Program Files\NHS\ManageBreastScreeningGateway"
 New-Item -Path $Base -ItemType Directory -Force | Out-Null
@@ -91,7 +92,7 @@ Write-Output "Written .env to $Base"
 $dst = "$env:TEMP\deploy.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/NHSDigital/manage-breast-screening-gateway/main/scripts/powershell/deploy.ps1" -OutFile $dst -UseBasicParsing
 Write-Output "Downloaded deploy.ps1"
-& $dst -Bootstrap -ReleaseTag $ReleaseTag -BaseInstallPath $Base
+& $dst -Bootstrap -ReleaseTag $ReleaseTag -BaseInstallPath $Base -PythonVersion $PythonVersion
 PSEOF
 
   # Delete any previous deploy run command (idempotent re-runs)
@@ -106,12 +107,16 @@ PSEOF
     --arg loc    "$LOCATION" \
     --arg script "$DEPLOY_SCRIPT" \
     --arg tag    "$RELEASE_TAG" \
+    --arg pyver  "$PYTHON_VERSION" \
     --arg envb64 "$ENV_CONTENT_B64" \
     '{
       location: $loc,
       properties: {
         source: { script: $script },
-        parameters: [{ name: "ReleaseTag", value: $tag }],
+        parameters: [
+          { name: "ReleaseTag",     value: $tag   },
+          { name: "PythonVersion",  value: $pyver }
+        ],
         protectedParameters: [
           { name: "EnvContentB64", value: $envb64 }
         ],

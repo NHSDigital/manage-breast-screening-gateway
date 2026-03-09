@@ -2,13 +2,14 @@ name: "CI/CD: Pull Request"
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
   group: pr-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write  # needed to create pre-releases
   id-token: write
   security-events: write
 
@@ -30,5 +31,29 @@ jobs:
     uses: ./.github/workflows/stage-4-deploy.yaml
     with:
       environments: '["review"]'
+      commit_sha: ${{ github.event.pull_request.head.sha }}
+    secrets: inherit
+
+  # Build and publish a pre-release when the 'deploy' label is present.
+  # Runs on every push while the label is active (synchronize re-triggers this).
+  build-for-deploy:
+    name: Build for deploy
+    needs: [commit-stage, test-stage]
+    if: contains(github.event.pull_request.labels.*.name, 'deploy')
+    uses: ./.github/workflows/stage-3-build.yaml
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+    secrets: inherit
+
+  deploy-app-stage:
+    name: Deploy app stage
+    needs: [build-for-deploy]
+    if: contains(github.event.pull_request.labels.*.name, 'deploy')
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy-app.yaml
+    with:
+      environments: '["review"]'
+      release_tag: pr-${{ github.event.pull_request.number }}
       commit_sha: ${{ github.event.pull_request.head.sha }}
     secrets: inherit

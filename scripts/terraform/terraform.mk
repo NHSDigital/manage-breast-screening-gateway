@@ -62,5 +62,12 @@ terraform-apply: terraform-init # Apply Terraform changes - make <env> terraform
 	terraform -chdir=infrastructure/terraform apply -var-file ../environments/${ENV_CONFIG}/variables.tfvars ${AUTO_APPROVE}
 
 
+terraform-output: terraform-init # Read Terraform outputs from state - make <env> terraform-output
+	terraform -chdir=infrastructure/terraform output -json
+
 terraform-validate: terraform-init-no-backend # Validate Terraform changes - make <env> terraform-validate
 	terraform -chdir=infrastructure/terraform validate
+
+.PHONY: _install-tool _install-tools ci review dev preprod prod set-azure-account get-subscription-ids \
+	resource-group-init terraform-init-no-backend terraform-init terraform-plan terraform-apply \
+	terraform-output terraform-validate

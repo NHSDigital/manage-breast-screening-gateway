@@ -12,6 +12,11 @@ on:
         required: false
         type: boolean
         default: false
+      pr_number:
+        description: "PR number for pre-release build (e.g. '42' → tag 'pr-42'). Empty = not a PR build."
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -31,7 +36,9 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          if [[ -n "${{ inputs.version }}" ]]; then
+          if [[ -n "${{ inputs.pr_number }}" ]]; then
+            VERSION="pr-${{ inputs.pr_number }}"
+          elif [[ -n "${{ inputs.version }}" ]]; then
             VERSION="${{ inputs.version }}"
           elif [[ "${{ github.ref_type }}" == "tag" ]]; then
             VERSION="${{ github.ref_name }}"
@@ -77,14 +84,19 @@ jobs:
           "
 
       - name: Create or Update Release
-        if: github.ref_type == 'tag' || inputs.new_release_published
+        if: github.ref_type == 'tag' || inputs.new_release_published || inputs.pr_number != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
+          IS_PRERELEASE: ${{ inputs.pr_number != '' }}
         run: |
+          PRERELEASE_FLAG=""
+          [[ "$IS_PRERELEASE" == "true" ]] && PRERELEASE_FLAG="--prerelease"
+
           # Create the release if it doesn't exist. If it does, ignore the error.
           gh release create "$VERSION" \
             --title "$VERSION" \
+            $PRERELEASE_FLAG \
             --generate-notes \
             2>/dev/null || echo "Release already exists, uploading assets..."
 

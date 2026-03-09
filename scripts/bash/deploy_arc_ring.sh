@@ -104,12 +104,13 @@ Write-Output "Downloaded deploy.ps1 (line count: $((Get-Content $dst).Count))"
 & $dst -Bootstrap -ReleaseTag $ReleaseTag -BaseInstallPath $Base -PythonVersion $PythonVersion
 PSEOF
 
-  # Delete any previous deploy run command (idempotent re-runs)
-  az connectedmachine run-command delete \
-    --resource-group "$ARC_RG" \
-    --machine-name "$MACHINE" \
-    --run-command-name "deploy-gateway-app" \
-    --yes 2>/dev/null || true
+  # Delete any previous deploy run command (idempotent re-runs).
+  # Use az rest — the connectedmachine CLI subcommand is unreliable.
+  az rest --method DELETE \
+    --url "https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${ARC_RG}/providers/Microsoft.HybridCompute/machines/${MACHINE}/runCommands/deploy-gateway-app?api-version=2024-07-10" \
+    2>/dev/null || true
+  # Brief pause to let ARM propagate the deletion before re-creating
+  sleep 5
 
   # Submit via REST API — CLI does not reliably support protectedParameters
   BODY=$(jq -n \

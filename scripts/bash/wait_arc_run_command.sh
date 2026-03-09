@@ -25,7 +25,18 @@ echo "Waiting for Arc Run Command '$CMD_NAME' on '$MACHINE'..."
 START_TIME=$(date +%s)
 
 while true; do
-  CMD_JSON=$(az rest --method GET --url "$CMD_URL" --output json)
+  # Capture stderr separately so a transient 404 (ARM propagation delay) doesn't
+  # kill the script under set -euo pipefail.
+  CMD_JSON=$(az rest --method GET --url "$CMD_URL" --output json 2>/tmp/arc_wait_err) || {
+    ERR=$(cat /tmp/arc_wait_err)
+    if echo "$ERR" | grep -q "404\|Not Found"; then
+      echo "Run command not yet visible in ARM — retrying in ${SLEEP_TIME}s..."
+      sleep "$SLEEP_TIME"
+      continue
+    fi
+    echo "ERROR polling run command: $ERR"
+    exit 1
+  }
 
   PROVISIONING_STATE=$(echo "$CMD_JSON" | jq -r '.properties.provisioningState // "Unknown"')
   EXEC_STATE=$(echo "$CMD_JSON"        | jq -r '.properties.instanceView.executionState // "Unknown"')

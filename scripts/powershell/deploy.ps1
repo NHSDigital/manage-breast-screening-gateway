@@ -257,6 +257,11 @@ if (-not $ZipPath) {
     }
 }
 
+# -- Refresh PATH (Chocolatey updates registry but not the running process) ---
+
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+            [System.Environment]::GetEnvironmentVariable("Path", "User")
+
 # -- Validation ---------------------------------------------------------------
 
 $pythonExe = Get-Command python.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source

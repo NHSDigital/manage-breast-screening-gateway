@@ -100,7 +100,7 @@ $pyPath = "C:\Python$pyMajorMinor"
 if (Test-Path $pyPath) { $env:Path += ";$pyPath" }
 $dst = "$env:TEMP\deploy.ps1"
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/NHSDigital/manage-breast-screening-gateway/$ReleaseTag/scripts/powershell/deploy.ps1" -OutFile $dst -UseBasicParsing
-Write-Output "Downloaded deploy.ps1"
+Write-Output "Downloaded deploy.ps1 (line count: $((Get-Content $dst).Count))"
 & $dst -Bootstrap -ReleaseTag $ReleaseTag -BaseInstallPath $Base -PythonVersion $PythonVersion
 PSEOF
 

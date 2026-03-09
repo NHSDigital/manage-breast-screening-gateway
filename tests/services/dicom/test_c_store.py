@@ -47,10 +47,11 @@ class TestCStore:
         assert subject.call(mock_event) == FAILURE
 
     def test_existing_sop_instance_uid(self, mock_storage, mock_event):
-        mock_storage.instance_exists.return_value = True
+        mock_storage.store_instance.side_effect = pydicom.uid.generate_uid()
         subject = CStore(mock_storage)
 
         assert subject.call(mock_event) == SUCCESS
+        mock_storage.store_instance.assert_called_once()
 
     def test_valid_event_is_stored(self, mock_storage, mock_event):
         mock_storage.instance_exists.return_value = False

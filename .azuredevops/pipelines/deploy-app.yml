@@ -14,9 +14,6 @@ parameters:
     displayName: ADO management pool
     type: string
 
-  - name: commitSha
-    displayName: Commit SHA to deploy from
-    type: string
 
 stages:
   - stage: ${{ parameters.environment }}
@@ -35,7 +32,6 @@ stages:
             deploy:
               steps:
                 - checkout: self
-                  ref: ${{ parameters.commitSha }}
 
                 - task: AzureCLI@2
                   displayName: Deploy gateway app to ${{ parameters.environment }}

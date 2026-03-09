@@ -56,7 +56,7 @@ jobs:
             --name "Deploy Gateway App - ${ENVIRONMENT}" \
             --org https://dev.azure.com/nhse-dtos \
             --project "${ADO_PROJECT}" \
-            --parameters releaseTag="${RELEASE_TAG}" environment="${ENVIRONMENT}" pool="${ADO_MANAGEMENT_POOL}" commitSha="${COMMIT_SHA}" \
+            --parameters releaseTag="${RELEASE_TAG}" environment="${ENVIRONMENT}" pool="${ADO_MANAGEMENT_POOL}" \
             --output tsv --query id)
 
           echo "See pipeline run in Azure DevOps: https://dev.azure.com/nhse-dtos/${ADO_PROJECT}/_build/results?buildId=${RUN_ID}&view=results"

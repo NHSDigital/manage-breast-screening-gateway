@@ -144,13 +144,13 @@ try {
     # Build tags - all site metadata is stamped onto the Arc resource for Terraform
     # discovery and ADO pipeline targeting. SiteName must not contain spaces.
     $tags  = "ArcSQLServerExtensionDeployment=Disabled"
-    $tags += " Programme=BreastScreening"
-    $tags += " SiteType=$SiteType"
-    $tags += " DeploymentRing=$DeploymentRing"
-    if ($SiteCode)   { $tags += " SiteCode=$SiteCode" }
-    if ($SiteName)   { $tags += " SiteName=$SiteName" }
-    if ($NHSRegion)  { $tags += " NHSRegion=$NHSRegion" }
-    if ($PacsVendor) { $tags += " PacsVendor=$PacsVendor" }
+    $tags += ",Programme=BreastScreening"
+    $tags += ",SiteType=$SiteType"
+    $tags += ",DeploymentRing=$DeploymentRing"
+    if ($SiteCode)   { $tags += ",SiteCode=$SiteCode" }
+    if ($SiteName)   { $tags += ",SiteName=$SiteName" }
+    if ($NHSRegion)  { $tags += ",NHSRegion=$NHSRegion" }
+    if ($PacsVendor) { $tags += ",PacsVendor=$PacsVendor" }
 
     # Build connect arguments. --resource-name sets the Azure resource name,
     # overriding the default (hostname). Required for meaningful HC naming in Terraform.

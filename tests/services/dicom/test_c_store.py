@@ -8,6 +8,9 @@ from pydicom.uid import JPEG2000
 from services.dicom import FAILURE, SUCCESS
 from services.dicom.c_store import CStore
 from services.dicom.image_compressor import ImageCompressor
+from services.dicom.validation_failure_notifier import ValidationFailureNotifier
+from services.dicom.validator import DicomValidationError, DicomValidator
+from services.storage import MWLStorage
 
 
 class TestCStore:
@@ -104,3 +107,34 @@ class TestCStore:
         stored_bytes = mock_storage.store_instance.call_args[0][1]
         stored_ds = pydicom.dcmread(BytesIO(stored_bytes), force=True)
         assert stored_ds.file_meta.TransferSyntaxUID == JPEG2000
+
+    def test_validation_failure_notifies_manage(self, mock_storage, mock_event):
+        """When validation fails and accession is in MWL, notify manage."""
+        mock_validator = Mock(spec=DicomValidator)
+        mock_validator.validate_dataset.side_effect = DicomValidationError("Missing required tag")
+
+        mock_mwl = Mock(spec=MWLStorage)
+        mock_mwl.get_source_message_id.return_value = "action-uuid-123"
+
+        mock_notifier = Mock(spec=ValidationFailureNotifier)
+
+        subject = CStore(mock_storage, validator=mock_validator, mwl_storage=mock_mwl, notifier=mock_notifier)
+        assert subject.call(mock_event) == FAILURE
+
+        mock_notifier.notify.assert_called_once_with("action-uuid-123", "DICOM validation failed: Missing required tag")
+        mock_mwl.get_source_message_id.assert_called_once_with("ABC123")
+
+    def test_validation_failure_accession_not_in_mwl(self, mock_storage, mock_event):
+        """When accession is not in MWL, validation failure returns FAILURE without calling notify."""
+        mock_validator = Mock(spec=DicomValidator)
+        mock_validator.validate_dataset.side_effect = DicomValidationError("Missing required tag")
+
+        mock_mwl = Mock(spec=MWLStorage)
+        mock_mwl.get_source_message_id.return_value = None
+
+        mock_notifier = Mock(spec=ValidationFailureNotifier)
+
+        subject = CStore(mock_storage, validator=mock_validator, mwl_storage=mock_mwl, notifier=mock_notifier)
+        assert subject.call(mock_event) == FAILURE
+
+        mock_notifier.notify.assert_not_called()

@@ -15,6 +15,7 @@ from pynetdicom.sop_class import (
 
 from services.dicom.c_echo import CEcho
 from services.dicom.c_store import CStore
+from services.dicom.validation_failure_notifier import ValidationFailureNotifier
 from services.mwl.c_find import CFind
 from services.mwl.n_create import NCreate
 from services.mwl.n_set import NSet
@@ -33,6 +34,7 @@ class PACSServer:
         storage_path: str = "/var/lib/pacs/storage",
         db_path: str = "/var/lib/pacs/pacs.db",
         block: bool = True,
+        mwl_db_path: str = "/var/lib/pacs/worklist.db",
     ):
         """
         Initialize PACS server.
@@ -42,10 +44,13 @@ class PACSServer:
             port: Port to listen on
             storage_path: Directory for DICOM file storage
             db_path: Path to SQLite database
+            mwl_db_path: Path to the MWL SQLite database (for failure notification lookups)
         """
         self.ae_title = ae_title
         self.port = port
         self.storage = PACSStorage(db_path, storage_path)
+        self.mwl_storage = MWLStorage(mwl_db_path)
+        self.notifier = ValidationFailureNotifier()
         self.ae = None
         self.block = block
 
@@ -56,7 +61,10 @@ class PACSServer:
         self.ae = AE(ae_title=self.ae_title)
         self.ae.supported_contexts = StoragePresentationContexts
 
-        handlers = [(evt.EVT_C_ECHO, CEcho().call), (evt.EVT_C_STORE, CStore(self.storage).call)]
+        handlers = [
+            (evt.EVT_C_ECHO, CEcho().call),
+            (evt.EVT_C_STORE, CStore(self.storage, mwl_storage=self.mwl_storage, notifier=self.notifier).call),
+        ]
 
         logger.info(f"PACS server listening on 0.0.0.0:{self.port}")
         logger.info(f"Storage: {self.storage.storage_root}")

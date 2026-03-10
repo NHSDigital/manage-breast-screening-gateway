@@ -19,6 +19,7 @@ from server import MWLServer, PACSServer
 from services.dicom import PENDING, SUCCESS
 from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_processor import UploadProcessor
+from services.dicom.validation_failure_notifier import ValidationFailureNotifier
 from services.storage import MWLStorage, PACSStorage
 
 TEST_ACCESSION_NUMBER = "ACC-E2E-12345"  # gitleaks:allow
@@ -85,12 +86,14 @@ class TestEndToEndRelayToUpload:
         return server
 
     @pytest.fixture
-    def pacs_server(self, pacs_storage):
+    def pacs_server(self, pacs_storage, mwl_storage):
         """PACS server using the shared storage."""
         server = PACSServer.__new__(PACSServer)
         server.ae_title = "SCREENING_PACS"
         server.port = 4244
         server.storage = pacs_storage
+        server.mwl_storage = mwl_storage
+        server.notifier = ValidationFailureNotifier()
         server.ae = None
         server.block = False
         return server

@@ -12,7 +12,9 @@ from services.storage import PACSStorage
 class TestSendCStoreToGateway:
     @pytest.fixture(autouse=True)
     def with_pacs_server(self, tmp_dir):
-        server = PACSServer("SCREENING_PACS", 4244, tmp_dir, f"{tmp_dir}/test.db", block=False)
+        server = PACSServer(
+            "SCREENING_PACS", 4244, tmp_dir, f"{tmp_dir}/test.db", block=False, mwl_db_path=f"{tmp_dir}/worklist.db"
+        )
         server.start()
 
         yield

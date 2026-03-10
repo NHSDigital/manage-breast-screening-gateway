@@ -29,8 +29,9 @@ def main():
     pacs_port = int(os.getenv("PACS_PORT", "4244"))
     pacs_storage_path = os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
     pacs_db_path = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
+    mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 
-    pacs_server = PACSServer(pacs_aet, pacs_port, pacs_storage_path, pacs_db_path, block=True)
+    pacs_server = PACSServer(pacs_aet, pacs_port, pacs_storage_path, pacs_db_path, block=True, mwl_db_path=mwl_db_path)
 
     try:
         pacs_server.start()

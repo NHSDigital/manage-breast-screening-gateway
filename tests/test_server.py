@@ -10,34 +10,41 @@ from pynetdicom.sop_class import (  # pyright: ignore[reportAttributeAccessIssue
 from server import MWLServer, PACSServer
 
 
+@patch(f"{PACSServer.__module__}.MWLStorage")
 @patch(f"{PACSServer.__module__}.PACSStorage")
 class TestPACSServer:
-    def test_init(self, mock_storage, tmp_dir):
-        subject = PACSServer("Custom AE Title", 2222, tmp_dir, f"{tmp_dir}/test.db", False)
+    def test_init(self, mock_pacs_storage, mock_mwl_storage, tmp_dir):
+        subject = PACSServer(
+            "Custom AE Title", 2222, tmp_dir, f"{tmp_dir}/test.db", False, mwl_db_path=f"{tmp_dir}/worklist.db"
+        )
 
         assert subject.ae_title == "Custom AE Title"
         assert subject.port == 2222
-        assert subject.storage == mock_storage.return_value
+        assert subject.storage == mock_pacs_storage.return_value
+        assert subject.mwl_storage == mock_mwl_storage.return_value
         assert subject.ae is None
         assert subject.block is False
 
-        mock_storage.assert_called_once_with(f"{tmp_dir}/test.db", tmp_dir)
+        mock_pacs_storage.assert_called_once_with(f"{tmp_dir}/test.db", tmp_dir)
+        mock_mwl_storage.assert_called_once_with(f"{tmp_dir}/worklist.db")
 
-    def test_init_defaults(self, mock_storage):
+    def test_init_defaults(self, mock_pacs_storage, mock_mwl_storage):
         subject = PACSServer()
 
         assert subject.ae_title == "SCREENING_PACS"
         assert subject.port == 4244
-        assert subject.storage == mock_storage.return_value
+        assert subject.storage == mock_pacs_storage.return_value
+        assert subject.mwl_storage == mock_mwl_storage.return_value
         assert subject.ae is None
         assert subject.block is True
 
-        mock_storage.assert_called_once_with("/var/lib/pacs/pacs.db", "/var/lib/pacs/storage")
+        mock_pacs_storage.assert_called_once_with("/var/lib/pacs/pacs.db", "/var/lib/pacs/storage")
+        mock_mwl_storage.assert_called_once_with("/var/lib/pacs/worklist.db")
 
     @patch(f"{PACSServer.__module__}.AE")
     @patch(f"{PACSServer.__module__}.CEcho")
     @patch(f"{PACSServer.__module__}.CStore")
-    def test_start(self, mock_c_store, mock_c_echo, mock_ae, _):
+    def test_start(self, mock_c_store, mock_c_echo, mock_ae, _mock_pacs_storage, _mock_mwl_storage):
         subject = PACSServer()
         subject.start()
 

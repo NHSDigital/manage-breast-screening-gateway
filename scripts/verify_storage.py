@@ -74,7 +74,7 @@ def verify_storage():
 
     for i, instance in enumerate(instances, 1):
         print(f"{i}. SOP Instance UID: {instance['sop_instance_uid']}")
-        print(f"   Patient ID:       {instance['patient_id'] or 'N/A'}")
+        print(f"   Patient ID:       *******{instance['patient_id'][7:]}")
         print(f"   Patient Name:     {instance['patient_name'] or 'N/A'}")
         print(f"   Accession Number: {instance['accession_number'] or 'N/A'}")
         print(f"   Source AET:       {instance['source_aet']}")

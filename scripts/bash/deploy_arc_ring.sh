@@ -132,6 +132,12 @@ PSEOF
       {"name": "EnvContentB64", "value": $envb64}
     ]')
 
+  # Delete any previous run command so the create is clean (idempotent re-runs).
+  az rest --method DELETE \
+    --url "https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${ARC_RG}/providers/Microsoft.HybridCompute/machines/${MACHINE}/runCommands/deploy-gateway-app?api-version=2024-07-10" \
+    2>/dev/null || true
+  sleep 5
+
   # az connectedmachine run-command create follows the ARM LRO pattern and blocks
   # until the script completes (or times out), returning the final instanceView.
   echo "Submitting run command for $MACHINE..."

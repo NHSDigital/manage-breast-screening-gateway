@@ -41,6 +41,8 @@ stages:
                     scriptLocation: inlineScript
                     addSpnToEnvironment: true
                     inlineScript: |
+                      az config set extension.dynamic_install_allow_preview=true
+                      az extension add --name connectedmachine --allow-preview true --yes
                       export ARM_TENANT_ID="$tenantId"
                       export ARM_CLIENT_ID="$servicePrincipalId"
                       export ARM_OIDC_TOKEN="$idToken"

@@ -26,7 +26,7 @@ class ValidationFailureNotifier:
         try:
             logger.info(f"Reporting validation failure for action {source_message_id}")
 
-            response = requests.post(
+            response = requests.patch(
                 f"{self.api_endpoint}/{source_message_id}/failure",
                 json={"error": error},
                 timeout=self.timeout,

@@ -16,6 +16,8 @@ import urllib.parse
 
 from dotenv import load_dotenv
 from websockets.asyncio.client import connect
+from websockets.frames import CloseCode
+from websockets.exceptions import ConnectionClosedError
 
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.storage import MWLStorage
@@ -30,6 +32,7 @@ SAS_TOKEN_EXPIRY_SECONDS = 3600
 ACTIONS = {
     "worklist.create_item": CreateWorklistItem,
 }
+EXPIRED_TOKEN = "ExpiredToken"
 
 
 class RelayListener:
@@ -54,7 +57,7 @@ class RelayListener:
 
         logger.info(f"Connecting to Azure Relay: {self.relay_uri.hybrid_connection_name}...")
 
-        async with connect(self.relay_uri.connection_url(), compression=None) as websocket:
+        async with self._connect() as websocket:
             logger.info("Connected - waiting for worklist actions...")
 
             async for message in websocket:
@@ -87,6 +90,10 @@ class RelayListener:
             raise ValueError(f"Unknown action: {action_name}")
 
         return action_class(self.storage).call(payload)
+
+    def _connect(self):
+        """Connect to Azure Relay."""
+        return connect(self.relay_uri.connection_url(), compression=None)
 
 
 class RelayURI:
@@ -133,6 +140,16 @@ async def main():
         except KeyboardInterrupt:
             logger.warning("\nShutting down...")
             break
+        except ConnectionClosedError as e:
+            code = e.rcvd.code if e.rcvd else "N/A"
+            reason = e.rcvd.reason if e.rcvd else "N/A"
+
+            if code == CloseCode.INTERNAL_ERROR.value and EXPIRED_TOKEN in reason:
+                logger.info("SAS token expired, refreshing...")
+            else:
+                logger.warning(f"Connection closed with code {code}: {reason}")
+                logger.warning("Retrying in 5 seconds...")
+                await asyncio.sleep(5)
         except Exception as e:
             logger.warning(f"Connection error: {e}")
             logger.warning("Retrying in 5 seconds...")

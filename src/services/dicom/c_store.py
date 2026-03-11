@@ -35,7 +35,7 @@ class CStore:
         self.compressor = compressor or ImageCompressor()
         self.validator = validator or DicomValidator()
         self.mwl_storage = mwl_storage
-        self.notifier = notifier
+        self.notifier = notifier or ValidationFailureNotifier()
 
     def call(self, event: Event) -> int:
         try:

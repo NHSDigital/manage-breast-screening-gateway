@@ -39,13 +39,14 @@ class CFind:
         logger.info(f"C-FIND request from {requestor_aet}")
 
         query_patient_id = identifier.get("PatientID")
+        anonymised_patient_id = f"*******{query_patient_id[7:]}" if query_patient_id else "None"
 
         procedure_sequence = identifier.get("ScheduledProcedureStepSequence", [{}])
         query_modality = procedure_sequence[0].get("Modality")
         query_date = procedure_sequence[0].get("ScheduledProcedureStepStartDate")
 
         logger.debug(
-            "Query parameters: modality=%s, date=%s, patient_id=%s", query_modality, query_date, query_patient_id
+            "Query parameters: modality=%s, date=%s, patient_id=%s", query_modality, query_date, anonymised_patient_id
         )
 
         try:

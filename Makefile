@@ -58,6 +58,12 @@ _install-uv:
 	fi
 
 # ---------------------------------------------------------------------------
+#  Database backup
+# ---------------------------------------------------------------------------
+backup-db: # Backup sqlite databases @Operations
+	PYTHONPATH=scripts/python uv run python -m backup_database
+
+# ---------------------------------------------------------------------------
 # Testing
 # ---------------------------------------------------------------------------
 test: test-unit test-integration test-lint # Run all tests @Testing

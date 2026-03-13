@@ -8,9 +8,7 @@ on:
       - 'v*'
   workflow_dispatch:
 
-concurrency:
-  group: cicd-${{ github.ref }}
-  cancel-in-progress: true
+concurrency: cicd-${{ github.ref }}
 
 permissions:
   contents: write
@@ -97,4 +95,32 @@ jobs:
     with:
       version: ${{ needs.release-stage.outputs.new_release_version }}
       new_release_published: ${{ needs.release-stage.outputs.new_release_published == 'true' }}
+    secrets: inherit
+
+  deploy-stage:
+    name: Deploy stage
+    needs: [commit-stage, test-stage]
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy.yaml
+    with:
+      environments: '["review"]'
+      commit_sha: ${{ github.sha }}
+    secrets: inherit
+
+  deploy-app-stage:
+    name: Deploy app stage
+    needs: [build-stage, release-stage]
+    # Only deploy when a new release was published — no release means no deployable artifact.
+    if: |
+      always() &&
+      needs.build-stage.result == 'success' &&
+      needs.release-stage.outputs.new_release_published == 'true'
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy-app.yaml
+    with:
+      environments: '["dev", "preprod", "prod"]'
+      release_tag: ${{ needs.release-stage.outputs.new_release_version }}
+      commit_sha: ${{ github.sha }}
     secrets: inherit

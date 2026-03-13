@@ -4,5 +4,6 @@ AZURE_SUBSCRIPTION="Breast Screening - Manage Breast Screening - Prod"
 HUB_SUBSCRIPTION="Digital Screening DToS - Core Services Prod Hub"
 HUB=prod
 TERRAFORM_MODULES_REF=main
-ENABLE_SOFT_DELETE=false
+ENABLE_SOFT_DELETE=true
 ADO_MANAGEMENT_POOL=private-pool-prod-uks
+# To onboard more rings: set GATEWAY_RINGS="ring0 ring1 ring2 ..." in this file

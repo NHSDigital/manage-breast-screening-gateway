@@ -4,7 +4,9 @@ include scripts/terraform/terraform.mk
 .DEFAULT_GOAL := help
 
 .PHONY: clean config dependencies githooks-config githooks-run help test test-lint test-unit _install-uv \
-	up down restart logs build rebuild run-pacs run-mwl run-listener run-upload ps shell docker-clean
+	up down restart logs build rebuild run-pacs run-mwl run-listener run-upload ps shell docker-clean \
+	package deploy-app \
+	review dev preprod prod
 .SILENT: help
 
 # ---------------------------------------------------------------------------
@@ -19,6 +21,12 @@ help: # Print help @Others
 # ---------------------------------------------------------------------------
 package: # Create release package @Operations
 	./scripts/bash/package_release.sh
+
+GATEWAY_RINGS ?= ring0
+
+deploy-app: # Deploy gateway app to the target environment - make <env> deploy-app RELEASE_TAG=<tag> @Operations
+	@[ -n "$(RELEASE_TAG)" ] || (echo "ERROR: RELEASE_TAG is required. Usage: make <env> deploy-app RELEASE_TAG=<tag>"; exit 1)
+	scripts/bash/deploy_stage.sh "$(ENV_CONFIG)" "$(GATEWAY_RINGS)" "$(RELEASE_TAG)"
 
 clean: # Clean-up project resources @Operations
 	@echo "Cleaning up..."

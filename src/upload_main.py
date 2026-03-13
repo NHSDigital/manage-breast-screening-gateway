@@ -9,8 +9,10 @@ from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_listener import UploadListener
 from services.dicom.upload_processor import UploadProcessor
 from services.storage import MWLStorage, PACSStorage
+from telemetry import configure_telemetry
 
 load_dotenv()
+configure_telemetry()
 
 
 def main():

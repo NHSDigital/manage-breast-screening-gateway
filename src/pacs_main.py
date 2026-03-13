@@ -6,8 +6,10 @@ import os
 from dotenv import load_dotenv
 
 from server import PACSServer
+from telemetry import configure_telemetry
 
 load_dotenv()
+configure_telemetry()
 
 
 def main():

@@ -39,12 +39,22 @@ class CFind:
         logger.info(f"C-FIND request from {requestor_aet}")
 
         query_patient_id = identifier.get("PatientID")
+        anonymised_patient_id = f"*******{query_patient_id[7:]}" if query_patient_id else "None"
+        query_patient_name = identifier.get("PatientName")
 
         procedure_sequence = identifier.get("ScheduledProcedureStepSequence", [{}])
         query_modality = procedure_sequence[0].get("Modality")
         query_date = procedure_sequence[0].get("ScheduledProcedureStepStartDate")
         query_accession_number = identifier.get("AccessionNumber")
         query_time = procedure_sequence[0].get("ScheduledProcedureStepStartTime")
+
+        logger.debug(
+            "Query parameters: modality=%s, date=%s, patient_id=%s, patient_name=%s",
+            query_modality,
+            query_date,
+            anonymised_patient_id,
+            query_patient_name,
+        )
 
         try:
             items = self.storage.find_worklist_items(
@@ -53,6 +63,7 @@ class CFind:
                 scheduled_date=query_date if query_date else None,
                 scheduled_time=query_time if query_time else None,
                 patient_id=query_patient_id if query_patient_id else None,
+                patient_name=str(query_patient_name) if query_patient_name else None,
             )
 
             logger.info("Found %s matching worklist items", len(items))

@@ -407,6 +407,49 @@ class TestWorkingStorage:
             ["20240101", "20240131", "090000", "170000"],
         )
 
+        mock_connection.reset_mock()
+        subject.find_worklist_items(patient_name="Smith*")
+
+        mock_connection.execute.assert_called_once_with(
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE UPPER(patient_name) LIKE UPPER(?) ORDER BY scheduled_date, scheduled_time"
+            ),
+            ["Smith%"],
+        )
+
+    @pytest.mark.parametrize(
+        "dicom_pattern, sql_pattern",
+        [
+            ("Smith*", "Smith%"),  # trailing wildcard
+            ("*Smith*", "%Smith%"),  # leading and trailing wildcard
+            ("Sm?th*", "Sm_th%"),  # single-character wildcard combined with trailing
+            ("Smith^Jane", "Smith^Jane"),  # exact name, no wildcards
+        ],
+    )
+    def test_find_worklist_items_patient_name_wildcard_conversion(self, mock_db, tmp_dir, dicom_pattern, sql_pattern):
+        mock_cursor = MagicMock()
+        mock_cursor.fetchall.return_value = []
+        mock_connection = MagicMock()
+        mock_connection.execute.return_value = mock_cursor
+        mock_db.connect.return_value = mock_connection
+        subject = MWLStorage(tmp_dir)
+        mock_connection.reset_mock()
+
+        subject.find_worklist_items(patient_name=dicom_pattern)
+
+        mock_connection.execute.assert_called_once_with(
+            (
+                "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
+                "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                "FROM worklist_items WHERE UPPER(patient_name) LIKE UPPER(?) ORDER BY scheduled_date, scheduled_time"
+            ),
+            [sql_pattern],
+        )
+
     def test_get_worklist_item(self, mock_db, tmp_dir, result):
         mock_cursor = MagicMock()
         mock_cursor.fetchone.return_value = result

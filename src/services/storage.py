@@ -369,6 +369,7 @@ class MWLStorage(Storage):
         scheduled_date: Optional[str] = None,
         scheduled_time: Optional[str] = None,
         patient_id: Optional[str] = None,
+        patient_name: Optional[str] = None,
     ) -> List[WorklistItem]:
         """
         Query worklist items with optional filters.
@@ -379,6 +380,7 @@ class MWLStorage(Storage):
             scheduled_date: Filter by scheduled date (YYYYMMDD, or range like "20240101-20240131")
             scheduled_time: Filter by scheduled time (HHMMSS, or range like "080000-170000")
             patient_id: Filter by patient ID
+            patient_name: Filter by patient name
 
         Returns:
             List of WorklistItem instances matching the criteria
@@ -413,6 +415,12 @@ class MWLStorage(Storage):
         if patient_id:
             where_clauses.append("patient_id = ?")
             params.append(patient_id)
+
+        if patient_name:
+            # Convert DICOM wildcards (* → %, ? → _) to SQL LIKE syntax.
+            sql_pattern = patient_name.replace("*", "%").replace("?", "_")
+            where_clauses.append("UPPER(patient_name) LIKE UPPER(?)")
+            params.append(sql_pattern)
 
         if where_clauses:
             query += " WHERE " + " AND ".join(where_clauses)

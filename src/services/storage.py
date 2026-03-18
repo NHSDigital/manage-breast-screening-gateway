@@ -419,7 +419,10 @@ class MWLStorage(Storage):
         if patient_name:
             # Convert DICOM wildcards (* → %, ? → _) to SQL LIKE syntax.
             sql_pattern = patient_name.replace("*", "%").replace("?", "_")
-            where_clauses.append("UPPER(patient_name) LIKE UPPER(?)")
+            if sql_pattern == patient_name:  # no wildcards were present
+                where_clauses.append("UPPER(patient_name) = UPPER(?)")
+            else:
+                where_clauses.append("UPPER(patient_name) LIKE UPPER(?)")
             params.append(sql_pattern)
 
         if where_clauses:

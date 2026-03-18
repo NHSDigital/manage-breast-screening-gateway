@@ -421,15 +421,17 @@ class TestWorkingStorage:
         )
 
     @pytest.mark.parametrize(
-        "dicom_pattern, sql_pattern",
+        "dicom_pattern, sql_pattern, operator",
         [
-            ("Smith*", "Smith%"),  # trailing wildcard
-            ("*Smith*", "%Smith%"),  # leading and trailing wildcard
-            ("Sm?th*", "Sm_th%"),  # single-character wildcard combined with trailing
-            ("Smith^Jane", "Smith^Jane"),  # exact name, no wildcards
+            ("Smith*", "Smith%", "LIKE"),  # trailing wildcard
+            ("*Smith*", "%Smith%", "LIKE"),  # leading and trailing wildcard
+            ("Sm?th*", "Sm_th%", "LIKE"),  # single-character wildcard combined with trailing
+            ("Smith^Jane", "Smith^Jane", "="),  # exact name, no wildcards — uses = not LIKE
         ],
     )
-    def test_find_worklist_items_patient_name_wildcard_conversion(self, mock_db, tmp_dir, dicom_pattern, sql_pattern):
+    def test_find_worklist_items_patient_name_wildcard_conversion(
+        self, mock_db, tmp_dir, dicom_pattern, sql_pattern, operator
+    ):
         mock_cursor = MagicMock()
         mock_cursor.fetchall.return_value = []
         mock_connection = MagicMock()
@@ -445,7 +447,7 @@ class TestWorkingStorage:
                 "SELECT accession_number, modality, patient_birth_date, patient_id, "
                 "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                 "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
-                "FROM worklist_items WHERE UPPER(patient_name) LIKE UPPER(?) ORDER BY scheduled_date, scheduled_time"
+                f"FROM worklist_items WHERE UPPER(patient_name) {operator} UPPER(?) ORDER BY scheduled_date, scheduled_time"
             ),
             [sql_pattern],
         )

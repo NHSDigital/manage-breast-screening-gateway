@@ -1,5 +1,8 @@
 """DICOM services for PACS functionality."""
 
+# DICOM character sets
+CHARSET_UTF8 = "ISO_IR 192"
+
 # DICOM status codes
 SUCCESS = 0x0000
 FAILURE = 0xC000

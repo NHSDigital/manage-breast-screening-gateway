@@ -10,7 +10,7 @@ from typing import Iterator, Tuple
 from pydicom import Dataset
 from pynetdicom import evt
 
-from services.dicom import FAILURE, PENDING, SUCCESS
+from services.dicom import CHARSET_UTF8, FAILURE, PENDING, SUCCESS
 from services.storage import MWLStorage, WorklistItem
 
 logger = logging.getLogger(__name__)
@@ -81,6 +81,8 @@ class CFind:
     def _build_worklist_response(self, item: WorklistItem) -> Dataset:
         ds = Dataset()
         sps_item = Dataset()
+
+        ds.SpecificCharacterSet = CHARSET_UTF8
 
         # Patient demographics
         ds.PatientID = item.patient_id

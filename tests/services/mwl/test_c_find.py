@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 from pydicom import Dataset
 
-from services.dicom import FAILURE, PENDING, SUCCESS
+from services.dicom import CHARSET_UTF8, FAILURE, PENDING, SUCCESS
 from services.mwl.c_find import CFind
 from services.storage import WorklistItem
 
@@ -71,6 +71,7 @@ class TestCFind:
         status, ds = results[0]
         assert status == PENDING
         assert isinstance(ds, Dataset)
+        assert ds.SpecificCharacterSet == CHARSET_UTF8
         assert ds.PatientID == "9876543210"
         assert ds.AccessionNumber == "ACC001"
         # Final result: success

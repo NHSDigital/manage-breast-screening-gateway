@@ -3,6 +3,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 from pynetdicom import evt
 from pynetdicom.sop_class import (  # pyright: ignore[reportAttributeAccessIssue]
+    DigitalMammographyXRayImageStorageForPresentation,
+    DigitalMammographyXRayImageStorageForProcessing,
     ModalityPerformedProcedureStep,
     ModalityWorklistInformationFind,
 )
@@ -51,6 +53,9 @@ class TestPACSServer:
         assert subject.ae == mock_ae.return_value
 
         mock_ae.assert_called_once_with(ae_title="SCREENING_PACS")
+        add_context_calls = [call.args[0] for call in mock_ae.return_value.add_supported_context.call_args_list]
+        assert DigitalMammographyXRayImageStorageForPresentation in add_context_calls
+        assert DigitalMammographyXRayImageStorageForProcessing in add_context_calls
         mock_ae.return_value.start_server.assert_called_once_with(
             ("0.0.0.0", 4244),
             block=True,

@@ -3,10 +3,6 @@ from io import BytesIO
 
 from pydicom import Dataset, dcmwrite
 from pynetdicom.events import Event
-from pynetdicom.sop_class import (
-    DigitalMammographyXRayImageStorageForPresentation,  # type: ignore
-    DigitalMammographyXRayImageStorageForProcessing,  # type: ignore
-)
 
 from services.dicom import FAILURE, SUCCESS
 from services.dicom.image_compressor import ImageCompressor
@@ -18,11 +14,6 @@ logger = logging.getLogger(__name__)
 
 
 class CStore:
-    VALID_SOP_CLASSES = [
-        DigitalMammographyXRayImageStorageForPresentation,
-        DigitalMammographyXRayImageStorageForProcessing,
-    ]
-
     def __init__(
         self,
         storage: PACSStorage,
@@ -41,10 +32,6 @@ class CStore:
         try:
             ds = event.dataset
             ds.file_meta = event.file_meta
-
-            if ds.file_meta.MediaStorageSOPClassUID not in self.VALID_SOP_CLASSES:
-                logger.error(f"Invalid SOP Class UID: {ds.file_meta.MediaStorageSOPClassUID}")
-                return FAILURE
 
             sop_instance_uid = ds.get("SOPInstanceUID", "")
             accession_number = ds.get("AccessionNumber", "")

@@ -7,9 +7,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    labels:
-      - "dependencies"
-      - "python"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -18,9 +15,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "github-actions"
 
   # Pre-commit hooks
   - package-ecosystem: "pre-commit"
@@ -29,6 +23,3 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "pre-commit"

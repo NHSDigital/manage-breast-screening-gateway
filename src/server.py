@@ -7,6 +7,7 @@ Provides:
 
 import logging
 
+import pydicom.uid as dicom_uid
 from pynetdicom import AE, evt
 from pynetdicom.sop_class import (
     DigitalMammographyXRayImageStorageForPresentation,  # type: ignore[attr-defined]
@@ -23,16 +24,6 @@ from services.mwl.n_set import NSet
 from services.storage import MWLStorage, PACSStorage
 
 logger = logging.getLogger(__name__)
-
-# Transfer syntaxes proposed by the Hologic Selenia Dimensions/3Dimensions (Table 3.2.4-5)
-_HOLOGIC_TRANSFER_SYNTAXES = [
-    "1.2.840.10008.1.2.4.70",  # gitleaks:allow JPEG Lossless, First-Order Prediction (Hologic preferred)
-    "1.2.840.10008.1.2.1",  # gitleaks:allow Explicit VR Little Endian
-    "1.2.840.10008.1.2",  # gitleaks:allow Implicit VR Little Endian
-    "1.2.840.10008.1.2.2",  # gitleaks:allow Explicit VR Big Endian
-    "1.2.840.10008.1.2.4.80",  # gitleaks:allow JPEG-LS Lossless
-    "1.2.840.10008.1.2.4.90",  # gitleaks:allow JPEG 2000 Lossless
-]
 
 
 class PACSServer:
@@ -68,9 +59,17 @@ class PACSServer:
         """Start the PACS server and listen for incoming connections."""
         logger.info(f"Starting PACS server: {self.ae_title} on port {self.port}")
 
+        transfer_syntaxes = [
+            dicom_uid.JPEGLosslessSV1,  # Hologic preferred
+            dicom_uid.ExplicitVRLittleEndian,
+            dicom_uid.ImplicitVRLittleEndian,
+            dicom_uid.ExplicitVRBigEndian,
+            dicom_uid.JPEGLSLossless,
+            dicom_uid.JPEG2000Lossless,
+        ]
         self.ae = AE(ae_title=self.ae_title)
-        self.ae.add_supported_context(DigitalMammographyXRayImageStorageForPresentation, _HOLOGIC_TRANSFER_SYNTAXES)
-        self.ae.add_supported_context(DigitalMammographyXRayImageStorageForProcessing, _HOLOGIC_TRANSFER_SYNTAXES)
+        self.ae.add_supported_context(DigitalMammographyXRayImageStorageForPresentation, transfer_syntaxes)
+        self.ae.add_supported_context(DigitalMammographyXRayImageStorageForProcessing, transfer_syntaxes)
 
         handlers = [
             (evt.EVT_C_ECHO, CEcho().call),

@@ -5,6 +5,7 @@ DICOM PACS (Picture Archiving and Communication System) server for receiving and
 ## Overview
 
 The PACS server is a lightweight, production-ready DICOM storage solution that:
+
 - Receives medical images via DICOM C-STORE protocol
 - Stores the images using hash-based directory structure
 - Indexes metadata in SQLite database
@@ -15,25 +16,50 @@ The PACS server is a lightweight, production-ready DICOM storage solution that:
 ### Components
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    PACS Server (Port 4244)                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────┐   │
-│  │   C-STORE    │─────▶│   Storage    │─────▶│ SQLite   │   │
-│  │   Handler    │      │   Layer      │      │ Database │   │
-│  └──────────────┘      └──────────────┘      └──────────┘   │
-│         │                      │                            │
-│         │                      ▼                            │
-│         │              ┌──────────────┐                     │
-│         └─────────────▶│  Filesystem  │                     │
-│                        └──────────────┘                     │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                       PACS Server (Port 4244)                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌──────────────┐   ┌─────────────┐   ┌──────────────┐              │
+│  │   C-STORE    │──▶│   Resize    │──▶│   Compress   │              │
+│  │   Handler    │   │  (Lanczos)  │   │  (JPEG 2000) │              │
+│  └──────────────┘   └─────────────┘   └──────┬───────┘              │
+│                                              │                      │
+│                              ┌───────────────┴──────────────────┐   │
+│                              │         Storage Layer            │   │
+│                              ├──────────────────┬───────────────┤   │
+│                              │  SQLite Database │  Filesystem   │   │
+│                              └──────────────────┴───────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+### Accepted SOP Classes
+
+The server only negotiates presentation contexts for the two mammography SOP classes sent by the Hologic Selenia Dimensions/3Dimensions:
+
+- Digital mammography x-ray image storage – for presentation
+- Digital mammography x-ray image storage – for processing
+
+Other SOP classes (Secondary Capture, Breast Tomosynthesis, Dose SR, etc.) are rejected at association negotiation time so the modality knows not to send them.
+
+### Image Processing Pipeline
+
+When a C-STORE request arrives, the handler applies the following steps before writing to disk:
+
+1. **Validate** — checks that required DICOM tags are present (`SOPInstanceUID`, `PatientID`, `StudyInstanceUID`, `SOPClassUID`) and that pixel data is consistent.
+2. **Decompress** — if the image arrives in a compressed transfer syntax, it is decompressed before further processing.
+3. **Resize** — if either dimension exceeds `DICOM_THUMBNAIL_SIZE` (default 400 px), the image is scaled down.
+4. **Compress** — the pixel data is re-encoded as JPEG 2000 lossy at the configured compression ratio (`DICOM_COMPRESSION_RATIO`, default 15:1).
+5. **Store** — the compressed DICOM file is written to the filesystem and indexed in the PACS database.
+
+#### Why lossy compression and resizing?
+
+Modalities send images in JPEG Lossless transfer syntax. The gateway PACS does not store clinical-grade images but rather reduced-resolution copies for display in Manage Breast Screening, where radiologists review appointment and worklist context rather than performing clinical reads. Full-resolution images remain on the BSU internal PACS. A 15:1 JPEG 2000 lossy compression ratio combined with a 400px resize reduces a typical mammography file from several hundred MB to tens of KB, which is appropriate for the thumbnail display use case and unproblematic for transferring via Azure Relay.
 
 ### Storage Structure
 
 **Hash-based Directory Layout:**
+
 ```
 storage/
 ├── b2/
@@ -48,6 +74,7 @@ storage/
 ```
 
 Each file is stored using SHA256 hash of its SOP Instance UID:
+
 - First 2 characters → Level 1 directory
 - Characters 3-4 → Level 2 directory
 - First 16 characters + `.dcm` → Filename
@@ -100,6 +127,8 @@ Environment variables:
 | `PACS_PORT` | `4244` | DICOM service port |
 | `PACS_STORAGE_PATH` | `/var/lib/pacs/storage` | Directory for DICOM files |
 | `PACS_DB_PATH` | `/var/lib/pacs/pacs.db` | SQLite database path |
+| `DICOM_THUMBNAIL_SIZE` | `400` | Max pixel dimension after resize (px) |
+| `DICOM_COMPRESSION_RATIO` | `15` | JPEG 2000 lossy compression ratio |
 | `LOG_LEVEL` | `INFO` | Logging level |
 
 ## Verification
@@ -129,10 +158,12 @@ uv run pytest tests/integration/test_send_c_store_to_gateway.py -v
 ## Security
 
 **Current Implementation:**
+
 - No authentication (intended for internal network)
 - No encryption (use VPN/private network)
 - File integrity via SHA256 hashes
 
 **Future Considerations:**
+
 - TLS support for encrypted transport
 - Application-level authentication

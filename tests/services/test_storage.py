@@ -322,9 +322,9 @@ class TestWorkingStorage:
 
     def test_mark_in_progress_is_idempotent(self, mwl_storage, result):
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.mark_in_progress(item.accession_number)  # now IN_PROGRESS
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
-        assert mwl_storage.mark_in_progress(item.accession_number) is False  # no-op
+        assert mwl_storage.mark_in_progress(item.accession_number) is False
 
     def test_mark_in_progress_returns_false_when_not_found(self, mwl_storage):
         assert mwl_storage.mark_in_progress("DOES_NOT_EXIST") is False

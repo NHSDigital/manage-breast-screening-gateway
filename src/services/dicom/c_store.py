@@ -79,6 +79,7 @@ class CStore:
                 },
                 event.assoc.requestor.ae_title,
             )
+            self._mark_in_progress(accession_number)
             return SUCCESS
 
         except InstanceExistsError:
@@ -96,6 +97,14 @@ class CStore:
             dcmwrite(buffer, ds, enforce_file_format=True)
             buffer.seek(0)
             return buffer.read()
+
+    def _mark_in_progress(self, accession_number: str) -> None:
+        if not self.mwl_storage or not accession_number:
+            return
+        try:
+            self.mwl_storage.mark_in_progress(accession_number)
+        except Exception as e:
+            logger.error(f"Failed to mark worklist item in progress: {e}", exc_info=True)
 
     def _notify_failure(self, accession_number: str, error: str) -> None:
         if not self.mwl_storage or not self.notifier:

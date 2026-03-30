@@ -491,6 +491,26 @@ class MWLStorage(Storage):
 
             return result["source_message_id"] if result is not None else None
 
+    def mark_in_progress(self, accession_number: str) -> bool:
+        """
+        Transition worklist item from SCHEDULED to IN_PROGRESS.
+
+        Returns True if the status was updated, False if not found or already past SCHEDULED.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                UPDATE worklist_items
+                SET status = 'IN PROGRESS',
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+                  AND status = 'SCHEDULED'
+                """,
+                (accession_number,),
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
     def update_study_instance_uid(self, accession_number: str, study_instance_uid: str) -> bool:
         """
         Update the study instance UID for a worklist item.

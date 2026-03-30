@@ -233,13 +233,7 @@ class TestWorkingStorage:
 
         assert returned == item.source_message_id
 
-        with mwl_storage._get_connection() as conn:
-            row = conn.execute(
-                "SELECT status FROM worklist_items WHERE accession_number = ?",
-                (item.accession_number,),
-            ).fetchone()
-
-        assert row["status"] == "COMPLETED"
+        assert mwl_storage.get_worklist_item(item.accession_number).status == "COMPLETED"
 
     def test_update_status_with_no_update(self, mwl_storage):
         result = mwl_storage.update_status("DOES_NOT_EXIST", "COMPLETED")
@@ -318,3 +312,19 @@ class TestWorkingStorage:
 
     def test_get_worklist_item_by_mpps_instance_uid_returns_none(self, mwl_storage):
         assert mwl_storage.get_worklist_item_by_mpps_instance_uid("nope") is None
+
+    def test_mark_in_progress(self, mwl_storage, result):
+        item = self._insert_item(mwl_storage, result)  # inserted with status='SCHEDULED'
+
+        assert mwl_storage.mark_in_progress(item.accession_number) is True
+
+        assert mwl_storage.get_worklist_item(item.accession_number).status == "IN PROGRESS"
+
+    def test_mark_in_progress_is_idempotent(self, mwl_storage, result):
+        item = self._insert_item(mwl_storage, result)
+        mwl_storage.mark_in_progress(item.accession_number)  # now IN_PROGRESS
+
+        assert mwl_storage.mark_in_progress(item.accession_number) is False  # no-op
+
+    def test_mark_in_progress_returns_false_when_not_found(self, mwl_storage):
+        assert mwl_storage.mark_in_progress("DOES_NOT_EXIST") is False

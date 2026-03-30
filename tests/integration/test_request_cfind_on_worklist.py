@@ -31,7 +31,6 @@ class TestRequestCFindOnWorklist:
                 source_message_id="MSGID123456",
             )
         )
-        storage.update_status("ACC123456", "SCHEDULED")
         storage.store_worklist_item(
             WorklistItem(
                 accession_number="ACC234567",
@@ -48,8 +47,6 @@ class TestRequestCFindOnWorklist:
                 source_message_id="MSGID234567",
             )
         )
-        storage.update_status("ACC234567", "SCHEDULED")
-
         server.start()
 
         yield

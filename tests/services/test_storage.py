@@ -6,7 +6,7 @@ import pytest
 from pydicom.uid import generate_uid
 
 from models import WorklistItem
-from services.storage import MWLStorage, PACSStorage, WorklistItemNotFoundError
+from services.storage import InvalidStatusTransitionError, MWLStorage, PACSStorage, WorklistItemNotFoundError
 
 
 @pytest.fixture
@@ -228,20 +228,19 @@ class TestWorkingStorage:
 
     def test_update_status(self, mwl_storage, result):
         item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
         returned = mwl_storage.update_status(item.accession_number, "COMPLETED")
 
         assert returned == item.source_message_id
-
         assert mwl_storage.get_worklist_item(item.accession_number).status == "COMPLETED"
 
-    def test_update_status_with_no_update(self, mwl_storage):
-        result = mwl_storage.update_status("DOES_NOT_EXIST", "COMPLETED")
-
-        assert result is None
+    def test_update_status_returns_none_when_not_found(self, mwl_storage):
+        assert mwl_storage.update_status("DOES_NOT_EXIST", "IN PROGRESS") is None
 
     def test_update_status_with_mpps(self, mwl_storage, result):
         item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
         returned = mwl_storage.update_status(
             item.accession_number,
@@ -250,14 +249,19 @@ class TestWorkingStorage:
         )
 
         assert returned == item.source_message_id
+        assert mwl_storage.get_worklist_item(item.accession_number).mpps_instance_uid == "some-uid"
 
-        with mwl_storage._get_connection() as conn:
-            row = conn.execute(
-                "SELECT mpps_instance_uid FROM worklist_items WHERE accession_number = ?",
-                (item.accession_number,),
-            ).fetchone()
+    def test_update_status_raises_on_invalid_target(self, mwl_storage, result):
+        item = self._insert_item(mwl_storage, result)
 
-        assert row["mpps_instance_uid"] == "some-uid"
+        with pytest.raises(InvalidStatusTransitionError):
+            mwl_storage.update_status(item.accession_number, "SCHEDULED")  # SCHEDULED is never a valid target
+
+    def test_update_status_returns_none_on_wrong_state(self, mwl_storage, result):
+        item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+
+        assert mwl_storage.update_status(item.accession_number, "IN PROGRESS") is None
 
     def test_update_study_instance_uid(self, mwl_storage, result):
         item = self._insert_item(mwl_storage, result)
@@ -288,6 +292,7 @@ class TestWorkingStorage:
     def test_mpps_instance_exists(self, mwl_storage, result):
         uid = generate_uid()
         item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
         mwl_storage.update_status(item.accession_number, "COMPLETED", mpps_instance_uid=uid)
 
@@ -299,6 +304,7 @@ class TestWorkingStorage:
     def test_get_worklist_item_by_mpps_instance_uid(self, mwl_storage, result):
         uid = generate_uid()
         item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
         mwl_storage.update_status(item.accession_number, "COMPLETED", mpps_instance_uid=uid)
 
@@ -313,18 +319,17 @@ class TestWorkingStorage:
     def test_get_worklist_item_by_mpps_instance_uid_returns_none(self, mwl_storage):
         assert mwl_storage.get_worklist_item_by_mpps_instance_uid("nope") is None
 
-    def test_mark_in_progress(self, mwl_storage, result):
-        item = self._insert_item(mwl_storage, result)  # inserted with status='SCHEDULED'
+    def test_update_status_scheduled_to_in_progress(self, mwl_storage, result):
+        item = self._insert_item(mwl_storage, result)
 
-        assert mwl_storage.mark_in_progress(item.accession_number) is True
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "IN PROGRESS"
 
-    def test_mark_in_progress_is_idempotent(self, mwl_storage, result):
+    def test_update_status_in_progress_to_discontinued(self, mwl_storage, result):
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
-        assert mwl_storage.mark_in_progress(item.accession_number) is False
+        mwl_storage.update_status(item.accession_number, "DISCONTINUED")
 
-    def test_mark_in_progress_returns_false_when_not_found(self, mwl_storage):
-        assert mwl_storage.mark_in_progress("DOES_NOT_EXIST") is False
+        assert mwl_storage.get_worklist_item(item.accession_number).status == "DISCONTINUED"

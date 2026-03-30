@@ -8,6 +8,7 @@ from services.dicom import FAILURE, SUCCESS
 from services.dicom.image_compressor import ImageCompressor
 from services.dicom.validation_failure_notifier import ValidationFailureNotifier
 from services.dicom.validator import DicomValidationError, DicomValidator
+from services.mwl import MWLStatus
 from services.storage import InstanceExistsError, MWLStorage, PACSStorage
 
 logger = logging.getLogger(__name__)
@@ -102,7 +103,7 @@ class CStore:
         if not self.mwl_storage or not accession_number:
             return
         try:
-            self.mwl_storage.mark_in_progress(accession_number)
+            self.mwl_storage.update_status(accession_number, MWLStatus.IN_PROGRESS.value)
         except Exception as e:
             logger.error(f"Failed to mark worklist item in progress: {e}", exc_info=True)
 

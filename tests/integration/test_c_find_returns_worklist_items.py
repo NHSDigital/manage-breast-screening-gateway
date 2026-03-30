@@ -265,8 +265,6 @@ class TestCFindReturnsWorklistItems:
                 source_message_id="MSGID123456",
             )
         )
-        storage.update_status("ACC234567", "SCHEDULED")
-
         event.identifier.ScheduledProcedureStepSequence[0].Modality = "MG"
 
         results = list(CFind(storage).call(event))

@@ -134,9 +134,6 @@ class TestEndToEndRelayToUpload:
         assert worklist_items[0].accession_number == TEST_ACCESSION_NUMBER
         assert worklist_items[0].patient_id == TEST_PATIENT_ID
 
-        # Update status to SCHEDULED so it appears in C-FIND results
-        mwl_storage.update_status(TEST_ACCESSION_NUMBER, "SCHEDULED")
-
         # ===== STEP 2: Query worklist via C-FIND =====
         mwl_server.start()
         try:

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from models import WorklistItem
+from services.mwl import MWLStatus
 
 logger = logging.getLogger(__name__)
 
@@ -284,6 +285,12 @@ class WorklistItemNotFoundError(Exception):
     pass
 
 
+class InvalidStatusTransitionError(Exception):
+    """Raised when a requested status transition is not permitted."""
+
+    pass
+
+
 class DuplicateWorklistItemError(Exception):
     """Raised when a worklist item with the same accession number already exists."""
 
@@ -291,6 +298,12 @@ class DuplicateWorklistItemError(Exception):
 
 
 class MWLStorage(Storage):
+    _STATUS_TRANSITIONS: dict[MWLStatus, MWLStatus] = {
+        MWLStatus.IN_PROGRESS: MWLStatus.SCHEDULED,
+        MWLStatus.COMPLETED: MWLStatus.IN_PROGRESS,
+        MWLStatus.DISCONTINUED: MWLStatus.IN_PROGRESS,
+    }
+
     def __init__(self, db_path: str = "/var/lib/pacs/worklist.db"):
         """
         Initialize Worklist storage.
@@ -459,16 +472,24 @@ class MWLStorage(Storage):
         self, accession_number: str, status: str, mpps_instance_uid: Optional[str] = None
     ) -> Optional[str]:
         """
-        Update the status of a worklist item.
+        Transition a worklist item to a new status, enforcing valid state transitions.
 
         Args:
             accession_number: The accession number to update
-            status: New status (SCHEDULED, IN PROGRESS, COMPLETED, DISCONTINUED)
+            status: Target status
             mpps_instance_uid: Optional MPPS instance UID
 
         Returns:
             source_message_id if item was updated, None if not found
+
+        Raises:
+            InvalidStatusTransitionError: If the transition is not permitted
         """
+        target = MWLStatus(status)
+        if target not in self._STATUS_TRANSITIONS:
+            raise InvalidStatusTransitionError(f"Cannot transition to '{status}'")
+        from_status = self._STATUS_TRANSITIONS[target]
+
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
@@ -477,8 +498,9 @@ class MWLStorage(Storage):
                     mpps_instance_uid = COALESCE(?, mpps_instance_uid),
                     updated_at = CURRENT_TIMESTAMP
                 WHERE accession_number = ?
-            """,
-                (status, mpps_instance_uid, accession_number),
+                  AND status = ?
+                """,
+                (status, mpps_instance_uid, accession_number, from_status.value),
             )
             conn.commit()
 
@@ -486,21 +508,10 @@ class MWLStorage(Storage):
                 return None
 
             result = conn.execute(
-                "SELECT source_message_id FROM worklist_items WHERE accession_number = ?", (accession_number,)
+                "SELECT source_message_id FROM worklist_items WHERE accession_number = ?",
+                (accession_number,),
             ).fetchone()
-
             return result["source_message_id"] if result is not None else None
-
-    def mark_in_progress(self, accession_number: str) -> bool:
-        """
-        Transition worklist item from SCHEDULED to IN PROGRESS.
-
-        Returns True if the status was updated, False if not found or already past SCHEDULED.
-        """
-        item = self.get_worklist_item(accession_number)
-        if item is None or item.status != "SCHEDULED":
-            return False
-        return self.update_status(accession_number, "IN PROGRESS") is not None
 
     def update_study_instance_uid(self, accession_number: str, study_instance_uid: str) -> bool:
         """

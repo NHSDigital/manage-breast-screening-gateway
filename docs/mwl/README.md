@@ -9,6 +9,7 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 - Provides scheduled procedure information via [DICOM C-FIND](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_C) protocol
 - Stores worklist items in SQLite database
 - Supports filtering by modality, date, and patient ID
+- Resets the worklist on a schedule, backing up the database before clearing it
 - Runs in a separate container alongside the [PACS Server](../pacs/README.md)
 
 ## Architecture
@@ -21,54 +22,55 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌──────────────┐      ┌──────────────┐      ┌──────────┐   │
-│  │   C-FIND     │─────▶│   Storage    │─────▶│ SQLite   │   │
-│  │   Handler    │      │   Layer      │      │ Database │   │
-│  └──────────────┘      └──────────────┘      └──────────┘   │
-│         │                      ▲                            │
-│         │                      │                            │
-│         └──────────────────────┘                            │
-│         Query & Response                                    │
-└─────────────────────────────────────────────────────────────┘
-           ▲                                     ▲
-           │                                     │
-    ┌──────┴──────┐                      ┌───────┴────────┐
-    │  Modality   │                      │ Relay Listener │
-    │  (SCU)      │                      │ (Populates DB) │
-    └─────────────┘                      └────────────────┘
+│  │   C-FIND     │─────▶│   Storage    │─────▶│ SQLite   │◀──┼──────────────────┐
+│  │   Handler    │      │   Layer      │      │ Database │   │                  │
+│  └──────────────┘      └──────────────┘      └──────────┘   │                  │
+│         │                      ▲                            │                  │
+│         │                      │                            │        backup + clear (cron)
+│         └──────────────────────┘                            │                  │
+│         Query & Response                                    │                  │
+└─────────────────────────────────────────────────────────────┘                  │
+           ▲                          ▲                                   ┌──────┴─────────┐
+           │                          │                                   │ Reset Scheduler│
+    ┌──────┴──────┐           ┌───────┴────────┐                          └────────────────┘
+    │  Modality   │           │ Relay Listener │
+    │  (SCU)      │           │ (Populates DB) │
+    └─────────────┘           └────────────────┘
 ```
 
 ### Workflow
 
-1. **Worklist Creation**: Relay listener receives appointments from web app and creates worklist items (NB not yet implemented; worklist items must be created programmatically via `scripts/add_worklist_item.py`)
+1. **Worklist Creation**: Relay listener receives appointments from Manage Breast Screening and creates worklist items
 2. **Worklist Query**: Modality sends C-FIND request to MWL server
 3. **Filtering**: MWL server filters by modality, date, patient ID, status
 4. **Response**: Server returns matching worklist items to modality
-5. **Status Updates**: [MPPS (Modality Performed Procedure Step)](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_F) updates procedure status (NB not yet implemented)
+5. **Status Updates**: C-STORE receipt transitions items from `SCHEDULED` to `IN PROGRESS`; [MPPS](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_F) transitions items to `COMPLETED` or `DISCONTINUED`
+6. **Reset**: Reset scheduler backs up and clears the database on a configurable schedule
 
 ## Running the MWL Server
 
 The MWL server runs in a separate container:
 
 ```bash
-# Start both PACS and MWL servers
+# Start all services
 docker compose up -d
 
-# Start only MWL server
-docker compose up -d mwl
+# Start only the MWL server and reset scheduler
+docker compose up -d mwl reset
 
-# View logs
+# View MWL server logs
 docker compose logs -f mwl
 
-# Stop servers
-docker compose down
+# View reset scheduler logs
+docker compose logs -f reset
 
-# Reset databases
-docker compose down -v
+# Stop all services
+docker compose down
 ```
 
 ## Configuration
 
-Environment variables:
+### MWL server
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -76,6 +78,23 @@ Environment variables:
 | `MWL_PORT` | `4243` | DICOM service port |
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
 | `LOG_LEVEL` | `INFO` | Logging level |
+
+### Reset scheduler
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
+| `BACKUP_PATH` | `/var/lib/pacs/backups` | Directory for database backups |
+| `MWL_RESET_SCHEDULE` | `0 2 * * *` | Cron expression for reset schedule (UTC) |
+| `LOG_LEVEL` | `INFO` | Logging level |
+
+The `MWL_RESET_SCHEDULE` value is a standard cron expression. Examples:
+
+| Expression | Schedule |
+|------------|----------|
+| `0 2 * * *` | Daily at 02:00 UTC (default) |
+| `0 2 * * 1` | Every Monday at 02:00 UTC |
+| `0 2 1 * *` | First day of each month at 02:00 UTC |
 
 ## Example query
 
@@ -141,29 +160,27 @@ uv run pytest tests/integration/test_request_cfind_on_worklist.py -v
 
 ## Multi-container architecture
 
-The PACS and MWL servers run in separate containers. See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) for the architectural decision and trade-offs.
+The MWL-related services run in separate containers. See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) and [ADR-004: Daily backup and reset of the MWL database](../adr/ADR-004_MWL_Daily_Backup_And_Reset.md) for the architectural decisions.
 
 **Docker Compose services:**
 
 ```yaml
 services:
-  pacs:
-    container_name: pacs-server
-    command: ["uv", "run", "python", "-m", "pacs_main"]
-    ports:
-      - "4244:4244"
-
   mwl:
     container_name: mwl-server
     command: ["uv", "run", "python", "-m", "mwl_main"]
     ports:
       - "4243:4243"
+
+  reset:
+    container_name: mwl-reset
+    command: ["uv", "run", "python", "-m", "reset_main"]
 ```
 
-Each server:
+**Worklist item status transitions:**
 
-- Runs in its own container
-- Has its own Application Entity (AE)
-- Uses a separate SQLite database
-- Can be scaled and deployed independently
-- Handles different DICOM operations (C-STORE vs C-FIND)
+```
+SCHEDULED ──(first C-STORE)──▶ IN PROGRESS ──(MPPS N-SET)──▶ COMPLETED
+                                     │
+                                     └────────(MPPS N-SET)──▶ DISCONTINUED
+```

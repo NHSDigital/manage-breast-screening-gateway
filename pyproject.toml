@@ -16,6 +16,7 @@ dependencies = [
   "requests>=2.32.0",
   "python-dotenv>=1.2.1",
   "azure-monitor-opentelemetry>=1.8.6",
+  "croniter>=6.2.2",
 ]
 
 [dependency-groups]

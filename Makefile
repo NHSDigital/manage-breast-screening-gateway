@@ -69,7 +69,7 @@ _install-uv:
 #  Database backup
 # ---------------------------------------------------------------------------
 backup-db: # Backup sqlite databases @Operations
-	PYTHONPATH=scripts/python uv run python -m backup_database
+	PYTHONPATH=src uv run python -m backup_main
 
 # ---------------------------------------------------------------------------
 # Testing

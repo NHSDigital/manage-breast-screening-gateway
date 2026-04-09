@@ -3,4 +3,4 @@
 :: Adjust the Python path below if the deployment creates the venv elsewhere.
 @echo off
 set rootdir=%~1
-"%rootdir%\.venv\Scripts\python.exe" -m reset_main
+"%rootdir%\.venv\Scripts\python.exe" -m mwl_reset

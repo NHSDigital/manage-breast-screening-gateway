@@ -6,11 +6,12 @@ import sys
 
 from dotenv import load_dotenv
 
-from services.storage import MWLStorage
+from db_backup import backup_database
+from mwl_clear import clear_worklist
 from telemetry import configure_telemetry
 
 load_dotenv()
-configure_telemetry(service_name="reset")
+configure_telemetry(service_name="mwl_reset")
 
 
 def main():
@@ -30,16 +31,14 @@ def main():
     mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
     backup_path = os.getenv("BACKUP_PATH", "/var/lib/pacs/backups")
 
-    mwl_storage = MWLStorage(mwl_db_path)
-
     try:
-        path = mwl_storage.backup(backup_path)
+        path = backup_database(mwl_db_path, backup_path)
         logger.info(f"Backup complete: {path}")
     except Exception as e:
         logger.error(f"MWL backup failed: {e}", exc_info=True)
 
     try:
-        count = mwl_storage.clear()
+        count = clear_worklist(mwl_db_path)
         logger.info(f"MWL reset complete: {count} items deleted")
     except Exception as e:
         logger.error(f"MWL clear failed: {e}", exc_info=True)

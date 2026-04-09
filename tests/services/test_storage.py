@@ -333,33 +333,3 @@ class TestWorkingStorage:
         mwl_storage.update_status(item.accession_number, "DISCONTINUED")
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "DISCONTINUED"
-
-    def test_clear_deletes_all_items(self, mwl_storage, result):
-        self._insert_item(mwl_storage, result)
-
-        mwl_storage.clear()
-
-        assert mwl_storage.find_worklist_items() == []
-
-    def test_clear_returns_row_count(self, mwl_storage, result):
-        self._insert_item(mwl_storage, result)
-
-        assert mwl_storage.clear() == 1
-
-    def test_clear_returns_zero_when_empty(self, mwl_storage):
-        assert mwl_storage.clear() == 0
-
-    def test_backup_creates_file(self, mwl_storage, result, tmp_path):
-        self._insert_item(mwl_storage, result)
-        backup_dir = str(tmp_path / "backups")
-
-        backup_path = mwl_storage.backup(backup_dir)
-
-        assert Path(backup_path).exists()
-
-    def test_backup_returns_timestamped_path(self, mwl_storage, tmp_path):
-        backup_dir = str(tmp_path / "backups")
-
-        backup_path = mwl_storage.backup(backup_dir)
-
-        assert backup_path.endswith(".db.backup")

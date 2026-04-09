@@ -3,7 +3,6 @@ import logging
 import os
 import sqlite3
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -61,24 +60,6 @@ class Storage:
                 logger.info(f"Initializing database schema from {self.schema_path}")
                 conn.executescript(Path(self.schema_path).read_text())
                 conn.commit()
-
-    def backup(self, backup_dir: str) -> str:
-        """
-        Backup the database to a timestamped file in backup_dir.
-
-        Returns the path of the backup file.
-        """
-        os.makedirs(backup_dir, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        db_filename = os.path.basename(self.db_path)
-        backup_path = os.path.join(backup_dir, f"{timestamp}.{db_filename}.backup")
-
-        with self._get_connection() as conn:
-            with sqlite3.connect(backup_path) as backup_conn:
-                conn.backup(backup_conn)
-
-        logger.info(f"Database backed up to {backup_path}")
-        return backup_path
 
 
 class PACSStorage(Storage):
@@ -614,15 +595,3 @@ class MWLStorage(Storage):
             )
             row = cursor.fetchone()
             return WorklistItem(**row) if row else None
-
-    def clear(self) -> int:
-        """
-        Delete all worklist items.
-
-        Returns the number of rows deleted.
-        """
-        with self._get_connection() as conn:
-            cursor = conn.execute("DELETE FROM worklist_items")
-            conn.commit()
-            logger.info(f"MWL database cleared: {cursor.rowcount} items deleted")
-            return cursor.rowcount

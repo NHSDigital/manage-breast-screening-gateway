@@ -6,7 +6,7 @@ import sys
 
 from dotenv import load_dotenv
 
-from services.storage import MWLStorage, PACSStorage
+from db_backup import backup_database
 from telemetry import configure_telemetry
 
 load_dotenv()
@@ -18,10 +18,9 @@ def main():
     Main entry point for database backup.
 
     Environment variables:
-    PACS_DB_PATH:       Path to the PACS SQLite database
-    PACS_STORAGE_PATH:  Path to PACS file storage (default: /var/lib/pacs/storage)
-    MWL_DB_PATH:        Path to the MWL SQLite database
-    BACKUP_PATH:        Directory for backups (default: ./backups)
+    PACS_DB_PATH:  Path to the PACS SQLite database
+    MWL_DB_PATH:   Path to the MWL SQLite database
+    BACKUP_PATH:   Directory for backups (default: ./backups)
     """
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -29,7 +28,6 @@ def main():
     )
 
     pacs_db_path = os.getenv("PACS_DB_PATH")
-    pacs_storage_path = os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
     mwl_db_path = os.getenv("MWL_DB_PATH")
     backup_path = os.getenv("BACKUP_PATH", "./backups")
 
@@ -37,7 +35,7 @@ def main():
 
     if pacs_db_path:
         try:
-            PACSStorage(pacs_db_path, pacs_storage_path).backup(backup_path)
+            backup_database(pacs_db_path, backup_path)
         except Exception as e:
             logging.error(f"PACS backup failed: {e}")
             success = False
@@ -46,7 +44,7 @@ def main():
 
     if mwl_db_path:
         try:
-            MWLStorage(mwl_db_path).backup(backup_path)
+            backup_database(mwl_db_path, backup_path)
         except Exception as e:
             logging.error(f"MWL backup failed: {e}")
             success = False

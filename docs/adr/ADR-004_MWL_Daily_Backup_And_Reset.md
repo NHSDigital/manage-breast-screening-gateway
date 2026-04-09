@@ -12,22 +12,22 @@ The worklist is inherently ephemeral: appointments are scheduled per clinic, and
 
 The gateway MWL is not intended to be a canonical or long-term data store. Retaining worklist items indefinitely would cause the database to grow to unwieldy proportions and would give a false impression of data durability.
 
+The gateway runs as a Python process on a Windows VM managed by Azure Arc. Scheduling therefore belongs in the infrastructure layer (Windows Task Scheduler, configurable via Arc).
+
 ## Decision
 
-Reset the MWL database on a configurable schedule (default: daily at 02:00 UTC) by:
+Reset the MWL database on a schedule managed by Windows Task Scheduler by:
 
 1. Backing up the database before clearing it, using SQLite's native `conn.backup()` API
 2. Deleting all rows from `worklist_items`
 
-This runs as a dedicated `reset` container (`reset_main.py` / `MWLResetScheduler`).
-
-The schedule is configured via a cron expression (`MWL_RESET_SCHEDULE`), which allows any cadence (daily, weekly, etc) to be expressed in a single environment variable without code changes.
+`reset_main.py` is performs these two steps and exits. Windows Task Scheduler (registered via `scripts/bat/schtasks.bat`) invokes it on whatever schedule is configured in infrastructure.
 
 **Alternatives considered:**
 
-- **Reset on startup only** — would not handle long-running deployments where the container is not restarted between clinics
+- **In-process Python scheduler** (`croniter` sleep loop) — puts scheduling logic in application code; duplicates a facility the OS already provides; requires a long-running process that serves no other purpose
+- **Reset on startup only** — would not handle long-running deployments where the process is not restarted between clinics
 - **No reset** — leads to unbounded growth and stale data visible to the modality
-- **Interval-based env vars** (`RESET_INTERVAL=daily`, `RESET_TIME=02:00`, `RESET_DAY=monday`) — more verbose config, requires code changes to support new intervals; cron expression is more expressive in a single value
 
 ## Consequences
 
@@ -36,11 +36,11 @@ The schedule is configured via a cron expression (`MWL_RESET_SCHEDULE`), which a
 - Worklist is clean at the start of each clinic with no manual intervention
 - Database size remains bounded
 - Backup before clear means data is recoverable if needed
-- Schedule is fully configurable via env var without code changes
-- Follows the existing one-process-per-container pattern
+- Schedule is owned by infrastructure (Arc / Task Scheduler), not application code — no code change needed to adjust timing
+- `reset_main.py` is a simple, testable, one-shot script with no scheduler machinery
 
 ### Negative Consequences
 
-- Adds a fifth service to the deployment
+- Schedule configuration lives outside the codebase; requires infrastructure access to change
 - Any worklist items written very close to the reset time could be cleared before the modality queries them. This is mitigated by choosing a reset time well outside clinic hours
 - Backups accumulate on disk and will need periodic pruning; this is not currently automated

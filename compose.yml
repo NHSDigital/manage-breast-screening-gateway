@@ -93,21 +93,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  reset:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: mwl-reset
-    command: ["uv", "run", "python", "-m", "reset_main"]
-    volumes:
-      - pacs-db:/var/lib/pacs
-    environment:
-      - MWL_DB_PATH=/var/lib/pacs/worklist.db
-      - BACKUP_PATH=/var/lib/pacs/backups
-      - MWL_RESET_SCHEDULE=0 2 * * *
-      - LOG_LEVEL=INFO
-    restart: unless-stopped
-
 volumes:
   pacs-storage:
     driver: local

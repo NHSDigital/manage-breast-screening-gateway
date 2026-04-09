@@ -9,8 +9,8 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 - Provides scheduled procedure information via [DICOM C-FIND](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_C) protocol
 - Stores worklist items in SQLite database
 - Supports filtering by modality, date, and patient ID
-- Resets the worklist on a schedule, backing up the database before clearing it
-- Runs in a separate container alongside the [PACS Server](../pacs/README.md)
+- Resets the worklist daily via a scheduled `reset_main.py` script invoked by Windows Task Scheduler
+- Runs as a Python process on a Windows VM managed by Azure Arc
 
 ## Architecture
 
@@ -26,12 +26,12 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 │  │   Handler    │      │   Layer      │      │ Database │   │                  │
 │  └──────────────┘      └──────────────┘      └──────────┘   │                  │
 │         │                      ▲                            │                  │
-│         │                      │                            │        backup + clear (cron)
-│         └──────────────────────┘                            │                  │
+│         │                      │                            │        backup + clear
+│         └──────────────────────┘                            │      (Task Scheduler)
 │         Query & Response                                    │                  │
 └─────────────────────────────────────────────────────────────┘                  │
-           ▲                          ▲                                   ┌──────┴─────────┐
-           │                          │                                   │ Reset Scheduler│
+           ▲                         ▲                                    ┌───────┴────────┐
+           │                         │                                    │  reset_main.py │
     ┌──────┴──────┐           ┌───────┴────────┐                          └────────────────┘
     │  Modality   │           │ Relay Listener │
     │  (SCU)      │           │ (Populates DB) │
@@ -45,27 +45,25 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 3. **Filtering**: MWL server filters by modality, date, patient ID, status
 4. **Response**: Server returns matching worklist items to modality
 5. **Status Updates**: C-STORE receipt transitions items from `SCHEDULED` to `IN PROGRESS`; [MPPS](https://dicom.nema.org/medical/dicom/current/output/html/part04.html#chapter_F) transitions items to `COMPLETED` or `DISCONTINUED`
-6. **Reset**: Reset scheduler backs up and clears the database on a configurable schedule
+6. **Daily Reset**: Windows Task Scheduler invokes `reset_main.py`, which backs up and clears the database
 
 ## Running the MWL Server
 
-The MWL server runs in a separate container:
+The gateway runs as a Python process on a Windows VM:
 
 ```bash
-# Start all services
-docker compose up -d
+# Start the MWL server
+uv run python -m mwl_main
 
-# Start only the MWL server and reset scheduler
-docker compose up -d mwl reset
+# Run a one-shot backup and reset (normally invoked by Task Scheduler)
+uv run python -m reset_main
+```
 
-# View MWL server logs
+For local development, Docker Compose is available:
+
+```bash
+docker compose up -d mwl
 docker compose logs -f mwl
-
-# View reset scheduler logs
-docker compose logs -f reset
-
-# Stop all services
-docker compose down
 ```
 
 ## Configuration
@@ -79,22 +77,25 @@ docker compose down
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
 | `LOG_LEVEL` | `INFO` | Logging level |
 
-### Reset scheduler
+### Reset script (`reset_main.py`)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
 | `BACKUP_PATH` | `/var/lib/pacs/backups` | Directory for database backups |
-| `MWL_RESET_SCHEDULE` | `0 2 * * *` | Cron expression for reset schedule (UTC) |
 | `LOG_LEVEL` | `INFO` | Logging level |
 
-The `MWL_RESET_SCHEDULE` value is a standard cron expression. Examples:
+The reset schedule is configured in Windows Task Scheduler (registered via `scripts/bat/schtasks.bat`), not in the application.
 
-| Expression | Schedule |
-|------------|----------|
-| `0 2 * * *` | Daily at 02:00 UTC (default) |
-| `0 2 * * 1` | Every Monday at 02:00 UTC |
-| `0 2 1 * *` | First day of each month at 02:00 UTC |
+## Scheduling the daily reset (Windows)
+
+Register the scheduled task (run once, on the gateway VM):
+
+```bat
+scripts\bat\schtasks.bat
+```
+
+This creates a Task Scheduler task that runs `reset_main.py` daily at midnight. The schedule can be adjusted in Task Scheduler or via Azure Arc without any code change.
 
 ## Example query
 
@@ -131,14 +132,14 @@ assoc.release()
 Check worklist items:
 
 ```bash
-docker compose exec gateway sqlite3 /var/lib/pacs/worklist.db \
+sqlite3 /var/lib/pacs/worklist.db \
   "SELECT accession_number, patient_name, scheduled_date, status FROM worklist_items;"
 ```
 
 Add test worklist item:
 
 ```bash
-docker compose exec gateway sqlite3 /var/lib/pacs/worklist.db <<EOF
+sqlite3 /var/lib/pacs/worklist.db <<EOF
 INSERT INTO worklist_items (
     accession_number, patient_id, patient_name, patient_birth_date,
     scheduled_date, scheduled_time, modality, study_description
@@ -158,29 +159,12 @@ uv run pytest tests/integration/test_c_find_returns_worklist_items.py -v
 uv run pytest tests/integration/test_request_cfind_on_worklist.py -v
 ```
 
-## Multi-container architecture
-
-The MWL-related services run in separate containers. See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) and [ADR-004: Daily backup and reset of the MWL database](../adr/ADR-004_MWL_Daily_Backup_And_Reset.md) for the architectural decisions.
-
-**Docker Compose services:**
-
-```yaml
-services:
-  mwl:
-    container_name: mwl-server
-    command: ["uv", "run", "python", "-m", "mwl_main"]
-    ports:
-      - "4243:4243"
-
-  reset:
-    container_name: mwl-reset
-    command: ["uv", "run", "python", "-m", "reset_main"]
-```
-
-**Worklist item status transitions:**
+## Worklist item status transitions
 
 ```
 SCHEDULED ──(first C-STORE)──▶ IN PROGRESS ──(MPPS N-SET)──▶ COMPLETED
                                      │
                                      └────────(MPPS N-SET)──▶ DISCONTINUED
 ```
+
+See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) and [ADR-004: Daily backup and reset of the MWL database](../adr/ADR-004_MWL_Daily_Backup_And_Reset.md) for architectural decisions.

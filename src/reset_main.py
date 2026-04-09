@@ -1,11 +1,11 @@
-"""Entry point for MWL daily backup and reset scheduler."""
+"""MWL backup and reset script. Intended to be invoked by Windows Task Scheduler (or equivalent)."""
 
 import logging
 import os
+import sys
 
 from dotenv import load_dotenv
 
-from services.mwl.reset import MWLResetScheduler
 from services.storage import MWLStorage
 from telemetry import configure_telemetry
 
@@ -15,29 +15,35 @@ configure_telemetry(service_name="reset")
 
 def main():
     """
-    Main entry point for MWL reset scheduler.
+    Backs up and clears the MWL database. Exits with code 1 if the clear fails.
 
     Environment variables:
-    MWL_DB_PATH:        Path to the MWL SQLite database (default: /var/lib/pacs/worklist.db)
-    BACKUP_PATH:        Directory for database backups (default: /var/lib/pacs/backups)
-    MWL_RESET_SCHEDULE: Cron expression for reset schedule in UTC (default: 0 2 * * * — daily at 02:00)
+    MWL_DB_PATH:  Path to the MWL SQLite database (default: /var/lib/pacs/worklist.db)
+    BACKUP_PATH:  Directory for database backups (default: /var/lib/pacs/backups)
     """
     logging.basicConfig(
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
     )
+    logger = logging.getLogger(__name__)
 
     mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
     backup_path = os.getenv("BACKUP_PATH", "/var/lib/pacs/backups")
-    reset_schedule = os.getenv("MWL_RESET_SCHEDULE", "0 2 * * *")
 
     mwl_storage = MWLStorage(mwl_db_path)
-    scheduler = MWLResetScheduler(mwl_storage, backup_path, reset_schedule)
 
     try:
-        scheduler.run()
-    except KeyboardInterrupt:
-        logging.info("Received shutdown signal")
+        path = mwl_storage.backup(backup_path)
+        logger.info(f"Backup complete: {path}")
+    except Exception as e:
+        logger.error(f"MWL backup failed: {e}", exc_info=True)
+
+    try:
+        count = mwl_storage.clear()
+        logger.info(f"MWL reset complete: {count} items deleted")
+    except Exception as e:
+        logger.error(f"MWL clear failed: {e}", exc_info=True)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

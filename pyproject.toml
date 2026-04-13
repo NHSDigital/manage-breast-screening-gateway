@@ -8,7 +8,7 @@ license = { text = "MIT" }
 dependencies = [
   "pydicom>=3.0.1",
   "pynetdicom>=3.0.4",
-  "numpy>=2.4.0,<3",
+  "numpy>=2.4.4,<3",
   "pylibjpeg>=2.0.0",
   "pylibjpeg-openjpeg>=2.5.0",
   "pillow>=11.0.0",

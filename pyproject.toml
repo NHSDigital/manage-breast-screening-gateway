@@ -14,7 +14,7 @@ dependencies = [
   "pillow>=11.0.0",
   "websockets==16.0",
   "requests>=2.32.0",
-  "python-dotenv>=1.2.1",
+  "python-dotenv>=1.2.2",
   "azure-monitor-opentelemetry>=1.8.6",
 ]
 

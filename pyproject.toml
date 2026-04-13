@@ -6,7 +6,7 @@ requires-python = ">=3.14,<4.0.0"
 readme = "README.md"
 license = { text = "MIT" }
 dependencies = [
-  "pydicom>=3.0.1",
+  "pydicom>=3.0.2",
   "pynetdicom>=3.0.4",
   "numpy>=2.4.0,<3",
   "pylibjpeg>=2.0.0",

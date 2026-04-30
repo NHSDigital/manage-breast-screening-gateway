@@ -208,7 +208,7 @@ class TestVerifyCredentials:
         verify_credentials()
         mock_azure_credential.get_token.assert_called_with("https://relay.azure.com/.default")
 
-    def test_raises_on_credential_failure(self, monkeypatch):
+    def test_raises_client_authentication_error_on_credential_failure(self, monkeypatch):
         monkeypatch.delenv("AZURE_RELAY_SHARED_ACCESS_KEY", raising=False)
         with patch("relay_listener.DefaultAzureCredential") as mock:
             mock.return_value.get_token.side_effect = ClientAuthenticationError("no credentials")

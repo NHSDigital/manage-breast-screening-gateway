@@ -128,6 +128,8 @@ class RelayURI:
     def auth_headers(self) -> dict:
         if self._use_sas():
             return {}
+        if self._credential is None:
+            raise RuntimeError("No credential available — _credential should never be None when not using SAS")
         token = self._credential.get_token(AZURE_RELAY_SCOPE).token
         return {"Authorization": f"Bearer {token}"}
 
@@ -156,6 +158,8 @@ def verify_credentials():
     if uri._use_sas():
         logger.info("Using SAS token authentication for Azure Relay.")
     else:
+        if uri._credential is None:
+            raise RuntimeError("No credential available — _credential should never be None when not using SAS")
         uri._credential.get_token(AZURE_RELAY_SCOPE)
         credential_type = "ManagedIdentityCredential" if uri._env.production else "DefaultAzureCredential"
         logger.info(f"Azure Relay credentials verified ({credential_type}).")

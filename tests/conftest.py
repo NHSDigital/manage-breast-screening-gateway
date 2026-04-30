@@ -19,7 +19,10 @@ sys.path.append(f"{Path(__file__).parent.parent}/src")
 def mock_azure_credential():
     mock = MagicMock()
     mock.get_token.return_value.token = "test-token"
-    with patch("relay_listener.DefaultAzureCredential", return_value=mock):
+    with (
+        patch("relay_listener.DefaultAzureCredential", return_value=mock),
+        patch("relay_listener.ManagedIdentityCredential", return_value=mock),
+    ):
         yield mock
 
 

@@ -5,15 +5,21 @@ Supports creation of Modality Worklist Items.
 """
 
 import asyncio
+import base64
+import hashlib
+import hmac
 import json
 import logging
 import os
+import time
+import urllib.parse
 
-from azure.identity import DefaultAzureCredential
+from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from dotenv import load_dotenv
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError
 
+from environment import Environment
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.storage import MWLStorage
 from telemetry import configure_telemetry
@@ -24,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 AZURE_RELAY_SCOPE = "https://relay.azure.com/.default"
+SAS_TOKEN_EXPIRY_SECONDS = 3600
 
 
 class RelayListener:
@@ -35,6 +42,10 @@ class RelayListener:
     AZURE_RELAY_NAMESPACE: Azure Relay namespace (default: relay-test.servicebus.windows.net)
     AZURE_RELAY_HYBRID_CONNECTION: Azure Relay hybrid connection name (default: relay-test-hc)
     MWL_DB_PATH: Path to the MWL SQLite database file (default: /var/lib/pacs/worklist.db)
+
+    Non-production only (SAS token fallback):
+    AZURE_RELAY_KEY_NAME: Shared access policy name (default: RootManageSharedAccessKey)
+    AZURE_RELAY_SHARED_ACCESS_KEY: Shared access key value
     """
 
     def __init__(self, storage: MWLStorage):
@@ -94,20 +105,60 @@ class RelayURI:
     def __init__(self):
         self.relay_namespace = os.getenv("AZURE_RELAY_NAMESPACE", "relay-test.servicebus.windows.net")
         self.hybrid_connection_name = os.getenv("AZURE_RELAY_HYBRID_CONNECTION", "relay-test-hc")
-        self._credential = DefaultAzureCredential()
+        self.key_name = os.getenv("AZURE_RELAY_KEY_NAME", "RootManageSharedAccessKey")
+        self.shared_access_key = os.getenv("AZURE_RELAY_SHARED_ACCESS_KEY", "")
+        self._env = Environment()
+        self._credential = None if self._use_sas() else self._build_credential()
+
+    def _use_sas(self) -> bool:
+        return not self._env.production and bool(self.shared_access_key)
+
+    def _build_credential(self):
+        if self._env.production:
+            return ManagedIdentityCredential()
+        return DefaultAzureCredential()
 
     def connection_url(self) -> str:
-        return f"wss://{self.relay_namespace}/$hc/{self.hybrid_connection_name}?sb-hc-action=listen"
+        base = f"wss://{self.relay_namespace}/$hc/{self.hybrid_connection_name}?sb-hc-action=listen"
+        if self._use_sas():
+            token = self._create_sas_token()
+            return f"{base}&sb-hc-token={urllib.parse.quote_plus(token)}"
+        return base
 
     def auth_headers(self) -> dict:
+        if self._use_sas():
+            return {}
         token = self._credential.get_token(AZURE_RELAY_SCOPE).token
         return {"Authorization": f"Bearer {token}"}
 
+    def _create_sas_token(self, expiry_seconds: int = SAS_TOKEN_EXPIRY_SECONDS) -> str:
+        uri = f"http://{self.relay_namespace}/{self.hybrid_connection_name}"
+        encoded_uri = urllib.parse.quote_plus(uri)
+        expiry = str(int(time.time() + expiry_seconds))
+        signature = base64.b64encode(
+            hmac.new(self.shared_access_key.encode(), f"{encoded_uri}\n{expiry}".encode(), hashlib.sha256).digest()
+        )
+        return (
+            f"SharedAccessSignature sr={encoded_uri}"
+            f"&sig={urllib.parse.quote_plus(signature)}"
+            f"&se={expiry}&skn={self.key_name}"
+        )
+
 
 def verify_credentials():
-    """Verify managed identity credentials are available. Raises ClientAuthenticationError if not."""
-    DefaultAzureCredential().get_token(AZURE_RELAY_SCOPE)
-    logger.info("Managed identity credentials verified.")
+    """
+    Verify relay credentials are available at startup.
+
+    In production, raises ClientAuthenticationError if managed identity is not configured.
+    In non-production with a SAS key present, logs the auth method and returns immediately.
+    """
+    uri = RelayURI()
+    if uri._use_sas():
+        logger.info("Using SAS token authentication for Azure Relay.")
+    else:
+        uri._credential.get_token(AZURE_RELAY_SCOPE)
+        credential_type = "ManagedIdentityCredential" if uri._env.production else "DefaultAzureCredential"
+        logger.info(f"Azure Relay credentials verified ({credential_type}).")
 
 
 async def main():

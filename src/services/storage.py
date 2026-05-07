@@ -291,7 +291,7 @@ class InvalidStatusTransitionError(Exception):
     pass
 
 
-class DuplicateWorklistItemError(Exception):
+class WorklistItemExistsError(Exception):
     """Raised when a worklist item with the same accession number already exists."""
 
     pass
@@ -346,7 +346,7 @@ class MWLStorage(Storage):
                 )
                 conn.commit()
         except sqlite3.IntegrityError:
-            raise DuplicateWorklistItemError(f"Worklist item already exists: {worklist_item.accession_number}")
+            raise WorklistItemExistsError(f"Worklist item already exists: {worklist_item.accession_number}")
 
         return worklist_item.accession_number
 

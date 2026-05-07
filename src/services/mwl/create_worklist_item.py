@@ -1,7 +1,7 @@
 import logging
 
 from models import WorklistItem
-from services.storage import DuplicateWorklistItemError, MWLStorage
+from services.storage import MWLStorage, WorklistItemExistsError
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +19,14 @@ class CreateWorklistItem:
             params = payload.get("parameters", {})
 
             item = params.get("worklist_item", {})
+            accession_number = item.get("accession_number")
             participant = item.get("participant", {})
             scheduled = item.get("scheduled", {})
             procedure = item.get("procedure", {})
 
             self.storage.store_worklist_item(
                 WorklistItem(
-                    accession_number=item.get("accession_number"),
+                    accession_number=accession_number,
                     patient_id=participant.get("nhs_number"),
                     patient_name=participant.get("name"),
                     patient_birth_date=participant.get("birth_date"),
@@ -37,13 +38,11 @@ class CreateWorklistItem:
                     source_message_id=action_id,
                 )
             )
-            logger.info(f"Created worklist item: {item.get('accession_number')}")
+            logger.info(f"Created worklist item: {accession_number}")
             return {"status": "created", "action_id": action_id}
-        except DuplicateWorklistItemError:
-            logger.warning(
-                f"Duplicate worklist item ignored: accession_number={item.get('accession_number')!r}, action_id={action_id!r}"
-            )
-            return {"status": "duplicate", "action_id": action_id}
+        except WorklistItemExistsError:
+            logger.info(f"Worklist item exists: accession_number={accession_number}, action_id={action_id!r}")
+            return {"status": "exists", "action_id": action_id}
         except Exception as e:
             logger.error(f"Failed to create worklist item: {e}")
             return {"status": "error", "action_id": action_id, "error": str(e)}

@@ -72,7 +72,7 @@ class TestRelayListener:
             )
         )
 
-    def test_process_action(self, storage_instance, listener_payload):
+    def test_process_create_item_action(self, storage_instance, listener_payload):
         subject = RelayListener(storage_instance)
 
         response = subject.process_action(listener_payload)
@@ -92,6 +92,33 @@ class TestRelayListener:
                 source_message_id="action-12345",
             )
         )
+
+    def test_process_update_item_status_action(self, storage_instance, listener_payload):
+        subject = RelayListener(storage_instance)
+
+        subject.process_action(listener_payload)
+
+        update_payload = {
+            "action_id": "action-12345",
+            "action_type": "worklist.update_item_status",
+            "parameters": {"worklist_item": {"accession_number": "ACC999999", "status": "IN PROGRESS"}},
+        }
+
+        response = subject.process_action(update_payload)
+        assert response == {"accession_number": "ACC999999", "status": "IN PROGRESS"}
+
+        storage_instance.update_status.assert_called_once_with("ACC999999", "IN PROGRESS")
+
+    def test_process_action_missing_keys(self, storage_instance, listener_payload):
+        subject = RelayListener(storage_instance)
+
+        del listener_payload["parameters"]["worklist_item"]["accession_number"]
+
+        response = subject.process_action(listener_payload)
+        assert response["status"] == "error"
+        assert "Missing key" in response["message"]
+
+        storage_instance.store_worklist_item.assert_not_called()
 
     def test_process_action_invalid_type(self, storage_instance, listener_payload):
         subject = RelayListener(storage_instance)

@@ -29,7 +29,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
-AZURE_RELAY_SCOPE = "https://relay.azure.com/.default"
+AZURE_RELAY_SCOPE = "https://relay.azure.net/.default"
 SAS_TOKEN_EXPIRY_SECONDS = 3600
 
 
@@ -101,7 +101,6 @@ class RelayListener:
         return connect(
             self.relay_uri.connection_url(),
             compression=None,
-            additional_headers=self.relay_uri.auth_headers(),
         )
 
 
@@ -126,18 +125,16 @@ class RelayURI:
         base = f"wss://{self.relay_namespace}/$hc/{self.hybrid_connection_name}?sb-hc-action=listen"
         if self._use_sas():
             token = self._create_sas_token()
-            return f"{base}&sb-hc-token={urllib.parse.quote_plus(token)}"
-        return base
+        else:
+            token = self._create_bearer_token()
+        return f"{base}&sb-hc-token={urllib.parse.quote_plus(token)}"
 
-    def auth_headers(self) -> dict:
-        if self._use_sas():
-            return {}
+    def _create_bearer_token(self) -> str:
         if self._credential is None:
             raise CredentialNotAvailableError(
                 "No credential available — _credential should never be None when not using SAS"
             )
-        token = self._credential.get_token(AZURE_RELAY_SCOPE).token
-        return {"Authorization": f"Bearer {token}"}
+        return f"Bearer {self._credential.get_token(AZURE_RELAY_SCOPE).token}"
 
     def _create_sas_token(self, expiry_seconds: int = SAS_TOKEN_EXPIRY_SECONDS) -> str:
         uri = f"http://{self.relay_namespace}/{self.hybrid_connection_name}"

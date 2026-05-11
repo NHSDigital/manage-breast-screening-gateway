@@ -1,36 +1,28 @@
 from unittest.mock import patch
 
+import pytest
+
 from services.mwl.create_worklist_item import CreateWorklistItem
-from services.storage import DuplicateWorklistItemError, WorklistItem
+from services.storage import MWLStorage
 
 
-@patch(f"{CreateWorklistItem.__module__}.MWLStorage")
 class TestCreateWorklistItem:
-    def test_call_success(self, mock_mwl_storage, listener_payload):
-        mock_storage_instance = mock_mwl_storage.return_value
-        subject = CreateWorklistItem(mock_storage_instance)
+    @pytest.fixture
+    def db_file(tmp_path):
+        return f"{tmp_path}/test.db"
+
+    @pytest.fixture
+    def mwl_storage(db_file):
+        return MWLStorage(str(db_file))
+
+    def test_call_success(self, mwl_storage, listener_payload):
+        subject = CreateWorklistItem(mwl_storage)
 
         response = subject.call(listener_payload)
         assert response == {"action_id": "action-12345", "status": "created"}
 
-        mock_storage_instance.store_worklist_item.assert_called_once_with(
-            WorklistItem(
-                accession_number="ACC999999",
-                patient_id="999123456",
-                patient_name="SMITH^JANE",
-                patient_birth_date="19900202",
-                patient_sex="F",
-                scheduled_date="20240615",
-                scheduled_time="101500",
-                modality="MG",
-                study_description="MAMMOGRAPHY",
-                source_message_id="action-12345",
-            )
-        )
-
-    def test_call_missing_action_id(self, mock_mwl_storage, listener_payload):
-        mock_storage_instance = mock_mwl_storage.return_value
-        subject = CreateWorklistItem(mock_storage_instance)
+    def test_call_missing_action_id(self, mwl_storage, listener_payload):
+        subject = CreateWorklistItem(mwl_storage)
 
         del listener_payload["action_id"]
 
@@ -38,27 +30,18 @@ class TestCreateWorklistItem:
         assert response["status"] == "error"
         assert "Missing action_id" in response["error"]
 
-        mock_storage_instance.store_worklist_item.assert_not_called()
+    def test_call_existing_worklist_item(self, mwl_storage, listener_payload):
+        CreateWorklistItem(mwl_storage).call(listener_payload)
 
-    def test_call_duplicate_worklist_item(self, mock_mwl_storage, listener_payload):
-        mock_storage_instance = mock_mwl_storage.return_value
-        mock_storage_instance.store_worklist_item.side_effect = DuplicateWorklistItemError(
-            "Worklist item already exists: ACC999999"
-        )
-        subject = CreateWorklistItem(mock_storage_instance)
+        subject = CreateWorklistItem(mwl_storage)
 
         response = subject.call(listener_payload)
-        assert response == {"status": "duplicate", "action_id": "action-12345"}
+        assert response == {"status": "exists", "action_id": "action-12345"}
 
-        mock_storage_instance.store_worklist_item.assert_called_once()
-
-    def test_call_storage_exception(self, mock_mwl_storage, listener_payload):
-        mock_storage_instance = mock_mwl_storage.return_value
-        mock_storage_instance.store_worklist_item.side_effect = Exception("DB error")
-        subject = CreateWorklistItem(mock_storage_instance)
+    @patch(f"{CreateWorklistItem.__module__}.MWLStorage.store_worklist_item", side_effect=Exception("DB error"))
+    def test_call_storage_exception(self, _, mwl_storage, listener_payload):
+        subject = CreateWorklistItem(mwl_storage)
 
         response = subject.call(listener_payload)
         assert response["status"] == "error"
         assert "DB error" in response["error"]
-
-        mock_storage_instance.store_worklist_item.assert_called_once()

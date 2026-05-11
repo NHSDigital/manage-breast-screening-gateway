@@ -6,7 +6,13 @@ import pytest
 from pydicom.uid import generate_uid
 
 from models import WorklistItem
-from services.storage import InvalidStatusTransitionError, MWLStorage, PACSStorage, WorklistItemNotFoundError
+from services.storage import (
+    InvalidStatusTransitionError,
+    MWLStorage,
+    PACSStorage,
+    WorklistItemExistsError,
+    WorklistItemNotFoundError,
+)
 
 
 @pytest.fixture
@@ -135,6 +141,13 @@ class TestWorkingStorage:
 
         assert row is not None
         assert row["patient_id"] == item.patient_id
+
+    def test_store_worklist_item_already_exists(self, mwl_storage, result):
+        item = WorklistItem(**result)
+        mwl_storage.store_worklist_item(item)
+
+        with pytest.raises(WorklistItemExistsError):
+            mwl_storage.store_worklist_item(item)
 
     def test_find_worklist_items(self, mwl_storage, result):
         item = self._insert_item(mwl_storage, result)

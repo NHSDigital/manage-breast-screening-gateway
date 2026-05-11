@@ -119,14 +119,11 @@ class TestRelayURIWithDefaultAzureCredential:
         monkeypatch.delenv("AZURE_RELAY_SHARED_ACCESS_KEY", raising=False)
         yield
 
-    def test_connection_url(self):
+    def test_connection_url(self, mock_azure_credential):
         subject = RelayURI()
-        assert subject.connection_url() == "wss://test-namespace/$hc/test-connection?sb-hc-action=listen"
-
-    def test_auth_headers(self, mock_azure_credential):
-        subject = RelayURI()
-        assert subject.auth_headers() == {"Authorization": "Bearer test-token"}
-        mock_azure_credential.get_token.assert_called_once_with("https://relay.azure.com/.default")
+        url = subject.connection_url()
+        assert url.startswith("wss://test-namespace/$hc/test-connection?sb-hc-action=listen")
+        assert "sb-hc-token=Bearer+test-token" in url
 
     def test_uses_default_azure_credential(self, mock_azure_credential):
         with patch("relay_listener.DefaultAzureCredential") as mock_dac:
@@ -152,10 +149,6 @@ class TestRelayURIWithSasToken:
         assert url.startswith("wss://test-namespace/$hc/test-connection?sb-hc-action=listen")
         assert "sb-hc-token=SharedAccessSignature" in url
 
-    def test_auth_headers_are_empty(self):
-        subject = RelayURI()
-        assert subject.auth_headers() == {}
-
     def test_no_credential_is_created(self):
         with patch("relay_listener.DefaultAzureCredential") as mock_dac:
             with patch("relay_listener.ManagedIdentityCredential") as mock_mic:
@@ -180,15 +173,11 @@ class TestRelayURIInProduction:
             subject = RelayURI()
             assert subject._credential is mock_mic.return_value
 
-    def test_sas_key_is_ignored(self, monkeypatch):
+    def test_sas_key_is_ignored(self, mock_azure_credential, monkeypatch):
         monkeypatch.setenv("AZURE_RELAY_SHARED_ACCESS_KEY", "some-key")
         subject = RelayURI()
         assert not subject._use_sas()
-        assert "sb-hc-token" not in subject.connection_url()
-
-    def test_auth_headers_use_bearer_token(self, mock_azure_credential):
-        subject = RelayURI()
-        assert subject.auth_headers() == {"Authorization": "Bearer test-token"}
+        assert "sb-hc-token=Bearer+test-token" in subject.connection_url()
 
 
 class TestVerifyCredentials:
@@ -201,12 +190,12 @@ class TestVerifyCredentials:
     def test_verifies_default_azure_credential_when_no_key(self, mock_azure_credential, monkeypatch):
         monkeypatch.delenv("AZURE_RELAY_SHARED_ACCESS_KEY", raising=False)
         verify_credentials()
-        mock_azure_credential.get_token.assert_called_with("https://relay.azure.com/.default")
+        mock_azure_credential.get_token.assert_called_with("https://relay.azure.net/.default")
 
     def test_verifies_managed_identity_in_production(self, mock_azure_credential, monkeypatch):
         monkeypatch.setenv("ENVIRONMENT", "prod")
         verify_credentials()
-        mock_azure_credential.get_token.assert_called_with("https://relay.azure.com/.default")
+        mock_azure_credential.get_token.assert_called_with("https://relay.azure.net/.default")
 
     def test_raises_client_authentication_error_on_credential_failure(self, monkeypatch):
         monkeypatch.delenv("AZURE_RELAY_SHARED_ACCESS_KEY", raising=False)

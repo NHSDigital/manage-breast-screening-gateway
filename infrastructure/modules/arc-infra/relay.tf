@@ -45,8 +45,8 @@ resource "azurerm_relay_hybrid_connection" "per_machine" {
   requires_client_authorization = true
 }
 
-# Listen-only SAS rule per HC — distributed to each gateway site via the deploy pipeline.
-# The cloud app uses a namespace-level Send SAS and does not need per-site keys.
+# Listen-only SAS rule per HC — retained for local development / break-glass access.
+# Production relay authentication uses Managed Identity (see relay_listener_role below).
 resource "azurerm_relay_hybrid_connection_authorization_rule" "per_machine_listen" {
   for_each = local.arc_machines
 
@@ -58,4 +58,24 @@ resource "azurerm_relay_hybrid_connection_authorization_rule" "per_machine_liste
   listen = true
   send   = false
   manage = false
+}
+
+# Look up each discovered Arc machine to obtain its system-assigned managed identity.
+# Static machines (registered in the same apply) are excluded — they are not yet
+# visible to the data source and will be picked up on the next apply after onboarding.
+data "azurerm_arc_machine" "machines" {
+  for_each            = local.arc_machines_discovered
+  name                = each.key
+  resource_group_name = data.azurerm_resource_group.arc_enabled_servers[0].name
+}
+
+# Grant each machine's MI the Azure Relay Listener role on its own HC so the relay
+# listener service can authenticate without a SAS key.
+module "relay_listener_role" {
+  for_each = local.arc_machines_discovered
+  source   = "../dtos-devops-templates/infrastructure/modules/rbac-assignment"
+
+  scope                = azurerm_relay_hybrid_connection.per_machine[each.key].id
+  role_definition_name = "Azure Relay Listener"
+  principal_id         = data.azurerm_arc_machine.machines[each.key].identity[0].principal_id
 }

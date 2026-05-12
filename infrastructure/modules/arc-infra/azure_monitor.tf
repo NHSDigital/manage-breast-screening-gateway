@@ -217,3 +217,14 @@ resource "azurerm_resource_group_policy_remediation" "wac" {
   policy_assignment_id    = azurerm_resource_group_policy_assignment.wac[0].id
   resource_discovery_mode = "ReEvaluateCompliance"
 }
+
+module "app_insights" {
+  count  = var.enable_arc_servers ? 1 : 0
+  source = "../dtos-devops-templates/infrastructure/modules/app-insights"
+
+  name                       = "ai-${var.app_short_name}-${var.env_config}-arc-uks"
+  location                   = var.region
+  resource_group_name        = data.azurerm_resource_group.arc_enabled_servers[0].name
+  appinsights_type           = "other"
+  log_analytics_workspace_id = module.log_analytics_workspace[0].id
+}

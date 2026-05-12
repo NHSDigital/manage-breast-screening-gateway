@@ -28,6 +28,12 @@ output "relay_namespace_hostname" {
   value       = var.enable_arc_servers ? "${local.relay_namespace_name}.servicebus.windows.net" : null
 }
 
+output "app_insights_connection_string" {
+  description = "Application Insights connection string for the gateway services"
+  sensitive   = true
+  value       = var.enable_arc_servers ? module.app_insights[0].connection_string : null
+}
+
 output "relay_listen_sas_keys" {
   description = "Per-machine relay listen SAS primary keys, keyed by Arc resource name. Used by the deploy pipeline to write .env files."
   sensitive   = true

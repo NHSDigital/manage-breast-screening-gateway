@@ -6,4 +6,5 @@ HUB=prod
 TERRAFORM_MODULES_REF=main
 ENABLE_SOFT_DELETE=true
 ADO_MANAGEMENT_POOL=private-pool-prod-uks
+CLOUD_API_HOSTNAME=manage-breast-screening.nhs.uk
 # To onboard more rings: set GATEWAY_RINGS="ring0 ring1 ring2 ..." in this file

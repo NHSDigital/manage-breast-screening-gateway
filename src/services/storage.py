@@ -463,7 +463,7 @@ class MWLStorage(Storage):
         Transition a worklist item to a new status, enforcing valid state transitions.
 
         Args:
-            accession_number: The accession number to update
+            accession_number: The accession number of the worklist item to update
             status: Target status
             mpps_instance_uid: Optional MPPS instance UID
 

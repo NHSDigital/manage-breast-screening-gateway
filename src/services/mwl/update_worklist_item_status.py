@@ -17,7 +17,7 @@ class UpdateWorklistItemStatus:
             if updated_item is None:
                 return {"status": "error", "message": f"Worklist item '{accession_number}' not found"}
 
-            return {"accession_number": accession_number, "status": status}
+            return {"accession_number": accession_number, "status": "updated"}
         except KeyError as e:
             return {"status": "error", "message": f"Missing key: {e}"}
         except Exception as e:

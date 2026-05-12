@@ -41,7 +41,7 @@ class TestUpdateWorklistItemStatus:
 
         subject = UpdateWorklistItemStatus(mwl_storage)
         response = subject.call(status_update_payload)
-        assert response == {"accession_number": "ACC123", "status": "COMPLETED"}
+        assert response == {"accession_number": "ACC123", "status": "updated"}
 
     def test_call_missing_keys(self, mwl_storage, status_update_payload):
         subject = UpdateWorklistItemStatus(mwl_storage)

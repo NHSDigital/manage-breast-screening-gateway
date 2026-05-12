@@ -56,7 +56,7 @@ class TestRelayListenerProcessesActions:
         with fake_relay(relay_message, json.dumps(update_payload)) as ws_client:
             await listener.listen()
 
-        ws_client.send.assert_called_once_with(json.dumps({"accession_number": "ACC999999", "status": "IN PROGRESS"}))
+        ws_client.send.assert_called_once_with(json.dumps({"accession_number": "ACC999999", "status": "updated"}))
         stored_items = storage.find_worklist_items()
         assert len(stored_items) == 1
         item = stored_items[0]

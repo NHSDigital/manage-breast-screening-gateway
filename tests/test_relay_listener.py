@@ -105,7 +105,7 @@ class TestRelayListener:
         }
 
         response = subject.process_action(update_payload)
-        assert response == {"accession_number": "ACC999999", "status": "IN PROGRESS"}
+        assert response == {"accession_number": "ACC999999", "status": "updated"}
 
         storage_instance.update_status.assert_called_once_with("ACC999999", "IN PROGRESS")
 

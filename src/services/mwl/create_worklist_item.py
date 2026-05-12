@@ -12,14 +12,10 @@ class CreateWorklistItem:
 
     def call(self, payload: dict):
         try:
-            action_id = payload.get("action_id")
-            if not action_id:
-                raise ValueError("Missing action_id in payload")
-
+            action_id = payload["action_id"]
             params = payload.get("parameters", {})
-
             item = params.get("worklist_item", {})
-            accession_number = item.get("accession_number")
+            accession_number = item["accession_number"]
             participant = item.get("participant", {})
             scheduled = item.get("scheduled", {})
             procedure = item.get("procedure", {})
@@ -43,6 +39,9 @@ class CreateWorklistItem:
         except WorklistItemExistsError:
             logger.info(f"Worklist item exists: accession_number={accession_number}, action_id={action_id!r}")
             return {"status": "exists", "action_id": action_id}
+        except KeyError as e:
+            logger.error(f"Missing key in payload: {e}")
+            return {"status": "error", "message": f"Missing key: {e}"}
         except Exception as e:
             logger.error(f"Failed to create worklist item: {e}")
-            return {"status": "error", "action_id": action_id, "error": str(e)}
+            return {"status": "error", "message": str(e)}

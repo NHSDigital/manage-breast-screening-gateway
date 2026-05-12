@@ -21,6 +21,7 @@ from websockets.exceptions import ConnectionClosedError
 
 from environment import Environment
 from services.mwl.create_worklist_item import CreateWorklistItem
+from services.mwl.update_worklist_item_status import UpdateWorklistItemStatus
 from services.storage import MWLStorage
 from telemetry import configure_telemetry
 
@@ -93,6 +94,8 @@ class RelayListener:
             return {"status": "echo", "payload": payload}
         elif action_name == "worklist.create_item":
             return CreateWorklistItem(self.storage).call(payload)
+        elif action_name == "worklist.update_item_status":
+            return UpdateWorklistItemStatus(self.storage).call(payload)
         else:
             raise ValueError(f"Unsupported action: {action_name}")
 

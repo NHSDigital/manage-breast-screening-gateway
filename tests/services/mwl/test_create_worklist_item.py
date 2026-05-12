@@ -12,7 +12,7 @@ class TestCreateWorklistItem:
         return f"{tmp_path}/test.db"
 
     @pytest.fixture
-    def mwl_storage(db_file):
+    def mwl_storage(self, db_file):
         return MWLStorage(str(db_file))
 
     def test_call_success(self, mwl_storage, listener_payload):
@@ -28,7 +28,16 @@ class TestCreateWorklistItem:
 
         response = subject.call(listener_payload)
         assert response["status"] == "error"
-        assert "Missing action_id" in response["error"]
+        assert response["message"] == "Missing key: 'action_id'"
+
+    def test_call_missing_accession_number(self, mwl_storage, listener_payload):
+        subject = CreateWorklistItem(mwl_storage)
+
+        del listener_payload["parameters"]["worklist_item"]["accession_number"]
+
+        response = subject.call(listener_payload)
+        assert response["status"] == "error"
+        assert response["message"] == "Missing key: 'accession_number'"
 
     def test_call_existing_worklist_item(self, mwl_storage, listener_payload):
         CreateWorklistItem(mwl_storage).call(listener_payload)
@@ -44,4 +53,4 @@ class TestCreateWorklistItem:
 
         response = subject.call(listener_payload)
         assert response["status"] == "error"
-        assert "DB error" in response["error"]
+        assert "DB error" in response["message"]

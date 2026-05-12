@@ -6,8 +6,8 @@ import pytest
 from pydicom.uid import generate_uid
 
 from models import WorklistItem
+from services.mwl import InvalidStatusTransitionError
 from services.storage import (
-    InvalidStatusTransitionError,
     MWLStorage,
     PACSStorage,
     WorklistItemExistsError,
@@ -116,7 +116,7 @@ class TestPACSStorage:
         assert row["accession_number"] == metadata["accession_number"]
 
 
-class TestWorkingStorage:
+class TestMWLStorage:
     def _insert_item(self, storage, result):
         item = WorklistItem(**result)
         storage.store_worklist_item(item)

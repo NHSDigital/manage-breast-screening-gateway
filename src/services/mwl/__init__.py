@@ -35,5 +35,5 @@ class MWLStatusManager:
             current_status = MWLStatus(status)
             previous_status = MWLStatusManager._TRANSITIONS[current_status]
             return previous_status, current_status
-        except KeyError:
+        except KeyError, ValueError:
             raise InvalidStatusTransitionError(f"Cannot transition to '{status}'")

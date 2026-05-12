@@ -6,3 +6,4 @@ HUB=prod
 TERRAFORM_MODULES_REF=main
 ENABLE_SOFT_DELETE=true
 ADO_MANAGEMENT_POOL=private-pool-prod-uks
+CLOUD_API_HOSTNAME=preprod.manage-breast-screening.nhs.uk

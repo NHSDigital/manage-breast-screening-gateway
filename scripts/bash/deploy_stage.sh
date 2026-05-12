@@ -12,9 +12,6 @@ ENVIRONMENT=$1
 RINGS=$2
 RELEASE_TAG=$3
 
-APP_SHORT_NAME="mbsgw"
-KV_NAME="kv-${APP_SHORT_NAME}-${ENVIRONMENT}-inf"
-
 echo "========================================"
 echo "Environment : ${ENVIRONMENT}"
 echo "Rings       : ${RINGS}"
@@ -22,5 +19,5 @@ echo "Release     : ${RELEASE_TAG}"
 echo "========================================"
 
 for RING in $RINGS; do
-  scripts/bash/deploy_arc_ring.sh "$ENVIRONMENT" "$RING" "$RELEASE_TAG" "$KV_NAME"
+  scripts/bash/deploy_arc_ring.sh "$ENVIRONMENT" "$RING" "$RELEASE_TAG"
 done

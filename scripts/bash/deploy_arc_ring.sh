@@ -2,37 +2,35 @@
 # Deploy the gateway app to all Arc machines matching a ring within an environment.
 # Called by deploy_stage.sh.
 #
-# Usage: deploy_arc_ring.sh <environment> <ring> <release_tag> <kv_name>
+# Usage: deploy_arc_ring.sh <environment> <ring> <release_tag>
 
 set -euo pipefail
 
 ENVIRONMENT=$1
 RING=$2
 RELEASE_TAG=$3
-KV_NAME=$4
 
 APP_SHORT_NAME="mbsgw"
 ARC_RG="rg-${APP_SHORT_NAME}-${ENVIRONMENT}-uks-arc-enabled-servers"
 
-# Relay namespace is owned by dtos-manage-breast-screening; derive from environment name.
-RELAY_NAMESPACE_NAME="relay-manbrs-${ENVIRONMENT}"
-RELAY_RG="rg-manbrs-${ENVIRONMENT}-uks"
-RELAY_NAMESPACE_HOSTNAME="${RELAY_NAMESPACE_NAME}.servicebus.windows.net"
-
-# Ensure the relay extension is installed
-if ! az relay --help &>/dev/null; then
-  echo "Installing Azure CLI 'relay' extension..."
-  az extension add --name relay || {
-    echo "ERROR: Failed to install 'relay' extension. Please run 'az extension add --name relay' manually."
-    exit 1
-  }
-fi
+RELAY_NAMESPACE_HOSTNAME="relay-manbrs-${ENVIRONMENT}.servicebus.windows.net"
 
 # Use forward slashes — Python handles these fine on Windows and avoids .env escaping issues
 BASE_PATH="C:/Program Files/NHS/ManageBreastScreeningGateway"
 PYTHON_VERSION=$(awk '/^python / {print $2}' .tool-versions)
 
 echo "--- Ring: ${RING} | Environment: ${ENVIRONMENT} | Release: ${RELEASE_TAG} ---"
+
+# ── Per-environment config ─────────────────────────────────────────────────────
+source "infrastructure/environments/${ENVIRONMENT}/variables.sh"
+CLOUD_API_ENDPOINT="https://${CLOUD_API_HOSTNAME}/api/v1/dicom"
+
+APPLICATIONINSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
+  --app "ai-${APP_SHORT_NAME}-${ENVIRONMENT}-arc-uks" \
+  --resource-group "$ARC_RG" \
+  --query connectionString -o tsv 2>/dev/null || echo "")
+[[ -z "$APPLICATIONINSIGHTS_CONNECTION_STRING" ]] && \
+  echo "##vso[task.logissue type=warning]Application Insights resource not found — telemetry will be disabled"
 
 # ── Discover machines ──────────────────────────────────────────────────────────
 MACHINES_JSON=$(az connectedmachine list \
@@ -61,44 +59,13 @@ while IFS= read -r MACHINE_JSON; do
   LOCATION=$(echo "$MACHINE_JSON" | jq -r '.location')
   echo "Preparing deploy for $MACHINE ($LOCATION)..."
 
-  # Fetch relay SAS key directly — Contributor includes listKeys on relay HCs,
-  # and this avoids any dependency on Terraform state having the resource imported.
-  echo "Fetching SAS key for hc-${MACHINE} in $RELAY_NAMESPACE_NAME..."
-  SAS_KEY=$(az relay hyco authorization-rule keys list \
-    --resource-group "$RELAY_RG" \
-    --namespace-name "$RELAY_NAMESPACE_NAME" \
-    --hybrid-connection-name "hc-${MACHINE}" \
-    --name listen \
-    --query primaryKey -o tsv 2>/tmp/relay_key_err_${MACHINE}) || {
-      ERR=$(cat /tmp/relay_key_err_${MACHINE})
-      echo "##vso[task.logissue type=warning]Failed to fetch relay SAS key for hc-${MACHINE}: $ERR"
-      SAS_KEY=""
-    }
-
-  [[ -z "$SAS_KEY" ]] && \
-    echo "##vso[task.logissue type=warning]No relay SAS key found for hc-${MACHINE} — relay listener will not connect"
-
-  # Cloud API secrets are optional — warn if absent, services still start
-  CLOUD_API_ENDPOINT=$(az keyvault secret show --vault-name "$KV_NAME" \
-    --name "cloud-api-endpoint" --query value -o tsv 2>/dev/null || echo "")
-  CLOUD_API_TOKEN=$(az keyvault secret show --vault-name "$KV_NAME" \
-    --name "cloud-api-token-${MACHINE}" --query value -o tsv 2>/dev/null || echo "")
-
-  [[ -z "$CLOUD_API_ENDPOINT" ]] && \
-    echo "##vso[task.logissue type=warning]cloud-api-endpoint not in $KV_NAME — Upload service will not reach cloud API for $MACHINE"
-  [[ -z "$CLOUD_API_TOKEN" ]] && \
-    echo "##vso[task.logissue type=warning]cloud-api-token-${MACHINE} not in $KV_NAME — Upload service will not authenticate for $MACHINE"
-
   # Build .env, then base64-encode to pass newlines as a run command parameter.
   # NOTE: Arc Run Command drops protectedParameters for inline source.script,
   # so EnvContentB64 travels as a regular parameter (base64-encoded, not plain text).
-  # TODO: migrate to Key Vault + Arc MSI for production environments.
   ENV_CONTENT="AZURE_RELAY_NAMESPACE=${RELAY_NAMESPACE_HOSTNAME}
 AZURE_RELAY_HYBRID_CONNECTION=hc-${MACHINE}
-AZURE_RELAY_KEY_NAME=listen
-AZURE_RELAY_SHARED_ACCESS_KEY=${SAS_KEY}
 CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT}
-CLOUD_API_TOKEN=${CLOUD_API_TOKEN}
+APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
 MWL_AET=SCREENING_MWL
 MWL_PORT=4243
 MWL_DB_PATH=${BASE_PATH}/data/worklist.db

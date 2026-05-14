@@ -1,0 +1,204 @@
+import datetime
+import logging
+import os
+import time
+from functools import cached_property
+
+import numpy as np
+from PIL import Image
+from pydicom.dataset import Dataset, FileMetaDataset
+from pydicom.uid import ExplicitVRLittleEndian, generate_uid
+from pynetdicom import AE
+from pynetdicom.sop_class import (
+    DigitalMammographyXRayImageStorageForPresentation,  # type: ignore
+    ModalityWorklistInformationFind,  # type: ignore
+)
+
+from environment import Environment
+from services.dicom import PENDING, PENDING_WARNING, SUCCESS
+from services.mwl import MWLStatus
+from services.storage import MWLStorage, PACSStorage
+
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+)
+
+logger = logging.getLogger(__name__)
+
+
+MWL_DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
+PACS_DB_PATH = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
+PACS_STORAGE_PATH = os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
+MWL_AET = os.getenv("MWL_AET", "SCREENING_MWL")
+MWL_ADDRESS = os.getenv("MWL_ADDRESS", "localhost")
+MWL_PORT = int(os.getenv("MWL_PORT", "4243"))
+PACS_AET = os.getenv("PACS_AET", "SCREENING_PACS")
+PACS_ADDRESS = os.getenv("PACS_ADDRESS", "localhost")
+PACS_PORT = int(os.getenv("PACS_PORT", "4244"))
+DICOM_LATERALITIES = ["L", "R"]
+DICOM_VIEWS = ["CC", "MLO"]
+SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "/app/sample_images")
+EMULATED_PROCEDURE_DURATION_SECONDS = int(os.getenv("EMULATED_PROCEDURE_DURATION_SECONDS", "5"))
+
+
+class DicomExample:
+    def __init__(
+        self, dataset: Dataset | None, laterality: str, view: str, study_instance_uid: str, series_number: int
+    ):
+        self.dataset = dataset
+        self.laterality = laterality
+        self.view = view
+        self.study_instance_uid = study_instance_uid
+        self.series_number = series_number
+        self.data = self.generate_dicom()
+
+    def generate_dicom(self) -> Dataset:
+        ds = Dataset()
+        if not self.dataset:
+            logger.error("No dataset provided for DICOM generation")
+            return ds
+
+        img_path = f"{SAMPLE_IMAGES_PATH}/{self.laterality}{self.view}.jpg"
+        img = Image.open(img_path).convert("L")
+        columns, rows = img.size
+        pixel_array = np.array(img, dtype=np.uint8)
+        pixel_bytes = pixel_array.tobytes()
+        if len(pixel_bytes) % 2 != 0:
+            pixel_bytes += b"\x00"
+
+        file_meta = FileMetaDataset()
+        file_meta.MediaStorageSOPClassUID = DigitalMammographyXRayImageStorageForPresentation
+        file_meta.MediaStorageSOPInstanceUID = generate_uid()
+        file_meta.ImplementationClassUID = generate_uid()
+        file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
+
+        ds.SOPClassUID = file_meta.MediaStorageSOPClassUID
+        ds.SOPInstanceUID = file_meta.MediaStorageSOPInstanceUID
+        ds.SamplesPerPixel = 1
+        ds.PhotometricInterpretation = "MONOCHROME2"
+        ds.Rows = rows
+        ds.Columns = columns
+        ds.BitsAllocated = 8
+        ds.BitsStored = 8
+        ds.HighBit = 7
+        ds.PixelRepresentation = 0
+        ds.PixelData = pixel_bytes
+        ds.ImageLaterality = self.laterality
+        ds.ViewPosition = self.view
+
+        ds.AccessionNumber = self.dataset.AccessionNumber
+        ds.PatientID = self.dataset.PatientID
+        ds.PatientName = self.dataset.PatientName
+        ds.PatientBirthDate = self.dataset.PatientBirthDate
+        ds.PatientSex = self.dataset.PatientSex
+        scheduled_step = self.dataset.ScheduledProcedureStepSequence[0]
+        ds.StudyDate = scheduled_step.ScheduledProcedureStepStartDate
+        ds.StudyTime = scheduled_step.ScheduledProcedureStepStartTime
+        ds.StudyInstanceUID = self.study_instance_uid
+        ds.StudyID = f"STUDY{self.study_instance_uid[-8:]}"
+        ds.SeriesInstanceUID = generate_uid()
+        ds.SeriesNumber = self.series_number
+        ds.Modality = "MG"
+        ds.InstanceNumber = 1
+        ds.file_meta = file_meta
+
+        logger.debug(f"Generated DICOM for worklist item {self.dataset.AccessionNumber} - {self.laterality}{self.view}")
+        logger.debug(f"{ds}")
+
+        return ds
+
+
+class ModalityEmulator:
+    def __init__(self, mwl_storage: MWLStorage, pacs_storage: PACSStorage):
+        self.mwl_storage = mwl_storage
+        self.pacs_storage = pacs_storage
+
+    def process_worklist_items(self, ae: AE):
+        """
+        Queries the MWL for items scheduled for today and sends generated DICOM files to the PACS server for each item.
+        """
+        mwl_assoc = ae.associate(MWL_ADDRESS, MWL_PORT, ae_title=MWL_AET)
+        pacs_assoc = ae.associate(PACS_ADDRESS, PACS_PORT, ae_title=PACS_AET)
+
+        if mwl_assoc.is_established and pacs_assoc.is_established:
+            logger.info(f"Connected to MWL server {MWL_ADDRESS}:{MWL_PORT} ({MWL_AET})")
+            logger.info(f"Connected to PACS server {PACS_ADDRESS}:{PACS_PORT} ({PACS_AET})")
+
+            logger.info("Querying MWL for scheduled items...")
+            responses = mwl_assoc.send_c_find(self.c_find_dataset, query_model=ModalityWorklistInformationFind)
+            for status, ds in responses:
+                status_code = getattr(status, "Status", SUCCESS)
+
+                if status_code in (PENDING, PENDING_WARNING):
+                    accession_number = getattr(ds, "AccessionNumber", "UNKNOWN")
+                    study_instance_uid = generate_uid()
+                    series_number = 1
+                    for laterality in DICOM_LATERALITIES:
+                        for view in DICOM_VIEWS:
+                            logger.info(
+                                f"Processing worklist item {accession_number} - generating DICOM for {laterality}{view}"
+                            )
+                            dicom_example = DicomExample(ds, laterality, view, study_instance_uid, series_number)
+                            dataset = dicom_example.data
+
+                            if getattr(dataset, "SOPInstanceUID", None) is None:
+                                logger.error(
+                                    f"Skipping DICOM generation for {laterality}{view} of worklist item {accession_number}"
+                                )
+                                continue
+
+                            pacs_assoc.send_c_store(dataset)
+                            logger.info(
+                                f"Sent DICOM for {laterality}{view} of worklist item {accession_number}. Series# {series_number}"
+                            )
+                            series_number += 1
+
+                    self.mwl_storage.update_status(accession_number, MWLStatus.COMPLETED.value)
+                    logger.info(f"Completed processing for worklist item {accession_number}")
+                elif status_code == SUCCESS:
+                    logger.info("C-FIND query completed successfully")
+                else:
+                    logger.error(f"C-FIND query failed with status: 0x{status_code:04X}")
+
+        else:
+            logger.error("Failed to make MWL and PACS associations")
+
+        mwl_assoc.release()
+        pacs_assoc.release()
+
+    @cached_property
+    def c_find_dataset(self) -> Dataset:
+        date_today = datetime.date.today()
+        ds = Dataset()
+        sps_dataset = Dataset()
+        sps_dataset.Modality = "MG"
+        sps_dataset.ScheduledProcedureStepStartDate = date_today.strftime("%Y%m%d")
+        sps_dataset.ScheduledProcedureStepStartTime = "080000-"
+        ds.ScheduledProcedureStepSequence = [sps_dataset]
+        return ds
+
+
+def main():
+    if Environment().production:
+        raise RuntimeError("Modality Emulator should not be run in production environment")
+
+    logger.info("Modality Emulator Starting...")
+    mwl_storage = MWLStorage(db_path=MWL_DB_PATH)
+    pacs_storage = PACSStorage(db_path=PACS_DB_PATH)
+    emulator = ModalityEmulator(mwl_storage, pacs_storage)
+    ae = AE(ae_title="ModalityEmulator")
+    ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
+    ae.add_requested_context(ModalityWorklistInformationFind)
+
+    while True:
+        try:
+            time.sleep(EMULATED_PROCEDURE_DURATION_SECONDS)
+            emulator.process_worklist_items(ae)
+        except KeyboardInterrupt:
+            logger.warning("\n Modality Emulator shutting down...")
+            break
+
+
+if __name__ == "__main__":
+    main()

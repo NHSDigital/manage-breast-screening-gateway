@@ -229,6 +229,34 @@ class TestMWLStorage:
         assert len(results) == 1
         assert results[0].patient_name == "SMITH^JANE"
 
+    def test_find_worklist_items_with_filters_completed_items(self, mwl_storage, result):
+        item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+        mwl_storage.update_status(item.accession_number, "COMPLETED")
+
+        results = mwl_storage.find_worklist_items(
+            accession_number="ACC123456",
+            modality="MG",
+            scheduled_date="20240101",
+            patient_id="999123456",
+        )
+
+        assert len(results) == 0
+
+    def test_find_worklist_items_with_filters_discontinued_items(self, mwl_storage, result):
+        item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+        mwl_storage.update_status(item.accession_number, "DISCONTINUED")
+
+        results = mwl_storage.find_worklist_items(
+            accession_number="ACC123456",
+            modality="MG",
+            scheduled_date="20240101",
+            patient_id="999123456",
+        )
+
+        assert len(results) == 0
+
     def test_get_worklist_item(self, mwl_storage, result):
         item = self._insert_item(mwl_storage, result)
 

@@ -61,7 +61,8 @@ $services = @(
     @{ Name = "Gateway-Relay"; Script = "relay_listener.py" },
     @{ Name = "Gateway-PACS"; Script = "pacs_main.py" },
     @{ Name = "Gateway-MWL"; Script = "mwl_main.py" },
-    @{ Name = "Gateway-Upload"; Script = "upload_main.py" }
+    @{ Name = "Gateway-Upload"; Script = "upload_main.py" },
+    @{ Name = "Gateway-Emulator"; Script = "modality_emulator.py" }
 )
 
 # -- Resolve current version --------------------------------------------------

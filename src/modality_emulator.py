@@ -39,7 +39,7 @@ PACS_AET = os.getenv("PACS_AET", "SCREENING_PACS")
 PACS_DB_PATH = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
 PACS_HOST = os.getenv("PACS_HOST", "localhost")
 PACS_PORT = int(os.getenv("PACS_PORT", "4244"))
-SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "/app/sample_images")
+SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "sample_images")
 
 
 class DicomExample:

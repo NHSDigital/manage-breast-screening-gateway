@@ -82,7 +82,8 @@ PACS_AET=SCREENING_PACS
 PACS_PORT=4244
 PACS_STORAGE_PATH=${BASE_PATH}/data/storage
 PACS_DB_PATH=${BASE_PATH}/data/pacs.db
-LOG_LEVEL=INFO"
+LOG_LEVEL=INFO
+SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
 
   # Cross-platform base64 encoding (works on macOS and Linux)
   ENV_CONTENT_B64=$(printf '%s' "$ENV_CONTENT" | base64 | tr -d '\n')

@@ -27,18 +27,19 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-MWL_DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
-PACS_DB_PATH = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
+DICOM_LATERALITIES = ["L", "R"]
+DICOM_VIEWS = ["CC", "MLO"]
+EMULATED_PROCEDURE_DURATION_SECONDS = int(os.getenv("EMULATED_PROCEDURE_DURATION_SECONDS", "5"))
+MODALITY = "MG"
 MWL_AET = os.getenv("MWL_AET", "SCREENING_MWL")
+MWL_DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 MWL_HOST = os.getenv("MWL_HOST", "localhost")
 MWL_PORT = int(os.getenv("MWL_PORT", "4243"))
 PACS_AET = os.getenv("PACS_AET", "SCREENING_PACS")
+PACS_DB_PATH = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
 PACS_HOST = os.getenv("PACS_HOST", "localhost")
 PACS_PORT = int(os.getenv("PACS_PORT", "4244"))
-DICOM_LATERALITIES = ["L", "R"]
-DICOM_VIEWS = ["CC", "MLO"]
 SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "/app/sample_images")
-EMULATED_PROCEDURE_DURATION_SECONDS = int(os.getenv("EMULATED_PROCEDURE_DURATION_SECONDS", "5"))
 
 
 class DicomExample:
@@ -58,8 +59,10 @@ class DicomExample:
             logger.error("No dataset provided for DICOM generation")
             return ds
 
-        img_path = f"{SAMPLE_IMAGES_PATH}/{self.laterality}{self.view}.jpg"
+        img_path = f"{SAMPLE_IMAGES_PATH}/L{self.view}.jpg"
         img = Image.open(img_path).convert("L")
+        if self.laterality == "R":
+            img = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         columns, rows = img.size
         pixel_array = np.array(img, dtype=np.uint8)
         pixel_bytes = pixel_array.tobytes()
@@ -98,7 +101,7 @@ class DicomExample:
         ds.StudyID = f"STUDY{self.study_instance_uid[-8:]}"
         ds.SeriesInstanceUID = generate_uid()
         ds.SeriesNumber = self.series_number
-        ds.Modality = "MG"
+        ds.Modality = MODALITY
         ds.InstanceNumber = 1
         ds.file_meta = file_meta
 
@@ -170,9 +173,9 @@ class ModalityEmulator:
         date_today = datetime.date.today()
         ds = Dataset()
         sps_dataset = Dataset()
-        sps_dataset.Modality = "MG"
+        sps_dataset.Modality = MODALITY
         sps_dataset.ScheduledProcedureStepStartDate = date_today.strftime("%Y%m%d")
-        sps_dataset.ScheduledProcedureStepStartTime = "080000-"
+        sps_dataset.ScheduledProcedureStepStartTime = "000000-"
         ds.ScheduledProcedureStepSequence = [sps_dataset]
         return ds
 

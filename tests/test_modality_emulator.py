@@ -104,7 +104,8 @@ class TestModalityEmulator:
         pending_status,
         success_status,
     ):
-        mock_generate_uid.return_value = "1.2.3.study"  # gitleaks: ignore
+        study_instance_uid = generate_uid()
+        mock_generate_uid.return_value = study_instance_uid
 
         mwl_storage = MagicMock()
 
@@ -134,6 +135,11 @@ class TestModalityEmulator:
         ae.associate.side_effect = [mwl_assoc, pacs_assoc]
 
         emulator.process_worklist_items(ae)
+
+        mock_dicom_example.assert_any_call(ds, "L", "CC", study_instance_uid, 1)
+        mock_dicom_example.assert_any_call(ds, "L", "MLO", study_instance_uid, 2)
+        mock_dicom_example.assert_any_call(ds, "R", "CC", study_instance_uid, 3)
+        mock_dicom_example.assert_any_call(ds, "R", "MLO", study_instance_uid, 4)
 
         expected_send_count = len(DICOM_LATERALITIES) * len(DICOM_VIEWS)
 

@@ -17,7 +17,7 @@ from pynetdicom.sop_class import (
 from environment import Environment
 from services.dicom import PENDING, PENDING_WARNING, SUCCESS
 from services.mwl import MWLStatus
-from services.storage import MWLStorage, PACSStorage
+from services.storage import MWLStorage
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -29,12 +29,11 @@ logger = logging.getLogger(__name__)
 
 MWL_DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 PACS_DB_PATH = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
-PACS_STORAGE_PATH = os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
 MWL_AET = os.getenv("MWL_AET", "SCREENING_MWL")
-MWL_ADDRESS = os.getenv("MWL_ADDRESS", "localhost")
+MWL_HOST = os.getenv("MWL_HOST", "localhost")
 MWL_PORT = int(os.getenv("MWL_PORT", "4243"))
 PACS_AET = os.getenv("PACS_AET", "SCREENING_PACS")
-PACS_ADDRESS = os.getenv("PACS_ADDRESS", "localhost")
+PACS_HOST = os.getenv("PACS_HOST", "localhost")
 PACS_PORT = int(os.getenv("PACS_PORT", "4244"))
 DICOM_LATERALITIES = ["L", "R"]
 DICOM_VIEWS = ["CC", "MLO"]
@@ -110,20 +109,19 @@ class DicomExample:
 
 
 class ModalityEmulator:
-    def __init__(self, mwl_storage: MWLStorage, pacs_storage: PACSStorage):
+    def __init__(self, mwl_storage: MWLStorage):
         self.mwl_storage = mwl_storage
-        self.pacs_storage = pacs_storage
 
     def process_worklist_items(self, ae: AE):
         """
         Queries the MWL for items scheduled for today and sends generated DICOM files to the PACS server for each item.
         """
-        mwl_assoc = ae.associate(MWL_ADDRESS, MWL_PORT, ae_title=MWL_AET)
-        pacs_assoc = ae.associate(PACS_ADDRESS, PACS_PORT, ae_title=PACS_AET)
+        mwl_assoc = ae.associate(MWL_HOST, MWL_PORT, ae_title=MWL_AET)
+        pacs_assoc = ae.associate(PACS_HOST, PACS_PORT, ae_title=PACS_AET)
 
         if mwl_assoc.is_established and pacs_assoc.is_established:
-            logger.info(f"Connected to MWL server {MWL_ADDRESS}:{MWL_PORT} ({MWL_AET})")
-            logger.info(f"Connected to PACS server {PACS_ADDRESS}:{PACS_PORT} ({PACS_AET})")
+            logger.info(f"Connected to MWL server {MWL_HOST}:{MWL_PORT} ({MWL_AET})")
+            logger.info(f"Connected to PACS server {PACS_HOST}:{PACS_PORT} ({PACS_AET})")
 
             logger.info("Querying MWL for scheduled items...")
             responses = mwl_assoc.send_c_find(self.c_find_dataset, query_model=ModalityWorklistInformationFind)
@@ -185,8 +183,7 @@ def main():
 
     logger.info("Modality Emulator Starting...")
     mwl_storage = MWLStorage(db_path=MWL_DB_PATH)
-    pacs_storage = PACSStorage(db_path=PACS_DB_PATH)
-    emulator = ModalityEmulator(mwl_storage, pacs_storage)
+    emulator = ModalityEmulator(mwl_storage)
     ae = AE(ae_title="ModalityEmulator")
     ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
     ae.add_requested_context(ModalityWorklistInformationFind)

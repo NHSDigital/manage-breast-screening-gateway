@@ -107,9 +107,8 @@ class TestModalityEmulator:
         mock_generate_uid.return_value = "1.2.3.study"  # gitleaks: ignore
 
         mwl_storage = MagicMock()
-        pacs_storage = MagicMock()
 
-        emulator = ModalityEmulator(mwl_storage, pacs_storage)
+        emulator = ModalityEmulator(mwl_storage)
 
         ds = Dataset()
         ds.SOPInstanceUID = generate_uid()
@@ -156,8 +155,7 @@ class TestModalityEmulator:
         success_status,
     ):
         mwl_storage = MagicMock()
-        pacs_storage = MagicMock()
-        emulator = ModalityEmulator(mwl_storage, pacs_storage)
+        emulator = ModalityEmulator(mwl_storage)
         ae = MagicMock()
 
         mwl_assoc = MagicMock()
@@ -184,9 +182,7 @@ class TestModalityEmulator:
         _,
     ):
         mwl_storage = MagicMock()
-        pacs_storage = MagicMock()
-
-        emulator = ModalityEmulator(mwl_storage, pacs_storage)
+        emulator = ModalityEmulator(mwl_storage)
 
         mwl_assoc = MagicMock()
         mwl_assoc.is_established = True

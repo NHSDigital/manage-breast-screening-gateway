@@ -47,6 +47,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag }}
           COMMIT_SHA: ${{ inputs.commit_sha }}
           ADO_PROJECT: ${{ github.event.repository.name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           source "infrastructure/environments/${ENVIRONMENT}/variables.sh"
 
@@ -56,7 +57,7 @@ jobs:
             --name "Deploy Gateway App - ${ENVIRONMENT}" \
             --org https://dev.azure.com/nhse-dtos \
             --project "${ADO_PROJECT}" \
-            --parameters releaseTag="${RELEASE_TAG}" environment="${ENVIRONMENT}" pool="${ADO_MANAGEMENT_POOL}" \
+            --parameters releaseTag="${RELEASE_TAG}" environment="${ENVIRONMENT}" pool="${ADO_MANAGEMENT_POOL}" githubToken="${GITHUB_TOKEN}" \
             --output tsv --query id)
 
           echo "See pipeline run in Azure DevOps: https://dev.azure.com/nhse-dtos/${ADO_PROJECT}/_build/results?buildId=${RUN_ID}&view=results"

@@ -97,6 +97,7 @@ SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
     --arg pyver  "$PYTHON_VERSION" \
     --arg envb64 "$ENV_CONTENT_B64" \
     --arg token  "$GITHUB_TOKEN" \
+    --arg env    "$ENVIRONMENT" \
     '{
       location: $loc,
       properties: {
@@ -105,7 +106,8 @@ SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
           { name: "ReleaseTag",    value: $tag   },
           { name: "PythonVersion", value: $pyver },
           { name: "EnvContentB64", value: $envb64 },
-          { name: "GitHubToken",   value: $token }
+          { name: "GitHubToken",   value: $token },
+          { name: "Environment",   value: $env }
         ],
         runAsSystem:      true,
         timeoutInSeconds: 1800

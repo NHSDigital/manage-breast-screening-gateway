@@ -240,9 +240,18 @@ if (-not $ZipPath) {
     Write-Log "Querying release: $apiUrl" "INFO"
     try {
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-        $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri $apiUrl -Headers $headers -UseBasicParsing -ErrorAction Stop
+        $release = $response.Content | ConvertFrom-Json
     } catch {
-        throw "Could not retrieve release from $apiUrl. If the repo is private, supply -GitHubToken. Error: $_"
+        $rateLimitMsg = ""
+        try {
+            $resetHeader = $_.Exception.Response.Headers["x-ratelimit-reset"]
+            if ($resetHeader) {
+                $resetTime = [System.DateTimeOffset]::FromUnixTimeSeconds([long]$resetHeader).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                $rateLimitMsg = " Rate limit resets at $resetTime (local time)."
+            }
+        } catch {}
+        throw "Could not retrieve release from $apiUrl. If the repo is private, supply -GitHubToken.$rateLimitMsg Error: $_"
     }
 
     Write-Log "Release found: $($release.tag_name) - $($release.name)" "INFO"

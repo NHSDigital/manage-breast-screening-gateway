@@ -68,8 +68,11 @@ _install-uv:
 # ---------------------------------------------------------------------------
 #  Database backup
 # ---------------------------------------------------------------------------
-backup-db: # Backup sqlite databases @Operations
-	PYTHONPATH=src uv run python -m backup_main
+backup-dbs: # Backup sqlite databases @Operations
+	PYTHONPATH=src uv run python -c'import scripts.python.database; scripts.python.database.backup_databases()'
+
+reset-worklist: # Reset worklist database @Operations
+	PYTHONPATH=src uv run python -c'import scripts.python.database; scripts.python.database.reset_worklist_database()'
 
 # ---------------------------------------------------------------------------
 # Testing

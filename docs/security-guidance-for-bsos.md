@@ -52,8 +52,8 @@ Only the named modalities should be able to reach the gateway on the DICOM port.
 
 ### 3.1 Local accounts
 
-- The gateway services run under a **dedicated, non-interactive service account** with no logon rights and no membership of administrative groups.
-- **Interactive logon** to the VM is restricted via Active Directory / local group policy to a named group of hospital administrators.
+- The gateway application runs under the local **SYSTEM** account. This is a non-interactive account and cannot be used to log in.
+- **Interactive logon** to the VM is restricted via Active Directory / local group policy to a named group of hospital administrators. Because SYSTEM is highly privileged on the local machine, controlling who can log in to the VM is the primary access control.
 
 ### 3.2 Filesystem permissions
 

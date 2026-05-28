@@ -2,7 +2,6 @@ import datetime
 import logging
 import os
 import time
-from functools import cached_property
 
 import numpy as np
 from PIL import Image
@@ -168,7 +167,7 @@ class ModalityEmulator:
         mwl_assoc.release()
         pacs_assoc.release()
 
-    @cached_property
+    @property
     def c_find_dataset(self) -> Dataset:
         date_today = datetime.date.today()
         ds = Dataset()

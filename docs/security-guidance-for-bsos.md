@@ -31,10 +31,7 @@ No long-term patient record is stored on the gateway VM. The source of truth for
 Allow outbound HTTPS (443) only to:
 
 - `*.servicebus.windows.net` — Azure Relay (Rubie ↔ Gateway).
-- Rubie API FQDN (e.g. `manbrs-*.azurewebsites.net` — confirm against the deployed environment).
-- Azure Arc control-plane endpoints — see [Microsoft's published list](https://learn.microsoft.com/azure/azure-arc/servers/network-requirements).
-- OS update endpoints (Microsoft Update / distro repositories).
-- GitHub release endpoints (`github.com`, `*.githubusercontent.com`) — used by Arc to fetch new gateway versions. **[TBC with DevOps: depends on whether release assets are pulled by the Arc agent on the VM, or repackaged Azure-side and pushed via the Arc control plane.]**
+- Rubie API host.
 
 Deny all other outbound traffic.
 
@@ -86,7 +83,7 @@ Only the named modalities should be able to reach the gateway on the DICOM port.
 ## 6. Patching and vulnerability management
 
 - **OS patches:** apply within hospital's standard patching SLA.
-- **Gateway application:** NHS England publishes new versions as GitHub releases. Arc fetches and deploys the latest release to the VM. The hospital is not responsible for building or packaging the application.
+- **Gateway application:** new versions are deployed to the VM by NHS England via Azure Arc. Artifacts are delivered through the Arc data plane (no direct outbound traffic from the VM to GitHub or other public artifact stores). The hospital is not responsible for building or packaging the application.
 
 ## 7. Change management
 

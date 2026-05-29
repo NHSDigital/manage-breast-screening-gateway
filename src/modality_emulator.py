@@ -154,8 +154,13 @@ class ModalityEmulator:
                             )
                             series_number += 1
 
-                    self.mwl_storage.update_status(accession_number, MWLStatus.COMPLETED.value)
-                    logger.info(f"Completed processing for worklist item {accession_number}")
+                    time.sleep(2)  # Allow C-STORE operations to complete before updating status
+
+                    updated = self.mwl_storage.update_status(accession_number, MWLStatus.COMPLETED.value)
+                    if not updated:
+                        logger.error(f"Failed to update status for worklist item {accession_number}")
+                    else:
+                        logger.info(f"Completed processing for worklist item {accession_number}")
                 elif status_code == SUCCESS:
                     logger.info("C-FIND query completed successfully")
                 else:

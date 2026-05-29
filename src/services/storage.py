@@ -487,6 +487,11 @@ class MWLStorage(Storage):
             conn.commit()
 
             if cursor.rowcount == 0:
+                logger.warning(
+                    "Failed to update status for accession number %s: no matching item in expected state %s",
+                    accession_number,
+                    from_status.value,
+                )
                 return None
 
             result = conn.execute(

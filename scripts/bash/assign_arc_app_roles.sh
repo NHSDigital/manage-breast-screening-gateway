@@ -37,6 +37,11 @@ while IFS= read -r machine; do
     --subscription "$SUBSCRIPTION" \
     --query "identity.principalId" -o tsv)
 
+  if [ -z "$miPrincipalId" ]; then
+    echo "  Warning: $machine has no managed identity principal ID, skipping."
+    continue
+  fi
+
   echo "Assigning $appRoleValue to $machine (MI: $miPrincipalId)..."
   if ! output=$(az rest --method POST \
     --uri "https://graph.microsoft.com/v1.0/servicePrincipals/${spObjectId}/appRoleAssignedTo" \
@@ -48,6 +53,8 @@ while IFS= read -r machine; do
       echo "Error: $output"
       exit 1
     fi
+  else
+    echo "  Successfully assigned."
   fi
 done <<< "$arcMachines"
 

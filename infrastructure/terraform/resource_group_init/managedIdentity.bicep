@@ -14,3 +14,4 @@ resource managedIdentiyGHtoADOFedCred 'Microsoft.ManagedIdentity/userAssignedIde
 }
 
 output miPrincipalID string = mi.properties.principalId
+output miId string = mi.id

@@ -50,11 +50,6 @@ variable "gateway_test_vm_size" {
   default     = "Standard_B2s"
 }
 
-variable "enterprise_app_role_value" {
-  description = "App role name to assign to each Arc machine's managed identity on the web API enterprise app (spn-manbrs-web-api-<env>). Leave empty to skip assignment."
-  type        = string
-  default     = "Gateway.Access"
-}
 
 locals {
   region              = "uksouth"

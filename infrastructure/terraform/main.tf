@@ -11,7 +11,6 @@ module "arc_infra" {
   env_config          = var.env_config
   resource_group_name       = local.resource_group_name
   enable_arc_servers        = var.enable_arc_servers
-  enterprise_app_role_value = var.enterprise_app_role_value
 
   # Create the HC for the test VM in the same run as VM creation.
   # The Arc data source won't see a machine registered in the same apply.

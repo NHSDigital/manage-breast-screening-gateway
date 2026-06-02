@@ -7,6 +7,8 @@ param storageAccountRGName string
 param storageAccountName string
 param appShortName string
 param userGroupPrincipalID string
+param enterpriseAppClientId string
+param groupMemberIds array = []
 
 var hubMap = {
   dev:                  'dev'
@@ -21,6 +23,7 @@ var privateDNSZoneRGName = 'rg-hub-${hubMap[envConfig]}-uks-private-dns-zones'
 var managedIdentityRGName = 'rg-mi-${envConfig}-uks'
 var infraResourceGroupName = 'rg-mbsgw-${envConfig}-infra'
 var keyVaultName = 'kv-mbsgw-${envConfig}-inf'
+var enterpriseAppName = 'spn-manbrs-web-api-${envConfig}'
 
 var miADOtoAZname = 'mi-${appShortName}-${envConfig}-adotoaz-uks'
 var miGHtoADOname = 'mi-${appShortName}-${envConfig}-ghtoado-uks'
@@ -204,6 +207,16 @@ resource groupNetworkContributorAssignment 'Microsoft.Authorization/roleAssignme
     principalId: userGroupPrincipalID
     principalType: 'Group'
     description: '${userGroupName} Network Contributor access to subscription'
+  }
+}
+
+module pipelineMiAppRole 'enterpriseAppOwner.bicep' = {
+  name: 'pipelineMiAppRoleAssignment'
+  scope: managedIdentityRG
+  params: {
+    enterpriseAppClientId: enterpriseAppClientId
+    enterpriseAppName: enterpriseAppName
+    groupMemberIds: groupMemberIds
   }
 }
 

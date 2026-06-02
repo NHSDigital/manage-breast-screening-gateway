@@ -61,7 +61,7 @@ echo ""
 
 # ── Validate required files ───────────────────────────────────────────────────
 
-REQUIRED_FILES=("src" "pyproject.toml" "uv.lock" "README.md")
+REQUIRED_FILES=("src/" "sample_images/" "pyproject.toml" "uv.lock" "README.md" "LICENCE.md")
 
 for item in "${REQUIRED_FILES[@]}"; do
     if [[ ! -e "${REPO_ROOT}/${item}" ]]; then
@@ -84,7 +84,7 @@ cd "$REPO_ROOT"
 # This ensures only tracked files are included, preventing accidental inclusion of
 # .env files, local secrets, or untracked files.
 echo "Creating archive from git tracked files..."
-git archive --format=zip -o "$ARTIFACT_PATH" HEAD src/ pyproject.toml uv.lock README.md
+git archive --format=zip -o "$ARTIFACT_PATH" HEAD "${REQUIRED_FILES[@]}"
 
 echo "Archive created successfully."
 

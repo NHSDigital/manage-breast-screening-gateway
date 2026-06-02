@@ -6,10 +6,8 @@ import os
 from dotenv import load_dotenv
 
 from server import MWLServer
-from telemetry import configure_telemetry
 
 load_dotenv()
-configure_telemetry(service_name="mwl")
 
 
 def main():

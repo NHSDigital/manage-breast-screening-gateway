@@ -367,7 +367,7 @@ class MWLStorage(Storage):
             "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
             "FROM worklist_items"
         )
-        where_clauses = []
+        where_clauses = ["status NOT IN ('COMPLETED', 'DISCONTINUED')"]
         params = []
 
         if accession_number:
@@ -487,6 +487,11 @@ class MWLStorage(Storage):
             conn.commit()
 
             if cursor.rowcount == 0:
+                logger.warning(
+                    "Failed to update status for accession number %s: no matching item in expected state %s",
+                    accession_number,
+                    from_status.value,
+                )
                 return None
 
             result = conn.execute(

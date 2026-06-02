@@ -50,6 +50,7 @@ variable "gateway_test_vm_size" {
   default     = "Standard_B2s"
 }
 
+
 locals {
   region              = "uksouth"
   resource_group_name = "rg-${var.app_short_name}-${var.environment}-uks"

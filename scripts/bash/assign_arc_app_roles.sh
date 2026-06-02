@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+set -eu
+
+ENV_CONFIG="$1"
+SUBSCRIPTION="$2"
+
+enterpriseAppName="spn-manbrs-web-api-${ENV_CONFIG}"
+rgName="rg-mbsgw-${ENV_CONFIG}-uks-arc-enabled-servers"
+appRoleValue="Gateway.Access"
+
+az extension add --name connectedmachine --allow-preview true --yes 2>/dev/null || true
+
+echo "Fetching enterprise app details for: $enterpriseAppName"
+spObjectId=$(az ad sp list --filter "displayName eq '${enterpriseAppName}'" --query "[0].id" -o tsv)
+appRoleId=$(az ad sp list --filter "displayName eq '${enterpriseAppName}'" --query "[0].appRoles[?value=='${appRoleValue}'].id | [0]" -o tsv)
+
+if [ -z "$spObjectId" ]; then
+  echo "Error: Enterprise app '$enterpriseAppName' not found"
+  exit 1
+fi
+
+echo "SP object ID:          $spObjectId"
+echo "App role ($appRoleValue): $appRoleId"
+
+echo "Listing Arc machines in: $rgName"
+arcMachines=$(az connectedmachine list --resource-group "$rgName" --subscription "$SUBSCRIPTION" --query "[].name" -o tsv)
+
+if [ -z "$arcMachines" ]; then
+  echo "No Arc machines found in $rgName"
+  exit 0
+fi
+
+while IFS= read -r machine; do
+  [ -z "$machine" ] && continue
+
+  miPrincipalId=$(az connectedmachine show \
+    --resource-group "$rgName" \
+    --name "$machine" \
+    --subscription "$SUBSCRIPTION" \
+    --query "identity.principalId" -o tsv)
+
+  if [ -z "$miPrincipalId" ]; then
+    echo "  Warning: $machine has no managed identity principal ID, skipping."
+    continue
+  fi
+
+  echo "Assigning $appRoleValue to $machine (MI: $miPrincipalId)..."
+  if ! output=$(az rest --method POST \
+    --uri "https://graph.microsoft.com/v1.0/servicePrincipals/${spObjectId}/appRoleAssignedTo" \
+    --headers "Content-Type=application/json" \
+    --body "{\"principalId\": \"${miPrincipalId}\", \"resourceId\": \"${spObjectId}\", \"appRoleId\": \"${appRoleId}\"}" 2>&1); then
+    if echo "$output" | grep -q "Permission being assigned already exists"; then
+      echo "  Already assigned, skipping."
+    else
+      echo "Error: $output"
+      exit 1
+    fi
+  else
+    echo "  Successfully assigned."
+  fi
+done <<< "$arcMachines"
+
+echo "Done."

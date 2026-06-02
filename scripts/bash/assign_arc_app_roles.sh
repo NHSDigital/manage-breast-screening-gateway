@@ -2,6 +2,7 @@
 set -eu
 
 ENV_CONFIG="$1"
+SUBSCRIPTION="$2"
 
 enterpriseAppName="spn-manbrs-web-api-${ENV_CONFIG}"
 rgName="rg-mbsgw-${ENV_CONFIG}-uks-arc-enabled-servers"
@@ -20,7 +21,7 @@ echo "SP object ID:          $spObjectId"
 echo "App role ($appRoleValue): $appRoleId"
 
 echo "Listing Arc machines in: $rgName"
-arcMachines=$(az connectedmachine list --resource-group "$rgName" --query "[].name" -o tsv)
+arcMachines=$(az connectedmachine list --resource-group "$rgName" --subscription "$SUBSCRIPTION" --query "[].name" -o tsv)
 
 if [ -z "$arcMachines" ]; then
   echo "No Arc machines found in $rgName"
@@ -33,6 +34,7 @@ while IFS= read -r machine; do
   miPrincipalId=$(az connectedmachine show \
     --resource-group "$rgName" \
     --name "$machine" \
+    --subscription "$SUBSCRIPTION" \
     --query "identity.principalId" -o tsv)
 
   echo "Assigning $appRoleValue to $machine (MI: $miPrincipalId)..."

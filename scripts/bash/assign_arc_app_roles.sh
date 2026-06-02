@@ -8,6 +8,8 @@ enterpriseAppName="spn-manbrs-web-api-${ENV_CONFIG}"
 rgName="rg-mbsgw-${ENV_CONFIG}-uks-arc-enabled-servers"
 appRoleValue="Gateway.Access"
 
+az extension add --name connectedmachine --allow-preview true --yes 2>/dev/null || true
+
 echo "Fetching enterprise app details for: $enterpriseAppName"
 spObjectId=$(az ad sp list --filter "displayName eq '${enterpriseAppName}'" --query "[0].id" -o tsv)
 appRoleId=$(az ad sp list --filter "displayName eq '${enterpriseAppName}'" --query "[0].appRoles[?value=='${appRoleValue}'].id | [0]" -o tsv)

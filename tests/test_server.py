@@ -7,6 +7,7 @@ from pynetdicom.sop_class import (  # pyright: ignore[reportAttributeAccessIssue
     DigitalMammographyXRayImageStorageForProcessing,
     ModalityPerformedProcedureStep,
     ModalityWorklistInformationFind,
+    Verification,
 )
 
 from server import MWLServer, PACSServer
@@ -54,6 +55,7 @@ class TestPACSServer:
 
         mock_ae.assert_called_once_with(ae_title="SCREENING_PACS")
         add_context_calls = [call.args[0] for call in mock_ae.return_value.add_supported_context.call_args_list]
+        assert Verification in add_context_calls
         assert DigitalMammographyXRayImageStorageForPresentation in add_context_calls
         assert DigitalMammographyXRayImageStorageForProcessing in add_context_calls
         mock_ae.return_value.start_server.assert_called_once_with(
@@ -100,7 +102,8 @@ class TestMWLServer:
         mock_storage.assert_called_once_with("/var/lib/pacs/worklist.db")
 
     @patch(f"{MWLServer.__module__}.AE")
-    def test_start(self, mock_ae, _):
+    @patch(f"{MWLServer.__module__}.CEcho")
+    def test_start(self, mock_c_echo, mock_ae, _):
         subject = MWLServer()
         mock_ae_instance = MagicMock()
         mock_ae.return_value = mock_ae_instance
@@ -110,6 +113,7 @@ class TestMWLServer:
         assert subject.ae == mock_ae_instance
 
         mock_ae.assert_called_once_with(ae_title="MWL_SCP")
+        mock_ae_instance.add_supported_context.assert_any_call(Verification)
         mock_ae_instance.add_supported_context.assert_any_call(
             ModalityWorklistInformationFind,
         )
@@ -121,7 +125,8 @@ class TestMWLServer:
         assert args[0] == ("0.0.0.0", 4243)
         assert kwargs["block"] is True
         assert "evt_handlers" in kwargs
-        assert len(kwargs["evt_handlers"]) == 3
+        assert (evt.EVT_C_ECHO, mock_c_echo.return_value.call) in kwargs["evt_handlers"]
+        assert len(kwargs["evt_handlers"]) == 4
 
     @patch(f"{MWLServer.__module__}.AE")
     def test_stop(self, *_):

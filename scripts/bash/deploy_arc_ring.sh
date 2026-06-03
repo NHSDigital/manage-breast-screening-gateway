@@ -89,6 +89,11 @@ while IFS= read -r MACHINE_JSON; do
   [[ -z "$CLOUD_API_TOKEN" ]] && \
     echo "##vso[task.logissue type=warning]cloud-api-token-${MACHINE} not in $KV_NAME — Upload service will not authenticate for $MACHINE"
 
+API_ENVIRONMENT=${ENVIRONMENT}
+
+if [[ "$ENVIRONMENT" == "preprod" ]]; then
+    API_ENVIRONMENT="PRE"
+fi
   # Build .env, then base64-encode to pass newlines as a run command parameter.
   # NOTE: Arc Run Command drops protectedParameters for inline source.script,
   # so EnvContentB64 travels as a regular parameter (base64-encoded, not plain text).
@@ -99,11 +104,11 @@ AZURE_RELAY_KEY_NAME=listen
 AZURE_RELAY_SHARED_ACCESS_KEY=${SAS_KEY}
 CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT}
 CLOUD_API_TOKEN=${CLOUD_API_TOKEN}
-MWL_AET=SCREENING_MWL
-MWL_PORT=4243
+MWL_AET=RUBIE_MWL_${API_ENVIRONMENT}
+MWL_PORT=104
 MWL_DB_PATH=${BASE_PATH}/data/worklist.db
-PACS_AET=SCREENING_PACS
-PACS_PORT=4244
+PACS_AET=RUBIE_PACS_${API_ENVIRONMENT}
+PACS_PORT=11112
 PACS_STORAGE_PATH=${BASE_PATH}/data/storage
 PACS_DB_PATH=${BASE_PATH}/data/pacs.db
 LOG_LEVEL=INFO"

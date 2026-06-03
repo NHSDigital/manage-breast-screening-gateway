@@ -91,7 +91,7 @@ while IFS= read -r MACHINE_JSON; do
 
 API_ENVIRONMENT=$(echo "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
 
-if [[ "$ENVIRONMENT" == "PREPROD" ]]; then
+if [[ "$API_ENVIRONMENT" == "PREPROD" ]]; then
     API_ENVIRONMENT="PRE"
 fi
   # Build .env, then base64-encode to pass newlines as a run command parameter.

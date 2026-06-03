@@ -25,6 +25,14 @@ echo "--- Ring: ${RING} | Environment: ${ENVIRONMENT} | Release: ${RELEASE_TAG} 
 source "infrastructure/environments/${ENVIRONMENT}/variables.sh"
 CLOUD_API_ENDPOINT="https://${CLOUD_API_HOSTNAME}/api/v1/dicom"
 
+CLOUD_API_RESOURCE=$(az ad sp list \
+  --display-name "spn-manbrs-web-api-${ENVIRONMENT}" \
+  --query "[0].appId" -o tsv 2>/dev/null || echo "")
+if [[ -z "$CLOUD_API_RESOURCE" ]]; then
+  echo "##vso[task.logissue type=error]Could not resolve client ID for spn-manbrs-web-api-${ENVIRONMENT}"
+  exit 1
+fi
+
 APPLICATIONINSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
   --app "ai-${APP_SHORT_NAME}-${ENVIRONMENT}-arc-uks" \
   --resource-group "$ARC_RG" \
@@ -65,6 +73,7 @@ while IFS= read -r MACHINE_JSON; do
   ENV_CONTENT="AZURE_RELAY_NAMESPACE=${RELAY_NAMESPACE_HOSTNAME}
 AZURE_RELAY_HYBRID_CONNECTION=hc-${MACHINE}
 CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT}
+CLOUD_API_RESOURCE=${CLOUD_API_RESOURCE}
 APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
 MWL_AET=SCREENING_MWL
 MWL_PORT=4243

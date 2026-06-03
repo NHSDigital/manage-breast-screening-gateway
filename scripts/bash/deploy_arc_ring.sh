@@ -89,7 +89,7 @@ while IFS= read -r MACHINE_JSON; do
   [[ -z "$CLOUD_API_TOKEN" ]] && \
     echo "##vso[task.logissue type=warning]cloud-api-token-${MACHINE} not in $KV_NAME — Upload service will not authenticate for $MACHINE"
 
-API_ENVIRONMENT=${ENVIRONMENT}
+API_ENVIRONMENT=$(echo "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
 
 if [[ "$ENVIRONMENT" == "preprod" ]]; then
     API_ENVIRONMENT="PRE"

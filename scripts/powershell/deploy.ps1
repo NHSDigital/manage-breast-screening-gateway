@@ -43,7 +43,10 @@ param(
     [string]$GitHubToken,
 
     [Parameter()]
-    [string]$EnvContentB64 = ""
+    [string]$EnvContentB64 = "",
+
+    [Parameter()]
+    [string]$Environment = "prod"
 )
 
 Set-StrictMode -Version Latest
@@ -337,6 +340,9 @@ $services = @(
     @{ Name = "Gateway-MWL"; Script = "mwl_main.py" },
     @{ Name = "Gateway-Upload"; Script = "upload_main.py" }
 )
+if (($Environment -ne "prod") -and ($Environment -ne "preprod")) {
+    $services += @{ Name = "Gateway-Emulator"; Script = "modality_emulator.py" }
+}
 
 # -- Extraction ---------------------------------------------------------------
 

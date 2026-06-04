@@ -61,7 +61,7 @@ echo ""
 
 # ── Validate required files ───────────────────────────────────────────────────
 
-REQUIRED_FILES=("src/" "scripts/python/" "pyproject.toml" "uv.lock" "README.md")
+REQUIRED_FILES=("src/" "sample_images/" "scripts/python/" "pyproject.toml" "uv.lock" "README.md" "LICENCE.md")
 
 for item in "${REQUIRED_FILES[@]}"; do
     if [[ ! -e "${REPO_ROOT}/${item}" ]]; then

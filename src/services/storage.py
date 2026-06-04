@@ -367,7 +367,7 @@ class MWLStorage(Storage):
             "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
             "FROM worklist_items"
         )
-        where_clauses = []
+        where_clauses = ["status NOT IN ('COMPLETED', 'DISCONTINUED')"]
         params = []
 
         if accession_number:

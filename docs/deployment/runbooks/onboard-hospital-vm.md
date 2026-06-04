@@ -100,7 +100,24 @@ Run the ADO pipeline **Deploy Arc Infrastructure - \<env\>** manually. Terraform
 
 **Verify**: In the Azure portal, navigate to `relay-manbrs-<env>` → Hybrid Connections → `hc-gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` is present.
 
-## Step 4 — Deploy the gateway application
+## Step 4 — Grant API access
+
+> [!IMPORTANT]
+> Without this step the gateway services will start but fail to authenticate against the cloud web API. The Arc machine's managed identity must be assigned the `Gateway.Access` app role on `spn-manbrs-web-api-<env>` before the first deployment.
+
+Run from a developer machine with Owner access to the enterprise application:
+
+```bash
+make <env> resource-group-init
+```
+
+This calls [`scripts/bash/assign_arc_app_roles.sh`](../../../scripts/bash/assign_arc_app_roles.sh) which discovers all Arc machines in `rg-mbsgw-<env>-uks-arc-enabled-servers` and assigns the `Gateway.Access` role to each machine's managed identity.
+
+> **Why is this manual?** The pipeline managed identity (`mi-mbsgw-<env>-adotoaz-uks`) cannot create app role assignments via the pipeline — Microsoft Graph requires `AppRoleAssignment.ReadWrite.All` in application auth context regardless of SP ownership, and this permission cannot be granted under the organisation's Entra policy. Running `resource-group-init` under a user account with ownership of the enterprise app SP is sufficient. See [Deployment Pipeline — Section 12](../deployment-pipeline.md#12-pipeline-identities-and-permissions) for details.
+
+**Verify**: In the Azure portal navigate to **Enterprise Applications → spn-manbrs-web-api-\<env\> → Users and groups**. The Arc machine (`gw-hull-university-teaching-hospitals-nhs-trust-rwa-01`) should appear with the `Gateway.Access` role.
+
+## Step 5 — Deploy the gateway application
 
 Run the ADO pipeline **Deploy Gateway - \<env\>** with:
 
@@ -115,7 +132,7 @@ The pipeline:
 2. Sends an Arc Run Command to `gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` that writes `.env` and runs `deploy.ps1`
 3. Polls for completion and reports success or failure
 
-## Step 5 — Smoke test
+## Step 6 — Smoke test
 
 Run from the gateway VM or via Arc Run Command:
 

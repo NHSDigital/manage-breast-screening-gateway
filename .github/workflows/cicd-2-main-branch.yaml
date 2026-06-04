@@ -80,6 +80,7 @@ jobs:
           LATEST_TAG=$(gh release list \
             --repo "${{ github.repository }}" \
             --limit 1 \
+            --exclude-pre-releases \
             --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
           if [[ -z "$LATEST_TAG" ]]; then
             echo "::error::No GitHub Release exists. Push a v* tag to create the first release."

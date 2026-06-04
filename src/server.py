@@ -14,6 +14,7 @@ from pynetdicom.sop_class import (
     DigitalMammographyXRayImageStorageForProcessing,  # type: ignore[attr-defined]
     ModalityPerformedProcedureStep,  # type: ignore[attr-defined]
     ModalityWorklistInformationFind,  # type: ignore[attr-defined]
+    Verification,  # type: ignore[attr-defined]
 )
 
 from services.dicom.c_echo import CEcho
@@ -68,6 +69,7 @@ class PACSServer:
             dicom_uid.JPEG2000Lossless,
         ]
         self.ae = AE(ae_title=self.ae_title)
+        self.ae.add_supported_context(Verification)
         self.ae.add_supported_context(DigitalMammographyXRayImageStorageForPresentation, transfer_syntaxes)
         self.ae.add_supported_context(DigitalMammographyXRayImageStorageForProcessing, transfer_syntaxes)
 
@@ -120,10 +122,12 @@ class MWLServer:
         logger.info(f"Starting MWL server: {self.ae_title} on port {self.port}")
 
         self.ae = AE(ae_title=self.ae_title)
+        self.ae.add_supported_context(Verification)
         self.ae.add_supported_context(ModalityWorklistInformationFind)
         self.ae.add_supported_context(ModalityPerformedProcedureStep)
 
         handlers = [
+            (evt.EVT_C_ECHO, CEcho().call),
             (evt.EVT_C_FIND, CFind(self.storage).call),
             (evt.EVT_N_CREATE, NCreate(self.storage).call),
             (evt.EVT_N_SET, NSet(self.storage).call),

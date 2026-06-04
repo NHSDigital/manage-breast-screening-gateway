@@ -206,6 +206,9 @@ def main():
         except KeyboardInterrupt:
             logger.warning("\n Modality Emulator shutting down...")
             break
+        except Exception:
+            logger.exception("Error in Modality Emulator")
+            time.sleep(5)  # Wait before retrying to avoid tight error loop
 
 
 if __name__ == "__main__":

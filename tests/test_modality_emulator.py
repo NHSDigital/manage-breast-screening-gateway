@@ -138,8 +138,10 @@ class TestModalityEmulator:
 
         mock_dicom_example.assert_any_call(ds, "L", "CC", study_instance_uid, 1)
         mock_dicom_example.assert_any_call(ds, "L", "MLO", study_instance_uid, 2)
-        mock_dicom_example.assert_any_call(ds, "R", "CC", study_instance_uid, 3)
-        mock_dicom_example.assert_any_call(ds, "R", "MLO", study_instance_uid, 4)
+        mock_dicom_example.assert_any_call(ds, "L", "CCID", study_instance_uid, 3)
+        mock_dicom_example.assert_any_call(ds, "R", "CC", study_instance_uid, 4)
+        mock_dicom_example.assert_any_call(ds, "R", "MLO", study_instance_uid, 5)
+        mock_dicom_example.assert_any_call(ds, "R", "CCID", study_instance_uid, 6)
 
         expected_send_count = len(DICOM_LATERALITIES) * len(DICOM_VIEWS)
 

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 DICOM_LATERALITIES = ["L", "R"]
-DICOM_VIEWS = ["CC", "MLO"]
+DICOM_VIEWS = ["CC", "MLO", "CCID"]
 EMULATED_PROCEDURE_DURATION_SECONDS = int(os.getenv("EMULATED_PROCEDURE_DURATION_SECONDS", "5"))
 MODALITY = "MG"
 MWL_AET = os.getenv("MWL_AET", "SCREENING_MWL")
@@ -102,6 +102,14 @@ class DicomExample:
         ds.SeriesNumber = self.series_number
         ds.Modality = MODALITY
         ds.InstanceNumber = 1
+
+        if self.view.endswith("ID"):
+            view_modifier_code_sequence = Dataset()
+            view_modifier_code_sequence.CodeValue = "R-102D5"
+            view_modifier_code_sequence.CodingSchemeDesignator = "SRT"
+            view_modifier_code_sequence.CodeMeaning = "Implant Displaced"
+            ds.ViewModifierCodeSequence = [view_modifier_code_sequence]
+
         ds.file_meta = file_meta
 
         logger.debug(f"Generated DICOM for worklist item {self.dataset.AccessionNumber} - {self.laterality}{self.view}")

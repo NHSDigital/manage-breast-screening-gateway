@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 
 from server import MWLServer
+from telemetry import configure_telemetry
 
 load_dotenv()
 
@@ -29,6 +30,8 @@ def main():
     mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 
     mwl_server = MWLServer(mwl_aet, mwl_port, mwl_db_path, block=True)
+
+    configure_telemetry(service_name="mwl-server")
 
     try:
         mwl_server.start()

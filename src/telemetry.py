@@ -3,6 +3,14 @@ import os
 
 logger = logging.getLogger(__name__)
 
+# Suppress verbose logging from OpenTelemetry and Azure Monitor libraries
+for package_name in [
+    "azure.monitor.opentelemetry",
+    "azure.core.pipeline.policies.http_logging_policy",
+]:
+    package_logger = logging.getLogger(package_name)
+    package_logger.setLevel(logging.WARNING)
+
 
 def configure_telemetry(service_name: str | None = None) -> None:
     """Configure OpenTelemetry with Azure Monitor.

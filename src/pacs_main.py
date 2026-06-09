@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 
 from server import PACSServer
+from telemetry import configure_telemetry
 
 load_dotenv()
 
@@ -32,6 +33,8 @@ def main():
     mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 
     pacs_server = PACSServer(pacs_aet, pacs_port, pacs_storage_path, pacs_db_path, block=True, mwl_db_path=mwl_db_path)
+
+    configure_telemetry(service_name="pacs-server")
 
     try:
         pacs_server.start()

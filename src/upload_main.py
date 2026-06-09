@@ -9,6 +9,7 @@ from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_listener import UploadListener
 from services.dicom.upload_processor import UploadProcessor
 from services.storage import MWLStorage, PACSStorage
+from telemetry import configure_telemetry
 
 load_dotenv()
 
@@ -66,6 +67,8 @@ def main():
     logging.info(f"Max retries: {max_retries}")
     logging.info(f"API endpoint: {uploader.api_endpoint}")
     logging.info("=" * 60)
+
+    configure_telemetry(service_name="upload-listener")
 
     try:
         listener.start()

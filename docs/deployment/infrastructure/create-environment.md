@@ -54,7 +54,7 @@ az provider show --namespace Microsoft.GuestConfiguration --query registrationSt
 
 - Confirm the web API enterprise application exists:
   - Name: `spn-manbrs-web-api-[environment]`
-  - If it does not exist, raise a ServiceNow request for the platform team to create it — the `resource-group-init` Bicep deployment and the `assign_arc_app_roles.sh` script both depend on it
+  - If it does not exist, raise a ServiceNow request for the platform team to create it — the `resource-group-init` Bicep deployment and the `assign-arc-app-roles` make target both depend on it
   - [Form for ServiceNow](https://nhsdigitallive.service-now.com/nhs_digital?id=sc_cat_item&sys_id=28f3ab4f1bf3ca1078ac4337b04bcb78&sysparm_category=114fced51bdae1502eee65b9bd4bcbdc)
 
 ## Code
@@ -239,10 +239,10 @@ Terraform automatically discovers Arc machines registered in the Arc-enabled ser
 make [environment] terraform-apply
 ```
 
-After Terraform provisions the Hybrid Connection, re-run `resource-group-init` to assign the `Gateway.Access` app role to the new machine's managed identity:
+After Terraform provisions the Hybrid Connection, run `assign-arc-app-roles` to assign the `Gateway.Access` app role to the new machine's managed identity:
 
 ```bash
-make [environment] resource-group-init
+make [environment] assign-arc-app-roles
 ```
 
-> **Why is this a separate step?** The pipeline managed identity cannot create app role assignments — `AppRoleAssignment.ReadWrite.All` is required in application auth context regardless of SP ownership, and this permission is not permitted under the organisation's Entra policy. Running `resource-group-init` under a user account with ownership of `spn-manbrs-web-api-[environment]` is sufficient. Without this step the gateway will fail to authenticate against the cloud web API. See [Onboard Hospital VM — Step 4](../runbooks/onboard-hospital-vm.md#step-4--grant-api-access).
+> **Why is this a separate step?** The pipeline managed identity cannot create app role assignments — `AppRoleAssignment.ReadWrite.All` is required in application auth context regardless of SP ownership, and this permission is not permitted under the organisation's Entra policy. Running `assign-arc-app-roles` under a user account with ownership of `spn-manbrs-web-api-[environment]` is sufficient. Without this step the gateway will fail to authenticate against the cloud web API. See [Onboard Hospital VM — Step 3](../runbooks/onboard-hospital-vm.md#step-3--grant-api-access).

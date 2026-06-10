@@ -64,9 +64,8 @@ declare -a RUN_CMD_NAMES=()
 
 # API_ENVIRONMENT is used to set the AET and port for the MWL and PACS servers.
 API_ENVIRONMENT=$(echo "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
-
-if [[ "$API_ENVIRONMENT" == "PREPROD" ]]; then
-    API_ENVIRONMENT="PRE"
+if [[ ${#API_ENVIRONMENT} -gt 4 ]]; then
+  API_ENVIRONMENT=${API_ENVIRONMENT:0:3} # Truncate REVIEW and PREPROD to 3 chars to fit within AET length limit
 fi
 
 while IFS= read -r MACHINE_JSON; do

@@ -21,9 +21,11 @@ ci: # Skip manual approvals when running in CI - make ci <env> <action>
 set-azure-account: # Set the Azure account for the environment - make <env> set-azure-account
 	[ "${SKIP_AZURE_LOGIN}" != "true" ] && az account set -s ${AZURE_SUBSCRIPTION} || true
 
-resource-group-init: set-azure-account get-subscription-ids # Initialise resources required by terraform and assign Gateway.Access role to Arc machine managed identities - make <env> resource-group-init
+resource-group-init: set-azure-account get-subscription-ids # Initialise resources required by terraform - make <env> resource-group-init
 	$(eval STORAGE_ACCOUNT_NAME=sa${APP_SHORT_NAME}${ENV_CONFIG}tfstate)
 	scripts/bash/resource_group_init.sh "${REGION}" "${HUB_SUBSCRIPTION_ID}" "${ENABLE_SOFT_DELETE}" "${ENV_CONFIG}" "${STORAGE_ACCOUNT_RG}" "${STORAGE_ACCOUNT_NAME}" "${APP_SHORT_NAME}" "${ARM_SUBSCRIPTION_ID}"
+
+assign-arc-app-roles: set-azure-account get-subscription-ids # Assign Gateway.Access app role to Arc machine managed identities - make <env> assign-arc-app-roles
 	scripts/bash/assign_arc_app_roles.sh "${ENV_CONFIG}" "${ARM_SUBSCRIPTION_ID}"
 
 get-subscription-ids: # Retrieve the hub subscription ID based on the subscription name in ${HUB_SUBSCRIPTION} - make <env> get-subscription-ids

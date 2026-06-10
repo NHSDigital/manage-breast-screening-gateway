@@ -15,7 +15,7 @@
 - [ ] Trust ODS code confirmed via the [ODS portal](https://odsportal.nhsbsa.nhs.uk/)
 - [ ] NHS region confirmed (`nw` | `neyh` | `mids` | `eoe` | `lon` | `se` | `sw`)
 - [ ] Deployment ring agreed with the programme team
-- [ ] `arc-onboarding-spn-client-id` and `arc-onboarding-spn-client-secret` retrieved from Key Vault
+- [ ] `arc-onboarding-spn-client-id` retrieved from Entra ID; new `arc-onboarding-spn-client-secret` generated with 1-day expiry and shared with the hospital trust IT team before the onboarding call
 
 ---
 
@@ -91,16 +91,7 @@ Logs are written to `C:\ArcSetup\ArcSetup.log`.
 
 **Verify**: In the Azure portal, navigate to `rg-mbsgw-<env>-uks-arc-enabled-servers` → Azure Arc machines → `gw-hull-university-teaching-hospitals-nhs-trust-rwa-01`. Status should be **Connected**.
 
-## Step 3 — Trigger Terraform to provision the Hybrid Connection
-
-Run the ADO pipeline **Deploy Arc Infrastructure - \<env\>** manually. Terraform discovers the new Arc machine and creates:
-
-- `hc-gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` in the relay namespace (`relay-manbrs-<env>`)
-- `listen` auth rule on that Hybrid Connection
-
-**Verify**: In the Azure portal, navigate to `relay-manbrs-<env>` → Hybrid Connections → `hc-gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` is present.
-
-## Step 4 — Grant API access
+## Step 3 — Grant API access
 
 > [!IMPORTANT]
 > Without this step the gateway services will start but fail to authenticate against the cloud web API. The Arc machine's managed identity must be assigned the `Gateway.Access` app role on `spn-manbrs-web-api-<env>` before the first deployment.
@@ -108,14 +99,23 @@ Run the ADO pipeline **Deploy Arc Infrastructure - \<env\>** manually. Terraform
 Run from a developer machine with Owner access to the enterprise application:
 
 ```bash
-make <env> resource-group-init
+make <env> assign-arc-app-roles
 ```
 
 This calls [`scripts/bash/assign_arc_app_roles.sh`](../../../scripts/bash/assign_arc_app_roles.sh) which discovers all Arc machines in `rg-mbsgw-<env>-uks-arc-enabled-servers` and assigns the `Gateway.Access` role to each machine's managed identity.
 
-> **Why is this manual?** The pipeline managed identity (`mi-mbsgw-<env>-adotoaz-uks`) cannot create app role assignments via the pipeline — Microsoft Graph requires `AppRoleAssignment.ReadWrite.All` in application auth context regardless of SP ownership, and this permission cannot be granted under the organisation's Entra policy. Running `resource-group-init` under a user account with ownership of the enterprise app SP is sufficient. See [Deployment Pipeline — Section 12](../deployment-pipeline.md#12-pipeline-identities-and-permissions) for details.
+> **Why is this manual?** The pipeline managed identity (`mi-mbsgw-<env>-adotoaz-uks`) cannot create app role assignments via the pipeline — Microsoft Graph requires `AppRoleAssignment.ReadWrite.All` in application auth context regardless of SP ownership, and this permission cannot be granted under the organisation's Entra policy. Running `assign-arc-app-roles` under a user account with ownership of the enterprise app SP is sufficient. See [Deployment Pipeline — Section 12](../deployment-pipeline.md#12-pipeline-identities-and-permissions) for details.
 
 **Verify**: In the Azure portal navigate to **Enterprise Applications → spn-manbrs-web-api-\<env\> → Users and groups**. The Arc machine (`gw-hull-university-teaching-hospitals-nhs-trust-rwa-01`) should appear with the `Gateway.Access` role.
+
+## Step 4 — Trigger Terraform to provision the Hybrid Connection
+
+Run the ADO pipeline **Deploy Arc Infrastructure - \<env\>** manually. Terraform discovers the new Arc machine and creates:
+
+- `hc-gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` in the relay namespace (`relay-manbrs-<env>`)
+- `listen` auth rule on that Hybrid Connection
+
+**Verify**: In the Azure portal, navigate to `relay-manbrs-<env>` → Hybrid Connections → `hc-gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` is present.
 
 ## Step 5 — Deploy the gateway application
 
@@ -172,7 +172,7 @@ Check Log Analytics Workspace for an initial heartbeat within 5 minutes of servi
 Check `C:\ArcSetup\ArcSetup.log` on the VM. Common causes:
 
 - **Firewall blocking outbound** — confirm the VM can reach `*.arc.azure.com` on port 443
-- **SPN credentials wrong** — verify client ID and secret from Key Vault are current
+- **SPN credentials wrong** — confirm the one-time secret shared before the call has not expired (1-day validity); generate a new one and retry if needed
 - **VM already registered** — if the machine was previously connected under a different name, disconnect first: `azcmagent disconnect`
 
 ### Script execution blocked

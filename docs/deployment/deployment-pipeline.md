@@ -422,7 +422,7 @@ The ADO managed identity holds:
 
 The managed identity does **not** hold `Key Vault Secrets Officer` — it cannot write secrets. Cloud API tokens must be provisioned separately by the team managing the cloud application.
 
-The managed identity also does **not** hold `AppRoleAssignment.ReadWrite.All`. Microsoft Graph requires this explicit application permission to create app role assignments — being an owner of the enterprise app service principal is insufficient in application auth context. Granting this tenant-wide permission is not permitted under the organisation's Entra policy. Arc machine managed identity app role assignments are therefore granted manually by running `make <env> resource-group-init` under a user account with ownership of `spn-manbrs-web-api-<env>` — see [`scripts/bash/assign_arc_app_roles.sh`](../../scripts/bash/assign_arc_app_roles.sh) and the [Onboard Hospital VM runbook](./runbooks/onboard-hospital-vm.md#step-4--grant-api-access).
+The managed identity also does **not** hold `AppRoleAssignment.ReadWrite.All`. Microsoft Graph requires this explicit application permission to create app role assignments — being an owner of the enterprise app service principal is insufficient in application auth context. Granting this tenant-wide permission is not permitted under the organisation's Entra policy. Arc machine managed identity app role assignments are therefore granted manually by running `make <env> assign-arc-app-roles` under a user account with ownership of `spn-manbrs-web-api-<env>` — see [`scripts/bash/assign_arc_app_roles.sh`](../../scripts/bash/assign_arc_app_roles.sh) and the [Onboard Hospital VM runbook](./runbooks/onboard-hospital-vm.md#step-3--grant-api-access).
 
 ### Separation of environments
 

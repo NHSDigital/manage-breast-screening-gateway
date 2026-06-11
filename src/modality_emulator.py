@@ -4,6 +4,7 @@ import os
 import time
 
 import numpy as np
+from dotenv import load_dotenv
 from PIL import Image
 from pydicom.dataset import Dataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, generate_uid
@@ -17,6 +18,8 @@ from environment import Environment
 from services.dicom import PENDING, PENDING_WARNING, SUCCESS
 from services.mwl import MWLStatus
 from services.storage import MWLStorage
+
+load_dotenv()
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
@@ -58,7 +61,7 @@ class DicomExample:
             logger.error("No dataset provided for DICOM generation")
             return ds
 
-        img_path = f"{SAMPLE_IMAGES_PATH}/L{self.view}.jpg"
+        img_path = f"{SAMPLE_IMAGES_PATH}/L{self.view.replace('ID', '')}.jpg"
         img = Image.open(img_path).convert("L")
         if self.laterality == "R":
             img = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)

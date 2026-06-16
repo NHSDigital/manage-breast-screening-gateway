@@ -7,7 +7,7 @@ DICOM PACS (Picture Archiving and Communication System) server for receiving and
 The PACS server is a lightweight, production-ready DICOM storage solution that:
 
 - Receives medical images via DICOM C-STORE protocol
-- Stores the images using hash-based directory structure
+- Stores the images using [hash-based directory structure](https://en.wikipedia.org/wiki/Content-addressable_storage)
 - Indexes metadata in SQLite database
 - Runs in a separate container alongside the [MWL Server](../mwl/README.md) (see [ADR-003](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md))
 

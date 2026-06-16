@@ -41,6 +41,7 @@ build/
 .coverage.*
 htmlcov/
 coverage.xml
+reports/
 .tox/
 .hypothesis/
 

@@ -122,7 +122,7 @@ docker compose down -v
 Environment variables:
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `PACS_AET` | `SCREENING_PACS` | Application Entity Title |
 | `PACS_PORT` | `4244` | DICOM service port |
 | `PACS_STORAGE_PATH` | `/var/lib/pacs/storage` | Directory for DICOM files |

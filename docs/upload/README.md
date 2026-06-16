@@ -57,7 +57,7 @@ The upload service:
 Environment variables:
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `CLOUD_API_ENDPOINT` | `http://localhost:8000/api/dicom/upload/` | Manage API upload endpoint |
 | `PACS_DB_PATH` | `/var/lib/pacs/pacs.db` | PACS SQLite database path |
 | `PACS_STORAGE_PATH` | `/var/lib/pacs/storage` | PACS file storage path |

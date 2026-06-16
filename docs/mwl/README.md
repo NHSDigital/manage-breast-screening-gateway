@@ -71,7 +71,7 @@ docker compose logs -f mwl
 ### MWL server
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `MWL_AET` | `MWL_SCP` | Application Entity Title |
 | `MWL_PORT` | `4243` | DICOM service port |
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
@@ -80,7 +80,7 @@ docker compose logs -f mwl
 ### Reset script (`reset_main.py`)
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
 | `BACKUP_PATH` | `/var/lib/pacs/backups` | Directory for database backups |
 | `LOG_LEVEL` | `INFO` | Logging level |

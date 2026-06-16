@@ -30,12 +30,12 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 │         └──────────────────────┘                            │      (Task Scheduler)
 │         Query & Response                                    │                  │
 └─────────────────────────────────────────────────────────────┘                  │
-           ▲                         ▲                                    ┌───────┴────────┐
-           │                         │                                    │  reset_main.py │
-    ┌──────┴──────┐           ┌───────┴────────┐                          └────────────────┘
-    │  Modality   │           │ Relay Listener │
-    │  (SCU)      │           │ (Populates DB) │
-    └─────────────┘           └────────────────┘
+           ▲                         ▲                                   ┌───────┴────────┐
+           │                         │                                   │  reset_main.py │
+    ┌──────┴──────┐          ┌───────┴────────┐                          └────────────────┘
+    │  Modality   │          │ Relay Listener │
+    │  (SCU)      │          │ (Populates DB) │
+    └─────────────┘          └────────────────┘
 ```
 
 ### Workflow

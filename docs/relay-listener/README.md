@@ -11,6 +11,14 @@ The listener processes worklist actions sent from Manage/Django and creates work
 │   Django (Manage)   │                           │  Gateway (Behind FW) │
 └─────────────────────┘                           └──────────────────────┘
          │                                                          │
+         │                                                          │
+         │                                             (0) Connect  │
+         │                       <────────────────────────────────  │
+         │          Establish a connection. Once this succeeds, we  │
+         │          will have a full-duplex, bi-directional comms   │
+         │          channel                                         │
+         │                                                          │
+         │                                                          │
          │ (1) Send Worklist Actions                                │
          │ ────────────────────────────────>                        │
          │   Connection: name-of-your-choice-relay-test-hc          │

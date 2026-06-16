@@ -16,7 +16,7 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 
 ### Components
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    MWL Server (Port 4243)                   │
 ├─────────────────────────────────────────────────────────────┤

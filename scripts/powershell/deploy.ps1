@@ -560,6 +560,54 @@ if (-not $cutoverFailed) {
     }
 }
 
+# -- Maintenance schedule -------------------------------------------------------------
+
+if (-not $cutoverFailed) {
+    $maintenanceScriptPath = Join-Path $BaseInstallPath "current\scripts\powershell\maintenance.ps1"
+    $backupMWLAction = New-ScheduledTaskAction `
+        -Execute "powershell.exe" `
+        -Argument "-ExecutionPolicy Bypass -File `"$maintenanceScriptPath`" -Action BackupMWLDatabase"
+
+    $backupMWLTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 2AM
+
+    Register-ScheduledTask `
+        -TaskName "Gateway-MWL-Maintenance" `
+        -Action $backupMWLAction `
+        -Trigger $backupMWLTrigger `
+        -User "SYSTEM" `
+        -RunLevel Highest `
+        -Force
+
+    $backupPACSAction = New-ScheduledTaskAction `
+        -Execute "powershell.exe" `
+        -Argument "-ExecutionPolicy Bypass -File `"$maintenanceScriptPath`" -Action BackupPACSDatabase"
+
+    $backupPACSTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 2.15AM
+
+    Register-ScheduledTask `
+        -TaskName "Gateway-PACS-Maintenance" `
+        -Action $backupPACSAction `
+        -Trigger $backupPACSTrigger `
+        -User "SYSTEM" `
+        -RunLevel Highest `
+        -Force
+
+    $rotateLogsAction = New-ScheduledTaskAction `
+        -Execute "powershell.exe" `
+        -Argument "-ExecutionPolicy Bypass -File `"$maintenanceScriptPath`" -Action RotateLogs"
+
+    $rotateLogsTrigger = New-ScheduledTaskTrigger -Daily -At 2.30AM
+
+    Register-ScheduledTask `
+        -TaskName "Gateway-Logs-Maintenance" `
+        -Action $rotateLogsAction `
+        -Trigger $rotateLogsTrigger `
+        -User "SYSTEM" `
+        -RunLevel Highest `
+        -Force
+
+}
+
 # -- Rollback on Failure ------------------------------------------------------
 
 if ($cutoverFailed) {

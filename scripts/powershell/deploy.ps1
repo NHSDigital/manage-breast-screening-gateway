@@ -522,10 +522,6 @@ foreach ($svc in $services) {
     Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "Description", "Manage Breast Screening Gateway - $($svc.Name)") -Description "set Description"
     Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "Start", "SERVICE_AUTO_START") -Description "set Start"
 
-    $svcLog = Join-Path $logsDir "$($svc.Name).log"
-    Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "AppStdout", "$svcLog") -Description "set AppStdout"
-    Invoke-Nssm -NssmPath $nssmExe -Arguments @("set", $svc.Name, "AppStderr", "$svcLog") -Description "set AppStderr"
-
     try {
         Start-Service -Name $svc.Name
         $startedServices += $svc.Name

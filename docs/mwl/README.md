@@ -161,10 +161,22 @@ uv run pytest tests/integration/test_request_cfind_on_worklist.py -v
 
 ## Worklist item status transitions
 
-```
-SCHEDULED ──(first C-STORE)──▶ IN PROGRESS ──(MPPS N-SET)──▶ COMPLETED
-                                     │
-                                     └────────(MPPS N-SET)──▶ DISCONTINUED
+```mermaid
+stateDiagram-v2
+    direction LR
+    state "IN PROGRESS" as IP
+
+    [*] --> SCHEDULED
+    SCHEDULED -->  IP: (first C-STORE)
+
+    state fork_state <<fork>>
+    IP --> fork_state: (MPPS N-SET)
+
+    fork_state --> COMPLETED
+    fork_state --> DISCONTINUED
+
+    COMPLETED --> [*]
+    DISCONTINUED --> [*]
 ```
 
 See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) and [ADR-004: Daily backup and reset of the MWL database](../adr/ADR-004_MWL_Daily_Backup_And_Reset.md) for architectural decisions.

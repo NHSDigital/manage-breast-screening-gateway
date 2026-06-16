@@ -15,7 +15,7 @@ The PACS server is a lightweight, production-ready DICOM storage solution that:
 
 ### Components
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       PACS Server (Port 4244)                       │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -60,7 +60,7 @@ Modalities send images in JPEG Lossless transfer syntax. The gateway PACS does n
 
 **Hash-based Directory Layout:**
 
-```
+```text
 storage/
 ├── b2/
 │   └── 51/

@@ -1,6 +1,5 @@
 """Entry point for DICOM upload listener service."""
 
-import logging
 import os
 
 from dotenv import load_dotenv
@@ -9,7 +8,7 @@ from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_listener import UploadListener
 from services.dicom.upload_processor import UploadProcessor
 from services.storage import MWLStorage, PACSStorage
-from telemetry import configure_telemetry
+from telemetry import configure_logging, configure_telemetry
 
 load_dotenv()
 
@@ -28,10 +27,7 @@ def main():
     UPLOAD_POLL_INTERVAL: Time in seconds between polling for new uploads (default: 2)
     UPLOAD_BATCH_SIZE: Number of pending uploads to process in each batch (default: 10)
     """
-    logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
-    )
+    logger = configure_logging("Gateway-Upload")
 
     poll_interval = float(os.getenv("UPLOAD_POLL_INTERVAL", "2"))
     batch_size = int(os.getenv("UPLOAD_BATCH_SIZE", "10"))
@@ -56,24 +52,24 @@ def main():
         batch_size=batch_size,
     )
 
-    logging.info("=" * 60)
-    logging.info("Starting DICOM upload listener service")
-    logging.info("=" * 60)
-    logging.info(f"PACS DB: {pacs_storage.db_path}")
-    logging.info(f"Worklist DB: {mwl_storage.db_path}")
-    logging.info(f"Storage: {pacs_storage.storage_root}")
-    logging.info(f"Poll interval: {poll_interval}s")
-    logging.info(f"Batch size: {batch_size}")
-    logging.info(f"Max retries: {max_retries}")
-    logging.info(f"API endpoint: {uploader.api_endpoint}")
-    logging.info("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Starting DICOM upload listener service")
+    logger.info("=" * 60)
+    logger.info(f"PACS DB: {pacs_storage.db_path}")
+    logger.info(f"Worklist DB: {mwl_storage.db_path}")
+    logger.info(f"Storage: {pacs_storage.storage_root}")
+    logger.info(f"Poll interval: {poll_interval}s")
+    logger.info(f"Batch size: {batch_size}")
+    logger.info(f"Max retries: {max_retries}")
+    logger.info(f"API endpoint: {uploader.api_endpoint}")
+    logger.info("=" * 60)
 
     configure_telemetry(service_name="upload-listener")
 
     try:
         listener.start()
     except KeyboardInterrupt:
-        logging.info("Received shutdown signal")
+        logger.info("Received shutdown signal")
         listener.stop()
 
 

@@ -36,6 +36,7 @@ class PACSServer:
         port: int = 4244,
         storage_path: str = "/var/lib/pacs/storage",
         db_path: str = "/var/lib/pacs/pacs.db",
+        logger: logging.Logger = logger,
         block: bool = True,
         mwl_db_path: str = "/var/lib/pacs/worklist.db",
     ):
@@ -54,11 +55,12 @@ class PACSServer:
         self.storage = PACSStorage(db_path, storage_path)
         self.mwl_storage = MWLStorage(mwl_db_path)
         self.ae = None
+        self.logger = logger
         self.block = block
 
     def start(self):
         """Start the PACS server and listen for incoming connections."""
-        logger.info(f"Starting PACS server: {self.ae_title} on port {self.port}")
+        self.logger.info(f"Starting PACS server: {self.ae_title} on port {self.port}")
 
         transfer_syntaxes = [
             dicom_uid.JPEGLosslessSV1,  # Hologic preferred
@@ -78,16 +80,16 @@ class PACSServer:
             (evt.EVT_C_STORE, CStore(self.storage, mwl_storage=self.mwl_storage).call),
         ]
 
-        logger.info(f"PACS server listening on 0.0.0.0:{self.port}")
-        logger.info(f"Storage: {self.storage.storage_root}")
-        logger.info(f"Database: {self.storage.db_path}")
+        self.logger.info(f"PACS server listening on 0.0.0.0:{self.port}")
+        self.logger.info(f"Storage: {self.storage.storage_root}")
+        self.logger.info(f"Database: {self.storage.db_path}")
 
         self.ae.start_server(("0.0.0.0", self.port), block=self.block, evt_handlers=handlers)  # type: ignore
 
     def stop(self):
         """Stop the PACS server."""
         if self.ae:
-            logger.info("Stopping PACS server")
+            self.logger.info("Stopping PACS server")
             self.ae.shutdown()
         self.storage.close()
 
@@ -100,6 +102,7 @@ class MWLServer:
         ae_title: str = "MWL_SCP",
         port: int = 4243,
         db_path: str = "/var/lib/pacs/worklist.db",
+        logger: logging.Logger = logger,
         block: bool = True,
     ):
         """
@@ -115,11 +118,12 @@ class MWLServer:
         self.port = port
         self.storage = MWLStorage(db_path)
         self.ae = None
+        self.logger = logger
         self.block = block
 
     def start(self):
         """Start the MWL server."""
-        logger.info(f"Starting MWL server: {self.ae_title} on port {self.port}")
+        self.logger.info(f"Starting MWL server: {self.ae_title} on port {self.port}")
 
         self.ae = AE(ae_title=self.ae_title)
         self.ae.add_supported_context(Verification)
@@ -133,13 +137,13 @@ class MWLServer:
             (evt.EVT_N_SET, NSet(self.storage).call),
         ]
 
-        logger.info(f"MWL server listening on 0.0.0.0:{self.port}")
-        logger.info(f"Database: {self.storage.db_path}")
+        self.logger.info(f"MWL server listening on 0.0.0.0:{self.port}")
+        self.logger.info(f"Database: {self.storage.db_path}")
 
         self.ae.start_server(("0.0.0.0", self.port), block=self.block, evt_handlers=handlers)  # type: ignore
 
     def stop(self):
         """Stop the MWL server."""
         if self.ae:
-            logger.info("Stopping MWL server")
+            self.logger.info("Stopping MWL server")
             self.ae.shutdown()

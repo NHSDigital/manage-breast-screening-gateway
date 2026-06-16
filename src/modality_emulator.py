@@ -1,5 +1,4 @@
 import datetime
-import logging
 import os
 import time
 
@@ -18,15 +17,11 @@ from environment import Environment
 from services.dicom import PENDING, PENDING_WARNING, SUCCESS
 from services.mwl import MWLStatus
 from services.storage import MWLStorage
+from telemetry import configure_logging
 
 load_dotenv()
 
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
-)
-
-logger = logging.getLogger(__name__)
+logger = configure_logging("Gateway-Emulator")
 
 
 DICOM_LATERALITIES = ["L", "R"]

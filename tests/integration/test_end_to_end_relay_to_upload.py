@@ -6,6 +6,7 @@ through to uploading the DICOM image to the Manage service.
 """
 
 import json
+import logging
 from unittest.mock import Mock, patch
 
 import pytest
@@ -81,6 +82,7 @@ class TestEndToEndRelayToUpload:
         server.port = 4243
         server.storage = mwl_storage
         server.ae = None
+        server.logger = logging.getLogger("MWLServer")
         server.block = False
         return server
 
@@ -93,6 +95,7 @@ class TestEndToEndRelayToUpload:
         server.storage = pacs_storage
         server.mwl_storage = mwl_storage
         server.ae = None
+        server.logger = logging.getLogger("PACSServer")
         server.block = False
         return server
 

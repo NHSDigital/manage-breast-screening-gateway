@@ -17,8 +17,15 @@ from server import MWLServer, PACSServer
 @patch(f"{PACSServer.__module__}.PACSStorage")
 class TestPACSServer:
     def test_init(self, mock_pacs_storage, mock_mwl_storage, tmp_dir):
+        mock_logger = MagicMock()
         subject = PACSServer(
-            "Custom AE Title", 2222, tmp_dir, f"{tmp_dir}/test.db", False, mwl_db_path=f"{tmp_dir}/worklist.db"
+            "Custom AE Title",
+            2222,
+            tmp_dir,
+            f"{tmp_dir}/test.db",
+            logger=mock_logger,
+            block=False,
+            mwl_db_path=f"{tmp_dir}/worklist.db",
         )
 
         assert subject.ae_title == "Custom AE Title"
@@ -26,6 +33,7 @@ class TestPACSServer:
         assert subject.storage == mock_pacs_storage.return_value
         assert subject.mwl_storage == mock_mwl_storage.return_value
         assert subject.ae is None
+        assert subject.logger == mock_logger
         assert subject.block is False
 
         mock_pacs_storage.assert_called_once_with(f"{tmp_dir}/test.db", tmp_dir)
@@ -80,12 +88,14 @@ class TestPACSServer:
 @patch(f"{MWLServer.__module__}.MWLStorage")
 class TestMWLServer:
     def test_init(self, mock_storage):
-        subject = MWLServer("CUSTOM_MWL", 11112, "/custom/path/worklist.db", False)
+        mock_logger = MagicMock()
+        subject = MWLServer("CUSTOM_MWL", 11112, "/custom/path/worklist.db", logger=mock_logger, block=False)
 
         assert subject.ae_title == "CUSTOM_MWL"
         assert subject.port == 11112
         assert subject.storage == mock_storage.return_value
         assert subject.ae is None
+        assert subject.logger == mock_logger
         assert subject.block is False
 
         mock_storage.assert_called_once_with("/custom/path/worklist.db")

@@ -9,7 +9,6 @@ import base64
 import hashlib
 import hmac
 import json
-import logging
 import os
 import time
 import urllib.parse
@@ -23,11 +22,11 @@ from environment import Environment
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.mwl.update_worklist_item_status import UpdateWorklistItemStatus
 from services.storage import MWLStorage
-from telemetry import configure_telemetry
+from telemetry import configure_logging, configure_telemetry
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
+logger = configure_logging("Gateway-Relay")
 
 DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
 AZURE_RELAY_SCOPE = "https://relay.azure.net/.default"
@@ -174,13 +173,9 @@ def verify_credentials():
 
 
 async def main():
-    logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
-    )
     configure_telemetry(service_name="relay-listener")
 
-    logger.info("Socket Listener Starting...")
+    logger.info("Gateway Relay Listener Starting...")
     verify_credentials()
     storage = MWLStorage(db_path=DB_PATH)
 

@@ -106,7 +106,6 @@ function Invoke-DatabaseBackup {
     }
 
     Write-Log "Database backup completed successfully." "SUCCESS"
-
 }
 
 # -- Log Rotation -------------------------------------------------------------
@@ -154,6 +153,29 @@ function Rotate-ServiceLogs {
     }
 }
 
+# -- PACS archiving -------------------------------------------------------------
+
+function Archive-PACS {
+    param(
+        [string]$BaseInstallPath
+    )
+
+    Write-Log "Archiving PACS files..." "INFO"
+
+    $pacsDir = Join-Path $BaseInstallPath "data\storage\*"
+    $archiveZip = Join-Path $BaseInstallPath "data\storage.zip"
+
+    Compress-Archive -Path $pacsDir -DestinationPath $archiveZip -Force
+
+    Write-Log "PACS files archived to $archiveZip." "INFO"
+
+    Remove-Item $pacsDir -Recurse -Force
+
+    Write-Log "PACS files removed from storage directory." "INFO"
+
+    Write-Log "PACS files archived successfully." "SUCCESS"
+}
+
 # -- Main ----------------------------------------------------------------------
 
 switch ($Action) {
@@ -167,6 +189,7 @@ switch ($Action) {
     "BackupPACSDatabase" {
         Stop-AllServices -Services $Services
         Invoke-DatabaseBackup -BaseInstallPath $BaseInstallPath -DbServiceName "PACS"
+        Archive-PACS -BaseInstallPath $BaseInstallPath
         Start-AllServices -Services $Services
     }
 

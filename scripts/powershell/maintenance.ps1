@@ -88,7 +88,7 @@ function Invoke-DatabaseBackup {
 
     Set-Item -Path env:PYTHONPATH -Value "$BaseInstallPath\current\scripts\python"
     Set-Item -Path env:BACKUP_PATH -Value "$BaseInstallPath\data\backups"
-    Set-Item -Path env:MAX_BACKUPS -Value 3
+    Set-Item -Path env:MAX_BACKUPS -Value 5
 
     if ($DbServiceName -eq "MWL") {
         Set-Item -Path env:DB_PATH -Value "$BaseInstallPath\data\worklist.db"

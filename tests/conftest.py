@@ -1,3 +1,4 @@
+import inspect
 import shutil
 import sys
 from contextlib import contextmanager
@@ -13,6 +14,43 @@ from pynetdicom.sop_class import (
 )
 
 sys.path.append(f"{Path(__file__).parent.parent}/src")
+
+
+def pytest_html_report_title(report):
+    report.title = "Rubie Gateway Tests"
+
+
+def _readable_test_name(item):
+    """
+    Build a human-readable name for the test report from the test's
+    docstring. Returns None when there is no docstring, so the default
+    nodeid is kept.
+    """
+    test_fn = getattr(item, "obj", None)
+    docstring = inspect.getdoc(test_fn) if test_fn else None
+    if not docstring:
+        return None
+
+    # First non-empty line, whitespace collapsed — docstrings are often
+    # multi-line and indented, which would render badly as a node id.
+    first_line = next((line.strip() for line in docstring.splitlines() if line.strip()), "")
+    if not first_line:
+        return None
+
+    # Keep parametrised cases distinct (they share one docstring).
+    param_id = getattr(getattr(item, "callspec", None), "id", None)
+    return f"{first_line} [{param_id}]" if param_id else first_line
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Use the test's docstring as its name in the HTML report, when present."""
+    outcome = yield
+    report = outcome.get_result()
+
+    readable_name = _readable_test_name(item)
+    if readable_name:
+        report.nodeid = readable_name
 
 
 @pytest.fixture(autouse=True)

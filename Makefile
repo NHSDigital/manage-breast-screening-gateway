@@ -3,8 +3,8 @@ include scripts/terraform/terraform.mk
 
 .DEFAULT_GOAL := help
 
-.PHONY: clean config dependencies githooks-config githooks-run help test test-lint test-unit _install-uv \
-	up down restart logs build rebuild run-pacs run-mwl run-listener run-upload ps shell docker-clean \
+.PHONY: clean config dependencies githooks-config githooks-run help test test-lint test-unit lint _install-uv \
+	up down restart logs build rebuild run run-pacs run-mwl run-listener run-upload ps shell docker-clean \
 	package deploy-app \
 	review dev preprod prod
 .SILENT: help
@@ -85,10 +85,17 @@ test-unit: # Run unit tests (use ARGS="<args>" for additional options) @Testing
 test-integration:
 	uv run pytest -m "integration" $(ARGS)
 
-test-lint: # Lint files @Testing
+test-lint: # Lint files (check only, as CI does) @Testing
 	uv run ruff check .
 	uv run ruff format --check .
 	uv run pyright
+
+lint: # Auto-fix lint and formatting issues @Testing
+	uv run ruff check --fix .
+	uv run ruff format .
+
+run: # Start all services in the foreground
+	docker compose up
 
 up: # Start all services
 	docker compose up -d

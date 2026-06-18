@@ -1,6 +1,6 @@
 param(
-    [ValidateSet("BackupPACSDatabase","BackupMWLDatabase","RotateLogs")]
     [string]$BaseInstallPath = "C:\Program Files\NHS\ManageBreastScreeningGateway",
+    [Parameter(Mandatory)]
     [string]$Action
 )
 
@@ -72,7 +72,12 @@ function Start-AllServices {
             Start-Sleep -Milliseconds 500
         }
 
-        Write-Log "$($svc.Name) started." "SUCCESS"
+        $finalStatus = Get-Service -Name $svc.Name -ErrorAction SilentlyContinue
+        if (-not $finalStatus -or $finalStatus.Status -ne 'Running') {
+            throw "Service $($svc.Name) did not start within ${TimeoutSeconds}s (state: $($finalStatus.Status))."
+        }
+
+        Write-Log "$($svc.Name) started in $([math]::Round($stopwatch.Elapsed.TotalSeconds, 1))s." "SUCCESS"
     }
 }
 
@@ -178,27 +183,33 @@ function Archive-PACS {
 
 # -- Main ----------------------------------------------------------------------
 
+$startStopTimeoutSeconds = 30
+
 switch ($Action) {
 
     "RotateLogs" {
-        Stop-AllServices -Services $Services
+        Stop-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
         Rotate-ServiceLogs -Services $services -LogsDir $logsDir
-        Start-AllServices -Services $Services
+        Start-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
     }
 
     "BackupPACSDatabase" {
-        Stop-AllServices -Services $Services
+        Stop-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
         Invoke-DatabaseBackup -BaseInstallPath $BaseInstallPath -DbServiceName "PACS"
         Archive-PACS -BaseInstallPath $BaseInstallPath
-        Start-AllServices -Services $Services
+        Start-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
     }
 
     "BackupMWLDatabase" {
-        Stop-AllServices -Services $Services
+        Stop-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
         Invoke-DatabaseBackup -BaseInstallPath $BaseInstallPath -DbServiceName "MWL"
-        Start-AllServices -Services $Services
+        Start-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
     }
 
+    default {
+        Write-Log "Unknown action: $Action" "ERROR"
+        throw "Unknown action: $Action"
+    }
 }
 
 exit 0

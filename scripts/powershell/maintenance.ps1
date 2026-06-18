@@ -104,7 +104,9 @@ function Invoke-DatabaseBackup {
         Set-Item -Path env:DB_PATH -Value "$BaseInstallPath\data\pacs.db"
         Set-Item -Path env:TABLE_NAME -Value "stored_instances"
     }
-    .\..\python\database.py
+    $pythonExe = Join-Path $BaseInstallPath "current\.venv\Scripts\python.exe"
+    $databaseScript = Join-Path $BaseInstallPath "current\scripts\python\database.py"
+    & $pythonExe $databaseScript
 
     if ($LASTEXITCODE -ne 0) {
         Write-Log "Database backup failed with exit code $LASTEXITCODE" "ERROR"

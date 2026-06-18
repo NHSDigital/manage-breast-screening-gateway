@@ -15,6 +15,7 @@ on:
           - dev
           - preprod
           - review
+          - prod
 
 concurrency: cicd-${{ github.ref }}
 
@@ -76,6 +77,7 @@ jobs:
       deploy_dev:     ${{ steps.envs.outputs.deploy_dev }}
       deploy_preprod: ${{ steps.envs.outputs.deploy_preprod }}
       deploy_review:  ${{ steps.envs.outputs.deploy_review }}
+      deploy_prod:    ${{ steps.envs.outputs.deploy_prod }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -88,22 +90,32 @@ jobs:
               echo "deploy_dev=true"     >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
             preprod)
               echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=true" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
             review)
               echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
               echo "deploy_review=true"  >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
+              ;;
+            prod)
+              echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
+              echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=true" >> "$GITHUB_OUTPUT"
               ;;
             *)
               # push-to-main (empty input): deploy to both dev and preprod
               echo "deploy_dev=true"     >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=true" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
           esac
 
@@ -185,6 +197,40 @@ jobs:
       commit_sha: ${{ github.sha }}
       branch_name: ${{ github.ref_name }}
     secrets: inherit
+
+  deploy-infra-prod:
+    name: Deploy infra (prod)
+    needs: [resolve, deploy-app-dev]
+    if: |
+      always() &&
+      needs.resolve.outputs.deploy_prod == 'true' &&
+      (needs.deploy-app-dev.result == 'success' || needs.deploy-app-dev.result == 'skipped')
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy.yaml
+    with:
+      environments: '["prod"]'
+      commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
+    secrets: inherit
+
+  deploy-app-prod:
+    name: Deploy app (prod)
+    needs: [resolve, deploy-infra-prod]
+    if: |
+      always() &&
+      needs.resolve.outputs.deploy_prod == 'true' &&
+      needs.deploy-infra-prod.result == 'success'
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy-app.yaml
+    with:
+      environments: '["prod"]'
+      release_tag: ${{ needs.resolve.outputs.release_tag }}
+      commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
+    secrets: inherit
+
 
   # ---- review (manual only) -------------------------------------------------
 

@@ -170,15 +170,26 @@ function Archive-PACS {
 
     Write-Log "Archiving PACS files..." "INFO"
 
-    $pacsDir = Join-Path $BaseInstallPath "data\storage\*"
+    $storageDir = Join-Path $BaseInstallPath "data\storage"
     $archiveZip = Join-Path $BaseInstallPath "data\storage.zip"
+
+    if (-not (Test-Path $storageDir)) {
+        Write-Log "PACS storage directory not found: $storageDir" "WARNING"
+        return
+    }
+
+    $pacsDir = Join-Path $storageDir "*"
+    $hasFiles = Get-ChildItem -Path $pacsDir -Force -ErrorAction SilentlyContinue | Select-Object -First 1
+    if (-not $hasFiles) {
+        Write-Log "No PACS files found to archive." "INFO"
+        return
+    }
 
     Compress-Archive -Path $pacsDir -DestinationPath $archiveZip -Force
 
     Write-Log "PACS files archived to $archiveZip." "INFO"
 
     Remove-Item $pacsDir -Recurse -Force
-
     Write-Log "PACS files removed from storage directory." "INFO"
 
     Write-Log "PACS files archived successfully." "SUCCESS"

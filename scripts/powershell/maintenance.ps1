@@ -71,6 +71,7 @@ function Start-AllServices {
             if ($status -and $status.Status -eq 'Running') { break }
             Start-Sleep -Milliseconds 500
         }
+        $stopwatch.Stop()
 
         $finalStatus = Get-Service -Name $svc.Name -ErrorAction SilentlyContinue
         if (-not $finalStatus -or $finalStatus.Status -ne 'Running') {

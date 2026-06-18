@@ -57,7 +57,7 @@ class TestDicomExample:
             dicom = DicomExample(
                 dataset=ds,
                 laterality="L",
-                view="CC",
+                view="CCID",
                 study_instance_uid=study_instance_uid,
                 series_number=1,
             )

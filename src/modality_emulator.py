@@ -61,7 +61,9 @@ class DicomExample:
             logger.error("No dataset provided for DICOM generation")
             return ds
 
-        img_path = f"{SAMPLE_IMAGES_PATH}/L{self.view.replace('ID', '')}.jpg"
+        view_position = self.view.replace("ID", "")
+
+        img_path = f"{SAMPLE_IMAGES_PATH}/L{view_position}.jpg"
         img = Image.open(img_path).convert("L")
         if self.laterality == "R":
             img = img.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
@@ -89,7 +91,7 @@ class DicomExample:
         ds.PixelRepresentation = 0
         ds.PixelData = pixel_bytes
         ds.ImageLaterality = self.laterality
-        ds.ViewPosition = self.view
+        ds.ViewPosition = view_position
 
         ds.AccessionNumber = self.dataset.AccessionNumber
         ds.PatientID = self.dataset.PatientID

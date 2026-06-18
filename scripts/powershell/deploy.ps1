@@ -582,7 +582,7 @@ if (-not $cutoverFailed) {
         -Execute "powershell.exe" `
         -Argument "-ExecutionPolicy Bypass -File `"$maintenanceScriptPath`" -Action BackupPACSDatabase"
 
-    $backupPACSTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 2.15AM
+    $backupPACSTrigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 2:15AM
 
     Register-ScheduledTask `
         -TaskName "Gateway-PACS-Maintenance" `
@@ -596,8 +596,7 @@ if (-not $cutoverFailed) {
         -Execute "powershell.exe" `
         -Argument "-ExecutionPolicy Bypass -File `"$maintenanceScriptPath`" -Action RotateLogs"
 
-    $rotateLogsTrigger = New-ScheduledTaskTrigger -Daily -At 2.30AM
-
+    $rotateLogsTrigger = New-ScheduledTaskTrigger -Daily -At 2:30AM
     Register-ScheduledTask `
         -TaskName "Gateway-Logs-Maintenance" `
         -Action $rotateLogsAction `

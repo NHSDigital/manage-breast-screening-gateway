@@ -15,6 +15,11 @@ on:
         description: Commit SHA used to trigger the ADO pipeline
         required: true
         type: string
+      branch_name:
+        description: Git branch containing commit_sha
+        required: false
+        default: "main"
+        type: string
 
 jobs:
   deploy:
@@ -46,13 +51,16 @@ jobs:
           ENVIRONMENT: ${{ matrix.environment }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           COMMIT_SHA: ${{ inputs.commit_sha }}
+          BRANCH_NAME: ${{ inputs.branch_name }}
           ADO_PROJECT: ${{ github.event.repository.name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           source "infrastructure/environments/${ENVIRONMENT}/variables.sh"
+          SOURCE_BRANCH="${BRANCH_NAME:-main}"
 
           echo "Starting Azure DevOps pipeline \"Deploy Gateway App - ${ENVIRONMENT}\"..."
           RUN_ID=$(az pipelines run \
+            --branch "${SOURCE_BRANCH}" \
             --commit-id "${COMMIT_SHA}" \
             --name "Deploy Gateway App - ${ENVIRONMENT}" \
             --org https://dev.azure.com/nhse-dtos \

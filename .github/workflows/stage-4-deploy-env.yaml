@@ -15,6 +15,11 @@ on:
         description: Commit SHA used to trigger the ADO pipeline
         required: true
         type: string
+      branch_name:
+        description: Git branch containing commit_sha
+        required: false
+        default: "main"
+        type: string
 
 jobs:
   deploy-infra:
@@ -25,6 +30,7 @@ jobs:
     with:
       environments: '["${{ inputs.environment }}"]'
       commit_sha: ${{ inputs.commit_sha }}
+      branch_name: ${{ inputs.branch_name }}
     secrets: inherit
 
   deploy-app:
@@ -37,6 +43,7 @@ jobs:
       environments: '["${{ inputs.environment }}"]'
       release_tag: ${{ inputs.release_tag }}
       commit_sha: ${{ inputs.commit_sha }}
+      branch_name: ${{ inputs.branch_name }}
     secrets: inherit
 
   smoke-test:

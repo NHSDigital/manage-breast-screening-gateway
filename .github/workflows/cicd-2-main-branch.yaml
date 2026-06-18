@@ -134,6 +134,7 @@ jobs:
     with:
       environments: '["dev"]'
       commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
     secrets: inherit
 
   deploy-app-dev:
@@ -147,6 +148,7 @@ jobs:
       environments: '["dev"]'
       release_tag: ${{ needs.resolve.outputs.release_tag }}
       commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
     secrets: inherit
 
   # ---- preprod --------------------------------------------------------------
@@ -164,6 +166,7 @@ jobs:
     with:
       environments: '["preprod"]'
       commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
     secrets: inherit
 
   deploy-app-preprod:
@@ -180,6 +183,7 @@ jobs:
       environments: '["preprod"]'
       release_tag: ${{ needs.resolve.outputs.release_tag }}
       commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
     secrets: inherit
 
   # ---- review (manual only) -------------------------------------------------
@@ -194,6 +198,7 @@ jobs:
     with:
       environments: '["review"]'
       commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
     secrets: inherit
 
   deploy-app-review:
@@ -207,4 +212,5 @@ jobs:
       environments: '["review"]'
       release_tag: ${{ needs.resolve.outputs.release_tag }}
       commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
     secrets: inherit

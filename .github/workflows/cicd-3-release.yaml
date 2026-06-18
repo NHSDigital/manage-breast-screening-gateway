@@ -42,6 +42,7 @@ jobs:
       environment: dev
       release_tag: ${{ github.ref_name }}
       commit_sha: ${{ github.sha }}
+      branch_name: main
     secrets: inherit
 
   deploy-preprod:
@@ -52,6 +53,7 @@ jobs:
       environment: preprod
       release_tag: ${{ github.ref_name }}
       commit_sha: ${{ github.sha }}
+      branch_name: main
     secrets: inherit
 
   prod-approval:
@@ -71,4 +73,5 @@ jobs:
       environment: prod
       release_tag: ${{ github.ref_name }}
       commit_sha: ${{ github.sha }}
+      branch_name: main
     secrets: inherit

@@ -1,7 +1,8 @@
-import pytest
 import sqlite3
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.append(f"{Path(__file__).parent.parent.parent}/scripts/python")
 

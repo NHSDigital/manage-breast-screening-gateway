@@ -100,8 +100,7 @@ SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
 
   # Use machine name + timestamp to ensure uniqueness across parallel submissions.
   CLEAN_TAG=$(echo "${RELEASE_TAG}" | tr '.' '-' | tr '/' '-')
-  DEPLOY_ID=$(date +%s)
-  RUN_CMD_NAME="deploy-mbsgw-${CLEAN_TAG}-${MACHINE}-${DEPLOY_ID}"
+  RUN_CMD_NAME="deploy-mbsgw-${CLEAN_TAG}-${MACHINE}"
 
   CMD_URL="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${ARC_RG}/providers/Microsoft.HybridCompute/machines/${MACHINE}/runCommands/${RUN_CMD_NAME}?api-version=2024-07-10"
 

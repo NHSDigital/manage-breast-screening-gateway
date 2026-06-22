@@ -1,4 +1,5 @@
 import inspect
+import re
 import shutil
 import sys
 from contextlib import contextmanager
@@ -20,31 +21,139 @@ def pytest_html_report_title(report):
     report.title = "Rubie Gateway Tests"
 
 
+# Domain acronyms that should render in their conventional form rather than
+# being naively title-cased from the test function name.
+_ACRONYMS = {
+    "cfind": "C-FIND",
+    "cstore": "C-STORE",
+    "cecho": "C-ECHO",
+    "ncreate": "N-CREATE",
+    "nset": "N-SET",
+    "mwl": "MWL",
+    "mpps": "MPPS",
+    "pacs": "PACS",
+    "dicom": "DICOM",
+    "sop": "SOP",
+    "uid": "UID",
+    "ae": "AE",
+    "aet": "AE title",
+    "sas": "SAS",
+    "jpeg2000": "JPEG 2000",
+    "sqlite": "SQLite",
+}
+
+
+# Two-token DICOM operations, so they can be recognised as a single acronym.
+_DICOM_OPS = {
+    ("c", "store"): "C-STORE",
+    ("c", "find"): "C-FIND",
+    ("c", "echo"): "C-ECHO",
+    ("n", "set"): "N-SET",
+    ("n", "create"): "N-CREATE",
+}
+
+# Method names whose humanised form says nothing without the class context
+# (the meaning lives in the test class, e.g. ``call`` in ``TestCFind``).
+_GENERIC_FIRST_WORDS = {
+    "call",
+    "init",
+    "start",
+    "stop",
+    "str",
+    "repr",
+    "setup",
+    "run",
+    "success",
+    "failure",
+    "handle",
+    "handles",
+    "update",
+    "upload",
+}
+
+
+def _apply_acronyms(words):
+    return [_ACRONYMS.get(word.lower(), word) for word in words]
+
+
+def _humanise_test_name(func_name):
+    """
+    Turn a test function name into a readable phrase, e.g.
+    ``test_cfind_filters_by_accession_number`` -> "C-FIND filters by
+    accession number".
+    """
+    name = func_name.removeprefix("test_")
+    for split, joined in (
+        ("c_store", "cstore"),
+        ("c_find", "cfind"),
+        ("c_echo", "cecho"),
+        ("n_set", "nset"),
+        ("n_create", "ncreate"),
+    ):
+        name = name.replace(split, joined)
+    phrase = " ".join(_apply_acronyms(name.split("_")))
+    return phrase[:1].upper() + phrase[1:] if phrase else func_name
+
+
+def _humanise_class_name(cls_name):
+    """
+    Turn a test class name into a readable component label, e.g.
+    ``TestCFind`` -> "C-FIND", ``TestMWLServer`` -> "MWL server".
+    """
+    name = cls_name.removeprefix("Test")
+    tokens = re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z]+|[a-z]+|\d+", name)
+
+    out, i = [], 0
+    while i < len(tokens):
+        pair = (tokens[i].lower(), tokens[i + 1].lower()) if i + 1 < len(tokens) else None
+        if pair in _DICOM_OPS:
+            out.append(_DICOM_OPS[pair])
+            i += 2
+            continue
+        token = tokens[i]
+        out.append(_ACRONYMS.get(token.lower(), token if token.isupper() else token.lower()))
+        i += 1
+
+    phrase = " ".join(out)
+    return phrase[:1].upper() + phrase[1:] if phrase else cls_name
+
+
 def _readable_test_name(item):
     """
-    Build a human-readable name for the test report from the test's
-    docstring. Returns None when there is no docstring, so the default
-    nodeid is kept.
+    Build a human-readable name for the test report. Prefers the test's
+    docstring (first line). Otherwise humanises the function name, and — when
+    that name is too generic to stand alone (e.g. ``test_call``) — prefixes
+    the humanised test-class name for context. Means every row reads well
+    without a docstring on every test.
     """
     test_fn = getattr(item, "obj", None)
     docstring = inspect.getdoc(test_fn) if test_fn else None
-    if not docstring:
-        return None
 
-    # First non-empty line, whitespace collapsed — docstrings are often
-    # multi-line and indented, which would render badly as a node id.
-    first_line = next((line.strip() for line in docstring.splitlines() if line.strip()), "")
-    if not first_line:
-        return None
+    if docstring:
+        # First non-empty line, whitespace collapsed — docstrings are often
+        # multi-line and indented, which would render badly as a node id.
+        base = next((line.strip() for line in docstring.splitlines() if line.strip()), "")
+    else:
+        base = ""
 
-    # Keep parametrised cases distinct (they share one docstring).
+    if not base:
+        method = _humanise_test_name(getattr(item, "originalname", None) or item.name)
+        words = method.split()
+        is_generic = not words or words[0].lower() in _GENERIC_FIRST_WORDS or len(words) <= 2
+        cls = getattr(item, "cls", None)
+        if is_generic and cls is not None:
+            base = f"{_humanise_class_name(cls.__name__)}: {method}"
+        else:
+            base = method
+
+    # Keep parametrised cases distinct (they share one name).
     param_id = getattr(getattr(item, "callspec", None), "id", None)
-    return f"{first_line} [{param_id}]" if param_id else first_line
+    return f"{base} [{param_id}]" if param_id else base
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """Use the test's docstring as its name in the HTML report, when present."""
+    """Use a readable docstring/humanised name as the test's name in the report."""
     outcome = yield
     report = outcome.get_result()
 

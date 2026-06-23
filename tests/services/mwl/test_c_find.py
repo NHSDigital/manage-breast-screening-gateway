@@ -50,6 +50,7 @@ class TestCFind:
     """Tests for CFind class."""
 
     def test_call_with_no_results(self, handler, mock_storage, mock_event):
+        """C-FIND: Call with no results."""
         mock_storage.find_worklist_items.return_value = []
 
         results = list(handler.call(mock_event))
@@ -61,6 +62,7 @@ class TestCFind:
         mock_storage.find_worklist_items.assert_called_once()
 
     def test_call_with_single_result(self, handler, mock_storage, mock_event, sample_worklist_item):
+        """C-FIND: Call with single result."""
         worklist_item = WorklistItem(**sample_worklist_item)
         mock_storage.find_worklist_items.return_value = [worklist_item]
 
@@ -80,6 +82,7 @@ class TestCFind:
         assert ds is None
 
     def test_call_with_multiple_results(self, handler, mock_storage, mock_event):
+        """C-FIND: Call with multiple results."""
         items = [
             WorklistItem(
                 accession_number=f"ACC00{i}",
@@ -109,6 +112,7 @@ class TestCFind:
         assert status == SUCCESS
 
     def test_call_with_accession_number_filter(self, handler, mock_storage, mock_event):
+        """C-FIND: Call with accession number filter."""
         mock_event.identifier.AccessionNumber = "ACC12345"
         mock_storage.find_worklist_items.return_value = []
 
@@ -125,6 +129,7 @@ class TestCFind:
 
     def test_call_with_modality_filter(self, handler, mock_storage, mock_event):
         # Add modality to query
+        """C-FIND: Call with modality filter."""
         sps_item = Dataset()
         sps_item.Modality = "MG"
         mock_event.identifier.ScheduledProcedureStepSequence = [sps_item]
@@ -142,6 +147,7 @@ class TestCFind:
         )
 
     def test_call_with_date_filter(self, handler, mock_storage, mock_event):
+        """C-FIND: Call with date filter."""
         sps_item = Dataset()
         sps_item.ScheduledProcedureStepStartDate = "20260107"
         mock_event.identifier.ScheduledProcedureStepSequence = [sps_item]
@@ -159,6 +165,7 @@ class TestCFind:
         )
 
     def test_call_with_time_filter(self, handler, mock_storage, mock_event):
+        """C-FIND: Call with time filter."""
         sps_item = Dataset()
         sps_item.ScheduledProcedureStepStartTime = "100000"
         mock_event.identifier.ScheduledProcedureStepSequence = [sps_item]
@@ -176,6 +183,7 @@ class TestCFind:
         )
 
     def test_call_with_patient_id_filter(self, handler, mock_storage, mock_event):
+        """C-FIND: Call with patient id filter."""
         mock_event.identifier.PatientID = "9876543210"
         mock_storage.find_worklist_items.return_value = []
 
@@ -191,6 +199,7 @@ class TestCFind:
         )
 
     def test_call_with_patient_name_filter(self, handler, mock_storage, mock_event):
+        """C-FIND: Call with patient name filter."""
         mock_event.identifier.PatientName = "Smith*"
         mock_storage.find_worklist_items.return_value = []
 
@@ -206,6 +215,7 @@ class TestCFind:
         )
 
     def test_call_handles_storage_exception(self, handler, mock_storage, mock_event):
+        """C-FIND: Call handles storage exception."""
         mock_storage.find_worklist_items.side_effect = Exception("Database error")
 
         results = list(handler.call(mock_event))
@@ -216,6 +226,7 @@ class TestCFind:
         assert ds is None
 
     def test_call_return_key_attributes_present(self, handler, mock_storage, mock_event, sample_worklist_item):
+        """C-FIND: Call return key attributes present."""
         worklist_item = WorklistItem(**sample_worklist_item)
         mock_storage.find_worklist_items.return_value = [worklist_item]
 

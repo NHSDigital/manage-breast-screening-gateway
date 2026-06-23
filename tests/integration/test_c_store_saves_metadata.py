@@ -42,6 +42,7 @@ class TestCStoreSavesMetadata:
         return MWLStorage(f"{tmp_dir}/worklist.db")
 
     def test_existing_sop_instance_uid(self, storage, mock_event):
+        """Existing SOP instance UID."""
         sop_instance_uid = "1.2.3.4.5.6"  # gitleaks:allow
         subject = CStore(storage)
         mock_event.dataset.file_meta = mock_event.file_meta
@@ -67,6 +68,7 @@ class TestCStoreSavesMetadata:
             assert len(results) == 1
 
     def test_valid_event_is_stored(self, storage, mock_event):
+        """Valid event is stored."""
         subject = CStore(storage)
 
         assert subject.call(mock_event) == SUCCESS
@@ -91,6 +93,7 @@ class TestCStoreSavesMetadata:
             assert Path(f"{storage.storage_root}/{storage_path}").is_file()
 
     def test_c_store_marks_worklist_in_progress(self, storage, mwl_storage, mock_event):
+        """C-STORE marks worklist in progress."""
         item = WorklistItem(
             accession_number="ABC123",
             modality="MG",

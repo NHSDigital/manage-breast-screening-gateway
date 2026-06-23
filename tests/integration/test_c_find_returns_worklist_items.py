@@ -63,6 +63,7 @@ class TestCFindReturnsWorklistItems:
         return event
 
     def test_cfind_returns_scheduled_items(self, event, storage):
+        """C-FIND returns scheduled items."""
         results = list(CFind(storage).call(event))
         assert len(results) == 3
 
@@ -97,6 +98,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_scheduled_date_range(self, event, storage):
+        """C-FIND filters by scheduled date range."""
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartDate = "20240101-20240201"
 
         results = list(CFind(storage).call(event))
@@ -117,6 +119,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_accession_number(self, event, storage):
+        """C-FIND filters by accession number."""
         event.identifier.AccessionNumber = "ACC234567"
         results = list(CFind(storage).call(event))
         assert len(results) == 2
@@ -128,6 +131,7 @@ class TestCFindReturnsWorklistItems:
         assert ds.AccessionNumber == "ACC234567"
 
     def test_cfind_filters_by_before_scheduled_date(self, event, storage):
+        """C-FIND filters by before scheduled date."""
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartDate = "-20240101"
 
         results = list(CFind(storage).call(event))
@@ -148,6 +152,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_after_scheduled_date(self, event, storage):
+        """C-FIND filters by after scheduled date."""
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartDate = "20240201-"
         results = list(CFind(storage).call(event))
 
@@ -167,6 +172,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_scheduled_time_range(self, event, storage):
+        """C-FIND filters by scheduled time range."""
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartTime = "090000-093000"
 
         results = list(CFind(storage).call(event))
@@ -187,6 +193,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_before_scheduled_time(self, event, storage):
+        """C-FIND filters by before scheduled time."""
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartTime = "-093000"
 
         results = list(CFind(storage).call(event))
@@ -207,6 +214,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_after_scheduled_time(self, event, storage):
+        """C-FIND filters by after scheduled time."""
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartTime = "093000-"
 
         results = list(CFind(storage).call(event))
@@ -227,6 +235,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_date_and_time_range(self, event, storage):
+        """C-FIND filters by date and time range."""
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartDate = "20240101-20240201"
         event.identifier.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartTime = "090000-093000"
 
@@ -249,6 +258,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_modality(self, event, storage):
+        """C-FIND filters by modality."""
         storage.store_worklist_item(
             WorklistItem(
                 accession_number="ACC999999",
@@ -284,6 +294,7 @@ class TestCFindReturnsWorklistItems:
         assert ds is None
 
     def test_cfind_filters_by_patient_id(self, event, storage):
+        """C-FIND filters by patient id."""
         event.identifier.PatientID = "999234567"
 
         results = list(CFind(storage).call(event))

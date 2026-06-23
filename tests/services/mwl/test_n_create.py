@@ -51,6 +51,7 @@ class TestNCreate:
         return event
 
     def test_ncreate_success(self, storage, event, sop_instance_uid):
+        """N-CREATE: N-CREATE success."""
         status, ds = NCreate(storage).call(event)
 
         assert status == SUCCESS
@@ -62,6 +63,7 @@ class TestNCreate:
         storage.update_status.assert_called_once_with("ACC123", "IN PROGRESS", sop_instance_uid)
 
     def test_ncreate_missing_sop_instance_uid(self, storage, event):
+        """N-CREATE missing SOP instance UID."""
         event.request.AffectedSOPInstanceUID = None
 
         status, ds = NCreate(storage).call(event)
@@ -70,6 +72,7 @@ class TestNCreate:
         assert ds is None
 
     def test_ncreate_duplicate_sop_instance(self, storage, event):
+        """N-CREATE duplicate SOP instance."""
         storage.mpps_instance_exists.return_value = True
 
         status, ds = NCreate(storage).call(event)
@@ -78,6 +81,7 @@ class TestNCreate:
         assert ds is None
 
     def test_ncreate_missing_pps_status(self, storage, event):
+        """N-CREATE missing pps status."""
         del event.attribute_list.PerformedProcedureStepStatus
 
         status, ds = NCreate(storage).call(event)
@@ -86,6 +90,7 @@ class TestNCreate:
         assert ds is None
 
     def test_ncreate_invalid_pps_status(self, storage, event):
+        """N-CREATE invalid pps status."""
         event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
 
         status, ds = NCreate(storage).call(event)
@@ -94,6 +99,7 @@ class TestNCreate:
         assert ds is None
 
     def test_ncreate_missing_scheduled_step_sequence(self, storage, event):
+        """N-CREATE missing scheduled step sequence."""
         del event.attribute_list.ScheduledStepAttributesSequence
 
         status, ds = NCreate(storage).call(event)
@@ -102,6 +108,7 @@ class TestNCreate:
         assert ds is None
 
     def test_ncreate_processing_failure(self, storage, event):
+        """N-CREATE processing failure."""
         storage.mpps_instance_exists.side_effect = Exception("Nooooo!")
 
         status, ds = NCreate(storage).call(event)
@@ -110,6 +117,7 @@ class TestNCreate:
         assert ds is None
 
     def test_ncreate_missing_accession_number(self, storage, event):
+        """N-CREATE missing accession number."""
         del event.attribute_list.ScheduledStepAttributesSequence[0].AccessionNumber
 
         status, ds = NCreate(storage).call(event)

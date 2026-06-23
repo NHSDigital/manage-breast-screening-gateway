@@ -39,6 +39,7 @@ def processor(mock_pacs_storage, mock_mwl_storage, mock_uploader):
 
 class TestUploadProcessor:
     def test_process_batch_with_no_pending(self, processor, mock_pacs_storage):
+        """Process batch with no pending."""
         mock_pacs_storage.get_pending_uploads.return_value = []
 
         result = processor.process_batch(limit=10)
@@ -47,6 +48,7 @@ class TestUploadProcessor:
         mock_pacs_storage.get_pending_uploads.assert_called_once_with(limit=10, max_retries=3)
 
     def test_process_batch_processes_all_instances(self, processor, mock_pacs_storage, mock_uploader):
+        """Process batch processes all instances."""
         mock_pacs_storage.get_pending_uploads.return_value = [
             {
                 "sop_instance_uid": "1.2.3.1",  # gitleaks:allow
@@ -71,6 +73,7 @@ class TestUploadProcessor:
         assert mock_uploader.upload_dicom.call_count == 2
 
     def test_upload_instance_success(self, processor, mock_pacs_storage, mock_mwl_storage, mock_uploader):
+        """Upload processor: Upload instance success."""
         instance = {
             "sop_instance_uid": "1.2.3.4",  # gitleaks:allow
             "storage_path": "ab/cd/file.dcm",
@@ -90,6 +93,7 @@ class TestUploadProcessor:
         mock_uploader.upload_dicom.assert_called_once_with("1.2.3.4", mo(), "ACTION123")  # gitleaks:allow
 
     def test_upload_instance_file_not_found(self, processor, mock_pacs_storage):
+        """Upload processor: Upload instance file not found."""
         instance = {
             "sop_instance_uid": "1.2.3.4",  # gitleaks:allow
             "storage_path": "missing/file.dcm",
@@ -108,6 +112,7 @@ class TestUploadProcessor:
         assert "not found" in args[0][1]
 
     def test_upload_instance_upload_failure(self, processor, mock_pacs_storage, mock_mwl_storage, mock_uploader):
+        """Upload processor: Upload instance upload failure."""
         instance = {
             "sop_instance_uid": "1.2.3.4",  # gitleaks:allow
             "storage_path": "ab/cd/file.dcm",
@@ -126,6 +131,7 @@ class TestUploadProcessor:
         assert mock_pacs_storage.mark_upload_failed.call_args[1]["permanent"] is False
 
     def test_upload_instance_handles_exception(self, processor, mock_pacs_storage):
+        """Upload processor: Upload instance handles exception."""
         instance = {
             "sop_instance_uid": "1.2.3.4",  # gitleaks:allow
             "storage_path": "ab/cd/file.dcm",
@@ -144,6 +150,7 @@ class TestUploadProcessor:
 
 class TestBackoff:
     def test_backoff_increases_on_failure(self, processor, mock_pacs_storage, mock_uploader):
+        """Backoff increases on failure."""
         mock_pacs_storage.get_pending_uploads.return_value = [
             {
                 "sop_instance_uid": "1.2.3.4",  # gitleaks:allow
@@ -160,6 +167,7 @@ class TestBackoff:
         assert processor.backoff_delay == 1.0
 
     def test_backoff_capped_at_max(self, mock_pacs_storage, mock_mwl_storage, mock_uploader):
+        """Backoff capped at max."""
         processor = UploadProcessor(
             pacs_storage=mock_pacs_storage,
             mwl_storage=mock_mwl_storage,

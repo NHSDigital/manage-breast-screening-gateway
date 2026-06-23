@@ -3,7 +3,7 @@ from environment import Environment
 
 class TestEnvironment:
     def test_environment(self, monkeypatch):
-
+        """Environment: Environment."""
         env = Environment()
 
         # Default should be development

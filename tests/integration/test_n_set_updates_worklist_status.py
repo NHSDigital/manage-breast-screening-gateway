@@ -43,6 +43,7 @@ class TestNSetUpdatesWorklistStatus:
         )
 
     def test_n_set_updates_worklist_status(self, tmp_dir, worklist_item, mpps_instance_uid):
+        """N-SET updates worklist status."""
         storage = MWLStorage(f"{tmp_dir}/test.db")
         accession_number = storage.store_worklist_item(worklist_item)
         storage.update_status(accession_number, "IN PROGRESS", mpps_instance_uid)

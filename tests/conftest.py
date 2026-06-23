@@ -22,9 +22,9 @@ def pytest_html_report_title(report):
 
 def _readable_test_name(item):
     """
-    Build a human-readable name for the test report from the test's
-    docstring. Returns None when there is no docstring, so the default
-    nodeid is kept.
+    Use the test's docstring (first line) as its name in the report. Every
+    test is expected to have a docstring; falls back to the default node id
+    if one is missing.
     """
     test_fn = getattr(item, "obj", None)
     docstring = inspect.getdoc(test_fn) if test_fn else None
@@ -33,18 +33,18 @@ def _readable_test_name(item):
 
     # First non-empty line, whitespace collapsed — docstrings are often
     # multi-line and indented, which would render badly as a node id.
-    first_line = next((line.strip() for line in docstring.splitlines() if line.strip()), "")
-    if not first_line:
+    base = next((line.strip() for line in docstring.splitlines() if line.strip()), "")
+    if not base:
         return None
 
     # Keep parametrised cases distinct (they share one docstring).
     param_id = getattr(getattr(item, "callspec", None), "id", None)
-    return f"{first_line} [{param_id}]" if param_id else first_line
+    return f"{base} [{param_id}]" if param_id else base
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """Use the test's docstring as its name in the HTML report, when present."""
+    """Use the test's docstring as its name in the report."""
     outcome = yield
     report = outcome.get_result()
 

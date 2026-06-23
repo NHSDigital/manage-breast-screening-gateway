@@ -14,6 +14,7 @@ def mock_processor():
 
 class TestUploadListener:
     def test_start_calls_process_batch(self, mock_processor):
+        """Upload listener: Start calls process batch."""
         listener = UploadListener(
             processor=mock_processor,
             poll_interval=0.01,
@@ -36,6 +37,7 @@ class TestUploadListener:
         mock_processor.process_batch.assert_called_with(limit=10)
 
     def test_stop_sets_running_false(self, mock_processor):
+        """Upload listener: Stop sets running false."""
         listener = UploadListener(processor=mock_processor)
         listener._running = True
 

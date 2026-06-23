@@ -22,6 +22,7 @@ class TestSendCStoreToGateway:
         server.stop()
 
     def test_send_dicom_series_to_gateway(self, tmp_dir):
+        """Send DICOM series to gateway."""
         number_of_instances = 5
         storage = PACSStorage(f"{tmp_dir}/test.db", str(tmp_dir))
         send_random_dicom_series(

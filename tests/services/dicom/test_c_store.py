@@ -38,18 +38,21 @@ class TestCStore:
         return mock_pacs_storage.return_value
 
     def test_no_sop_instance_uid_fails(self, mock_storage, mock_event):
+        """No SOP instance UID fails."""
         subject = CStore(mock_storage)
         mock_event.dataset.SOPInstanceUID = None
 
         assert subject.call(mock_event) == FAILURE
 
     def test_no_patient_id_fails(self, mock_storage, mock_event):
+        """No patient id fails."""
         subject = CStore(mock_storage)
         mock_event.dataset.PatientID = None
 
         assert subject.call(mock_event) == FAILURE
 
     def test_existing_sop_instance_uid(self, mock_storage, mock_event):
+        """Existing SOP instance UID."""
         mock_storage.store_instance.side_effect = pydicom.uid.generate_uid()
         subject = CStore(mock_storage)
 
@@ -57,6 +60,7 @@ class TestCStore:
         mock_storage.store_instance.assert_called_once()
 
     def test_valid_event_is_stored(self, mock_storage, mock_event):
+        """Valid event is stored."""
         mock_storage.instance_exists.return_value = False
         subject = CStore(mock_storage)
 
@@ -74,18 +78,22 @@ class TestCStore:
         assert call_args[0][3] == "ae-title"  # AE Title
 
     def test_storage_error_fails(self, mock_storage, mock_event):
+        """Storage error fails."""
         mock_storage.store_instance.side_effect = Exception("Nooooo!")
         subject = CStore(mock_storage)
 
         assert subject.call(mock_event) == FAILURE
 
     def test_failure_hexcode(self):
+        """C-STORE: Failure hexcode."""
         assert FAILURE == 0xC000
 
     def test_success_hexcode(self):
+        """C-STORE: Success hexcode."""
         assert SUCCESS == 0x0000
 
     def test_compressor_is_called(self, mock_storage, mock_event):
+        """Compressor is called."""
         mock_storage.instance_exists.return_value = False
         mock_compressor = Mock(spec=ImageCompressor)
         mock_compressor.compress.return_value = mock_event.dataset
@@ -125,6 +133,7 @@ class TestCStore:
         mock_mwl.get_source_message_id.assert_called_once_with("ABC123")
 
     def test_worklist_marked_in_progress_on_success(self, mock_storage, mock_event):
+        """Worklist marked in progress on success."""
         mock_mwl = Mock(spec=MWLStorage)
         subject = CStore(mock_storage, mwl_storage=mock_mwl)
 
@@ -133,6 +142,7 @@ class TestCStore:
         mock_mwl.update_status.assert_called_once_with("ABC123", "IN PROGRESS")
 
     def test_worklist_not_updated_on_store_failure(self, mock_storage, mock_event):
+        """Worklist not updated on store failure."""
         mock_storage.store_instance.side_effect = Exception("store failed")
         mock_mwl = Mock(spec=MWLStorage)
         subject = CStore(mock_storage, mwl_storage=mock_mwl)
@@ -142,6 +152,7 @@ class TestCStore:
         mock_mwl.update_status.assert_not_called()
 
     def test_worklist_update_error_does_not_fail_store(self, mock_storage, mock_event):
+        """Worklist update error does not fail store."""
         mock_mwl = Mock(spec=MWLStorage)
         mock_mwl.update_status.side_effect = Exception("db error")
         subject = CStore(mock_storage, mwl_storage=mock_mwl)

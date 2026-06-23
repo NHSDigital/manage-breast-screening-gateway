@@ -54,6 +54,7 @@ class TestRequestCFindOnWorklist:
         server.stop()
 
     def test_cfind_request_to_worklist_server(self):
+        """C-FIND request to worklist server."""
         ae = AE(ae_title="LOCAL_AE_TITLE")
         ae.add_requested_context(ModalityWorklistInformationFind)
         assoc = ae.associate("0.0.0.0", 4243, ae_title="MWL_SCP_AE_TITLE")
@@ -82,6 +83,7 @@ class TestRequestCFindOnWorklist:
         assert ds is None
 
     def test_cfind_with_filters_request_to_worklist_server(self):
+        """C-FIND with filters request to worklist server."""
         ae = AE(ae_title="LOCAL_AE_TITLE")
         ae.add_requested_context(ModalityWorklistInformationFind)
         assoc = ae.associate("0.0.0.0", 4243, ae_title="MWL_SCP_AE_TITLE")

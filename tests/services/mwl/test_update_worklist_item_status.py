@@ -36,6 +36,7 @@ class TestUpdateWorklistItemStatus:
         return MWLStorage(db_file)
 
     def test_call_success(self, mwl_storage, worklist_item_data, status_update_payload):
+        """Update worklist item status: Call success."""
         mwl_storage.store_worklist_item(WorklistItem(**worklist_item_data))
         mwl_storage.update_status("ACC123", "IN PROGRESS")
 
@@ -44,6 +45,7 @@ class TestUpdateWorklistItemStatus:
         assert response == {"accession_number": "ACC123", "status": "updated"}
 
     def test_call_missing_keys(self, mwl_storage, status_update_payload):
+        """Update worklist item status: Call missing keys."""
         subject = UpdateWorklistItemStatus(mwl_storage)
 
         del status_update_payload["parameters"]["worklist_item"]["status"]
@@ -53,6 +55,7 @@ class TestUpdateWorklistItemStatus:
         assert "Missing key" in response["message"]
 
     def test_call_nonexistent_item(self, mwl_storage, status_update_payload):
+        """Update worklist item status: Call nonexistent item."""
         subject = UpdateWorklistItemStatus(mwl_storage)
 
         response = subject.call(status_update_payload)
@@ -60,6 +63,7 @@ class TestUpdateWorklistItemStatus:
         assert response["message"] == "Worklist item 'ACC123' not found"
 
     def test_call_invalid_status_transition(self, mwl_storage, worklist_item_data, status_update_payload):
+        """Update worklist item status: Call invalid status transition."""
         subject = UpdateWorklistItemStatus(mwl_storage)
 
         mwl_storage.store_worklist_item(WorklistItem(**worklist_item_data))

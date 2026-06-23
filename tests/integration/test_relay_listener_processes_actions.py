@@ -18,6 +18,7 @@ class TestRelayListenerProcessesActions:
 
     @pytest.mark.asyncio
     async def test_relay_listener_creates_worklist_items(self, listener_payload, tmp_dir, fake_relay):
+        """Relay listener creates worklist items."""
         storage = MWLStorage(f"{tmp_dir}/test_worklist.db")
         listener = RelayListener(storage)
         relay_message = json.dumps({"accept": {"address": "wss://accept-url"}})
@@ -34,6 +35,7 @@ class TestRelayListenerProcessesActions:
 
     @pytest.mark.asyncio
     async def test_relay_listener_updates_worklist_item_status(self, update_payload, tmp_dir, fake_relay):
+        """Relay listener updates worklist item status."""
         storage = MWLStorage(f"{tmp_dir}/test_worklist.db")
         listener = RelayListener(storage)
         relay_message = json.dumps({"accept": {"address": "wss://accept-url"}})

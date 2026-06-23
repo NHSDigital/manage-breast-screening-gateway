@@ -53,6 +53,7 @@ def result():
 
 class TestPACSStorage:
     def test_init(self, pacs_storage, db_file):
+        """PACS storage: Init."""
         assert Path(db_file).exists()
 
         conn = sqlite3.connect(db_file)
@@ -61,6 +62,7 @@ class TestPACSStorage:
         assert table is not None
 
     def test_instance_exists_returns_true(self, pacs_storage):
+        """Instance exists returns true."""
         uid = generate_uid()
 
         with pacs_storage._get_connection() as conn:
@@ -76,9 +78,11 @@ class TestPACSStorage:
         assert pacs_storage.instance_exists(uid) is True
 
     def test_instance_exists_returns_false(self, pacs_storage):
+        """Instance exists returns false."""
         assert pacs_storage.instance_exists("1.2.3") is False
 
     def test_store_instance_saves_to_filesystem(self, pacs_storage):
+        """Store instance saves to filesystem."""
         uid = generate_uid()
         metadata = {"patient_id": "9990001112", "patient_name": "SMITH^JANE"}
 
@@ -93,6 +97,7 @@ class TestPACSStorage:
         assert expected_rel in filepath
 
     def test_store_instance_saves_to_db(self, pacs_storage):
+        """Store instance saves to db."""
         uid = generate_uid()
 
         metadata = {
@@ -123,12 +128,14 @@ class TestMWLStorage:
         return item
 
     def test_init(self, mwl_storage, db_file):
+        """MWL storage: Init."""
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='worklist_items'").fetchone()
 
         assert table is not None
 
     def test_store_worklist_item(self, mwl_storage, result):
+        """Store worklist item."""
         item = WorklistItem(**result)
 
         mwl_storage.store_worklist_item(item)
@@ -143,6 +150,7 @@ class TestMWLStorage:
         assert row["patient_id"] == item.patient_id
 
     def test_store_worklist_item_already_exists(self, mwl_storage, result):
+        """Store worklist item already exists."""
         item = WorklistItem(**result)
         mwl_storage.store_worklist_item(item)
 
@@ -150,6 +158,7 @@ class TestMWLStorage:
             mwl_storage.store_worklist_item(item)
 
     def test_find_worklist_items(self, mwl_storage, result):
+        """Find worklist items."""
         item = self._insert_item(mwl_storage, result)
 
         results = mwl_storage.find_worklist_items()
@@ -167,6 +176,7 @@ class TestMWLStorage:
         ],
     )
     def test_find_worklist_items_with_filters(self, mwl_storage, result, query_param_name, query_param_value):
+        """Find worklist items with filters."""
         self._insert_item(mwl_storage, result)
 
         results = mwl_storage.find_worklist_items(**{query_param_name: query_param_value})
@@ -174,6 +184,7 @@ class TestMWLStorage:
         assert len(results) == 1
 
     def test_find_worklist_items_with_multiple_filters(self, mwl_storage, result):
+        """Find worklist items with multiple filters."""
         self._insert_item(mwl_storage, result)
 
         results = mwl_storage.find_worklist_items(
@@ -186,6 +197,7 @@ class TestMWLStorage:
         assert len(results) == 1
 
     def test_find_worklist_items_with_date_range(self, mwl_storage, result):
+        """Find worklist items with date range."""
         self._insert_item(mwl_storage, result)
 
         results = mwl_storage.find_worklist_items(scheduled_date="20240101 - 20240131")
@@ -193,12 +205,14 @@ class TestMWLStorage:
         assert len(results) == 1
 
     def test_find_worklist_items_with_open_ended_date_range(self, mwl_storage, result):
+        """Find worklist items with open ended date range."""
         self._insert_item(mwl_storage, result)
 
         assert len(mwl_storage.find_worklist_items(scheduled_date="20240101 -")) == 1
         assert len(mwl_storage.find_worklist_items(scheduled_date="-20240101")) == 1
 
     def test_find_worklist_items_with_time_range(self, mwl_storage, result):
+        """Find worklist items with time range."""
         self._insert_item(mwl_storage, result)
 
         results = mwl_storage.find_worklist_items(scheduled_time="090000 - 170000")
@@ -206,11 +220,13 @@ class TestMWLStorage:
         assert len(results) == 1
 
     def test_find_worklist_items_with_open_ended_time_range(self, mwl_storage, result):
+        """Find worklist items with open ended time range."""
         self._insert_item(mwl_storage, result)
 
         assert len(mwl_storage.find_worklist_items(scheduled_time="090000 -")) == 1
 
     def test_find_worklist_items_with_date_and_time_range(self, mwl_storage, result):
+        """Find worklist items with date and time range."""
         self._insert_item(mwl_storage, result)
 
         results = mwl_storage.find_worklist_items(
@@ -222,6 +238,7 @@ class TestMWLStorage:
 
     @pytest.mark.parametrize("wildcard_param", ["Smith*", "*Smith*", "Sm?th*", "Smith^Jane"])
     def test_find_worklist_items_patient_name_wildcard_conversion(self, mwl_storage, result, wildcard_param):
+        """Find worklist items patient name wildcard conversion."""
         self._insert_item(mwl_storage, result)
 
         results = mwl_storage.find_worklist_items(patient_name=wildcard_param)
@@ -230,6 +247,7 @@ class TestMWLStorage:
         assert results[0].patient_name == "SMITH^JANE"
 
     def test_find_worklist_items_with_filters_completed_items(self, mwl_storage, result):
+        """Find worklist items with filters completed items."""
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
         mwl_storage.update_status(item.accession_number, "COMPLETED")
@@ -244,6 +262,7 @@ class TestMWLStorage:
         assert len(results) == 0
 
     def test_find_worklist_items_with_filters_discontinued_items(self, mwl_storage, result):
+        """Find worklist items with filters discontinued items."""
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
         mwl_storage.update_status(item.accession_number, "DISCONTINUED")
@@ -258,6 +277,7 @@ class TestMWLStorage:
         assert len(results) == 0
 
     def test_get_worklist_item(self, mwl_storage, result):
+        """Get worklist item."""
         item = self._insert_item(mwl_storage, result)
 
         fetched = mwl_storage.get_worklist_item(item.accession_number)
@@ -265,9 +285,11 @@ class TestMWLStorage:
         assert fetched == item
 
     def test_get_worklist_item_returns_none(self, mwl_storage):
+        """Get worklist item returns none."""
         assert mwl_storage.get_worklist_item("DOES_NOT_EXIST") is None
 
     def test_update_status(self, mwl_storage, result):
+        """MWL storage: Update status."""
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
@@ -277,9 +299,11 @@ class TestMWLStorage:
         assert mwl_storage.get_worklist_item(item.accession_number).status == "COMPLETED"
 
     def test_update_status_returns_none_when_not_found(self, mwl_storage):
+        """MWL storage: Update status returns none when not found."""
         assert mwl_storage.update_status("DOES_NOT_EXIST", "IN PROGRESS") is None
 
     def test_update_status_with_mpps(self, mwl_storage, result):
+        """MWL storage: Update status with MPPS."""
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
@@ -293,27 +317,32 @@ class TestMWLStorage:
         assert mwl_storage.get_worklist_item(item.accession_number).mpps_instance_uid == "some-uid"
 
     def test_update_status_raises_on_invalid_target(self, mwl_storage, result):
+        """MWL storage: Update status raises on invalid target."""
         item = self._insert_item(mwl_storage, result)
 
         with pytest.raises(InvalidStatusTransitionError):
             mwl_storage.update_status(item.accession_number, "SCHEDULED")  # SCHEDULED is never a valid target
 
     def test_update_status_returns_none_on_wrong_state(self, mwl_storage, result):
+        """MWL storage: Update status returns none on wrong state."""
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
         assert mwl_storage.update_status(item.accession_number, "IN PROGRESS") is None
 
     def test_update_study_instance_uid(self, mwl_storage, result):
+        """MWL storage: Update study instance UID."""
         item = self._insert_item(mwl_storage, result)
 
         assert mwl_storage.update_study_instance_uid(item.accession_number, "new-uid") is True
 
     def test_update_study_instance_uid_raises(self, mwl_storage):
+        """MWL storage: Update study instance UID raises."""
         with pytest.raises(WorklistItemNotFoundError):
             mwl_storage.update_study_instance_uid("DOES_NOT_EXIST", "uid")
 
     def test_delete_worklist_item(self, mwl_storage, result):
+        """Delete worklist item."""
         item = self._insert_item(mwl_storage, result)
 
         assert mwl_storage.delete_worklist_item(item.accession_number) is True
@@ -327,10 +356,12 @@ class TestMWLStorage:
         assert row is None
 
     def test_delete_worklist_item_raises(self, mwl_storage):
+        """Delete worklist item raises."""
         with pytest.raises(WorklistItemNotFoundError):
             mwl_storage.delete_worklist_item("DOES_NOT_EXIST")
 
     def test_mpps_instance_exists(self, mwl_storage, result):
+        """MPPS instance exists."""
         uid = generate_uid()
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
@@ -340,9 +371,11 @@ class TestMWLStorage:
         assert mwl_storage.mpps_instance_exists(uid) is True
 
     def test_mpps_instance_not_exists(self, mwl_storage):
+        """MPPS instance not exists."""
         assert mwl_storage.mpps_instance_exists("nope") is False
 
     def test_get_worklist_item_by_mpps_instance_uid(self, mwl_storage, result):
+        """Get worklist item by MPPS instance UID."""
         uid = generate_uid()
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
@@ -358,9 +391,11 @@ class TestMWLStorage:
         assert fetched.patient_id == item.patient_id
 
     def test_get_worklist_item_by_mpps_instance_uid_returns_none(self, mwl_storage):
+        """Get worklist item by MPPS instance UID returns none."""
         assert mwl_storage.get_worklist_item_by_mpps_instance_uid("nope") is None
 
     def test_update_status_scheduled_to_in_progress(self, mwl_storage, result):
+        """MWL storage: Update status scheduled to in progress."""
         item = self._insert_item(mwl_storage, result)
 
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
@@ -368,6 +403,7 @@ class TestMWLStorage:
         assert mwl_storage.get_worklist_item(item.accession_number).status == "IN PROGRESS"
 
     def test_update_status_in_progress_to_discontinued(self, mwl_storage, result):
+        """MWL storage: Update status in progress to discontinued."""
         item = self._insert_item(mwl_storage, result)
         mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 

@@ -21,6 +21,7 @@ class TestDicomExample:
         mock_generate_uid,
         mock_image_open,
     ):
+        """Generate DICOM creates valid dataset."""
         study_instance_uid = generate_uid()
         sop_instance_uid = generate_uid()
         implementation_class_uid = generate_uid()
@@ -104,6 +105,7 @@ class TestModalityEmulator:
         pending_status,
         success_status,
     ):
+        """Process worklist items sends all dicoms."""
         study_instance_uid = generate_uid()
         mock_generate_uid.return_value = study_instance_uid
 
@@ -162,6 +164,7 @@ class TestModalityEmulator:
         mock_sleep,
         success_status,
     ):
+        """Process worklist items returns when no items."""
         mwl_storage = MagicMock()
         emulator = ModalityEmulator(mwl_storage)
         ae = MagicMock()
@@ -189,6 +192,7 @@ class TestModalityEmulator:
         self,
         _,
     ):
+        """Process worklist items handles failed association."""
         mwl_storage = MagicMock()
         emulator = ModalityEmulator(mwl_storage)
 
@@ -211,5 +215,6 @@ class TestModalityEmulator:
 
     @patch("modality_emulator.Environment", production=True)
     def test_main_raises_in_production(self, _):
+        """Main raises in production."""
         with pytest.raises(RuntimeError, match="Modality Emulator should not be run in production environment"):
             main()

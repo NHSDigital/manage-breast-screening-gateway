@@ -17,6 +17,7 @@ from server import MWLServer, PACSServer
 @patch(f"{PACSServer.__module__}.PACSStorage")
 class TestPACSServer:
     def test_init(self, mock_pacs_storage, mock_mwl_storage, tmp_dir):
+        """PACS server: Init."""
         subject = PACSServer(
             "Custom AE Title", 2222, tmp_dir, f"{tmp_dir}/test.db", False, mwl_db_path=f"{tmp_dir}/worklist.db"
         )
@@ -32,6 +33,7 @@ class TestPACSServer:
         mock_mwl_storage.assert_called_once_with(f"{tmp_dir}/worklist.db")
 
     def test_init_defaults(self, mock_pacs_storage, mock_mwl_storage):
+        """PACS server: Init defaults."""
         subject = PACSServer()
 
         assert subject.ae_title == "SCREENING_PACS"
@@ -48,6 +50,7 @@ class TestPACSServer:
     @patch(f"{PACSServer.__module__}.CEcho")
     @patch(f"{PACSServer.__module__}.CStore")
     def test_start(self, mock_c_store, mock_c_echo, mock_ae, _mock_pacs_storage, _mock_mwl_storage):
+        """PACS server: Start."""
         subject = PACSServer()
         subject.start()
 
@@ -69,6 +72,7 @@ class TestPACSServer:
 
     @patch(f"{PACSServer.__module__}.AE")
     def test_stop(self, *_):
+        """PACS server: Stop."""
         subject = PACSServer()
         subject.start()
         subject.stop()
@@ -80,6 +84,7 @@ class TestPACSServer:
 @patch(f"{MWLServer.__module__}.MWLStorage")
 class TestMWLServer:
     def test_init(self, mock_storage):
+        """MWL server: Init."""
         subject = MWLServer("CUSTOM_MWL", 11112, "/custom/path/worklist.db", False)
 
         assert subject.ae_title == "CUSTOM_MWL"
@@ -91,6 +96,7 @@ class TestMWLServer:
         mock_storage.assert_called_once_with("/custom/path/worklist.db")
 
     def test_init_defaults(self, mock_storage):
+        """MWL server: Init defaults."""
         subject = MWLServer()
 
         assert subject.ae_title == "MWL_SCP"
@@ -104,6 +110,7 @@ class TestMWLServer:
     @patch(f"{MWLServer.__module__}.AE")
     @patch(f"{MWLServer.__module__}.CEcho")
     def test_start(self, mock_c_echo, mock_ae, _):
+        """MWL server: Start."""
         subject = MWLServer()
         mock_ae_instance = MagicMock()
         mock_ae.return_value = mock_ae_instance
@@ -130,6 +137,7 @@ class TestMWLServer:
 
     @patch(f"{MWLServer.__module__}.AE")
     def test_stop(self, *_):
+        """MWL server: Stop."""
         subject = MWLServer()
         subject.start()
         subject.stop()

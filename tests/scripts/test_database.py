@@ -25,6 +25,7 @@ def worklist_db(tmp_dir, monkeypatch):
 
 # Tests for backup_database
 def test_backup_creates_file(tmp_dir):
+    """Backup creates file."""
     db_path = f"{tmp_dir}/test.db"
     sqlite3.connect(db_path).close()
 
@@ -34,6 +35,7 @@ def test_backup_creates_file(tmp_dir):
 
 
 def test_backup_returns_timestamped_path(tmp_dir):
+    """Backup returns timestamped path."""
     db_path = f"{tmp_dir}/test.db"
     sqlite3.connect(db_path).close()
 
@@ -43,6 +45,7 @@ def test_backup_returns_timestamped_path(tmp_dir):
 
 
 def test_backup_creates_backup_dir_if_missing(tmp_dir):
+    """Backup creates backup dir if missing."""
     db_path = f"{tmp_dir}/test.db"
     sqlite3.connect(db_path).close()
     backup_dir = f"{tmp_dir}/backups/nested"
@@ -53,12 +56,14 @@ def test_backup_creates_backup_dir_if_missing(tmp_dir):
 
 
 def test_backup_database_creates_backup(worklist_db):
+    """Backup database creates backup."""
     backup_path = backup_database(worklist_db, str(Path(worklist_db).parent / "backups"))
     assert Path(backup_path).exists()
 
 
 # Tests for reset_worklist_database
 def test_reset_worklist_database_deletes_all_rows(worklist_db):
+    """Reset worklist database deletes all rows."""
     reset_worklist_database()
 
     with sqlite3.connect(worklist_db) as conn:
@@ -67,10 +72,12 @@ def test_reset_worklist_database_deletes_all_rows(worklist_db):
 
 
 def test_reset_worklist_database_returns_row_count(worklist_db):
+    """Reset worklist database returns row count."""
     assert reset_worklist_database() == 2
 
 
 def test_reset_worklist_database_returns_zero_when_empty(tmp_dir, monkeypatch):
+    """Reset worklist database returns zero when empty."""
     db_path = f"{tmp_dir}/worklist.db"
     with sqlite3.connect(db_path) as conn:
         conn.execute("CREATE TABLE worklist_items (accession_number TEXT PRIMARY KEY)")

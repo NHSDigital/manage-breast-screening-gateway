@@ -8,5 +8,6 @@ from services.dicom.c_echo import CEcho
 
 class TestCEcho:
     def test_call(self):
+        """C-ECHO: Call."""
         event = MagicMock(spec=Event)
         assert CEcho().call(event) == SUCCESS

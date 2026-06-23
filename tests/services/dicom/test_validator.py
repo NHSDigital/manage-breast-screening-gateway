@@ -29,10 +29,12 @@ class TestDicomValidator:
         return valid_dataset
 
     def test_validate_dataset_success(self, valid_dataset):
+        """Validate dataset success."""
         validator = DicomValidator()
         validator.validate_dataset(valid_dataset)  # Should not raise
 
     def test_validate_dataset_missing_sop_instance_uid(self):
+        """Validate dataset missing SOP instance UID."""
         ds = Dataset()
         ds.PatientID = TEST_PATIENT_ID
         ds.StudyInstanceUID = TEST_STUDY_INSTANCE_UID
@@ -43,6 +45,7 @@ class TestDicomValidator:
             validator.validate_dataset(ds)
 
     def test_validate_dataset_missing_patient_id(self):
+        """Validate dataset missing patient id."""
         ds = Dataset()
         ds.SOPInstanceUID = TEST_SOP_INSTANCE_UID
         ds.StudyInstanceUID = TEST_STUDY_INSTANCE_UID
@@ -53,6 +56,7 @@ class TestDicomValidator:
             validator.validate_dataset(ds)
 
     def test_validate_dataset_missing_study_instance_uid(self):
+        """Validate dataset missing study instance UID."""
         ds = Dataset()
         ds.SOPInstanceUID = TEST_SOP_INSTANCE_UID
         ds.PatientID = TEST_PATIENT_ID
@@ -63,6 +67,7 @@ class TestDicomValidator:
             validator.validate_dataset(ds)
 
     def test_validate_dataset_missing_sop_class_uid(self):
+        """Validate dataset missing SOP class UID."""
         ds = Dataset()
         ds.SOPInstanceUID = TEST_SOP_INSTANCE_UID
         ds.PatientID = TEST_PATIENT_ID
@@ -74,6 +79,7 @@ class TestDicomValidator:
 
     def test_validate_bytes_valid_preamble(self):
         # 128 bytes preamble + DICM + minimal content
+        """Validate bytes valid preamble."""
         data = b"\x00" * 128 + b"DICM" + b"\x00" * 100
 
         validator = DicomValidator()
@@ -81,6 +87,7 @@ class TestDicomValidator:
 
     def test_validate_bytes_missing_preamble(self):
         # DICM at wrong position (no 128-byte preamble before it)
+        """Validate bytes missing preamble."""
         data = b"DICM" + b"\x00" * 200
 
         validator = DicomValidator()
@@ -88,6 +95,7 @@ class TestDicomValidator:
             validator.validate_bytes(data)
 
     def test_validate_bytes_too_small(self):
+        """Validate bytes too small."""
         data = b"\x00" * 50
 
         validator = DicomValidator()
@@ -95,6 +103,7 @@ class TestDicomValidator:
             validator.validate_bytes(data)
 
     def test_validate_bytes_wrong_magic(self):
+        """Validate bytes wrong magic."""
         data = b"\x00" * 128 + b"XXXX" + b"\x00" * 100
 
         validator = DicomValidator()
@@ -102,10 +111,12 @@ class TestDicomValidator:
             validator.validate_bytes(data)
 
     def test_validate_pixel_data_valid(self, valid_image_dataset):
+        """Validate pixel data valid."""
         validator = DicomValidator()
         validator.validate_pixel_data(valid_image_dataset)  # Should not raise
 
     def test_validate_pixel_data_missing_rows(self):
+        """Validate pixel data missing rows."""
         ds = Dataset()
         ds.PixelData = b"\x00" * 100
         ds.Columns = 10
@@ -116,6 +127,7 @@ class TestDicomValidator:
             validator.validate_pixel_data(ds)
 
     def test_validate_pixel_data_missing_columns(self):
+        """Validate pixel data missing columns."""
         ds = Dataset()
         ds.PixelData = b"\x00" * 100
         ds.Rows = 10
@@ -126,6 +138,7 @@ class TestDicomValidator:
             validator.validate_pixel_data(ds)
 
     def test_validate_pixel_data_missing_bits_allocated(self):
+        """Validate pixel data missing bits allocated."""
         ds = Dataset()
         ds.PixelData = b"\x00" * 100
         ds.Rows = 10
@@ -136,12 +149,14 @@ class TestDicomValidator:
             validator.validate_pixel_data(ds)
 
     def test_validate_pixel_data_no_pixel_data(self):
+        """Validate pixel data no pixel data."""
         ds = Dataset()  # No PixelData
 
         validator = DicomValidator()
         validator.validate_pixel_data(ds)  # Should not raise
 
     def test_validate_pixel_data_none_pixel_data(self):
+        """Validate pixel data none pixel data."""
         ds = Dataset()
         ds.PixelData = None
 

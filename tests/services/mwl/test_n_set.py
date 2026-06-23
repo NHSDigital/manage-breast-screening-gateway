@@ -29,6 +29,7 @@ class TestNSet:
         return generate_uid()
 
     def test_missing_status_returns_processing_failure(self, mock_storage, event):
+        """Missing status returns processing failure."""
         event.request.RequestedSOPInstanceUID = generate_uid()
 
         # No PerformedProcedureStepStatus set
@@ -38,6 +39,7 @@ class TestNSet:
         assert ds is None
 
     def test_invalid_status_returns_invalid_attribute(self, mock_storage, event, requested_sop_instance_uid):
+        """Invalid status returns invalid attribute."""
         event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
         event.attribute_list.PerformedProcedureStepStatus = "INVALID_STATUS"
 
@@ -47,6 +49,7 @@ class TestNSet:
         assert ds is None
 
     def test_unknown_sop_instance_returns_unknown(self, mock_storage, event, requested_sop_instance_uid):
+        """Unknown SOP instance returns unknown."""
         event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
         event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
 
@@ -59,6 +62,7 @@ class TestNSet:
         mock_storage.get_worklist_item_by_mpps_instance_uid.assert_called_once_with(requested_sop_instance_uid)
 
     def test_database_update_failure_returns_processing_failure(self, mock_storage, event, requested_sop_instance_uid):
+        """Database update failure returns processing failure."""
         event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
         event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
 
@@ -75,6 +79,7 @@ class TestNSet:
         mock_storage.update_status.assert_called_once_with("ACC123", "COMPLETED")
 
     def test_successful_nset_returns_success_and_dataset(self, mock_storage, event, requested_sop_instance_uid):
+        """Successful N-SET returns success and dataset."""
         event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
         event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
 
@@ -95,6 +100,7 @@ class TestNSet:
         mock_storage.update_status.assert_called_once_with("ACC123", "COMPLETED")
 
     def test_exception_returns_processing_failure(self, mock_storage, event):
+        """Exception returns processing failure."""
         event.request.RequestedSOPInstanceUID = generate_uid()
         event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
 

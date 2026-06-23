@@ -28,6 +28,7 @@ class TestImageResizer:
         assert resized_ds.Columns == 256
 
     def test_resize_preserves_bit_depth(self, dataset_with_pixels):
+        """Resize preserves bit depth."""
         dataset_with_pixels.Rows = 1000
         dataset_with_pixels.Columns = 1000
         dataset_with_pixels.BitsAllocated = 16

@@ -19,6 +19,7 @@ class TestDICOMUploader:
         yield tf.name
 
     def test_upload_success(self, mock_put, dicom_file):
+        """DICOM uploader: Upload success."""
         mock_response = Mock()
         mock_response.status_code = 201
         mock_put.return_value = mock_response
@@ -57,6 +58,7 @@ class TestDICOMUploader:
         assert result is False
 
     def test_upload_failure_status_code(self, mock_put, dicom_file):
+        """DICOM uploader: Upload failure status code."""
         mock_response = Mock()
         mock_response.status_code = 500
         mock_response.text = "Internal server error"
@@ -68,6 +70,7 @@ class TestDICOMUploader:
         assert result is False
 
     def test_upload_timeout(self, mock_put, dicom_file):
+        """DICOM uploader: Upload timeout."""
         mock_put.side_effect = requests.exceptions.Timeout()
 
         uploader = DICOMUploader(timeout=5)
@@ -76,6 +79,7 @@ class TestDICOMUploader:
         assert result is False
 
     def test_upload_network_error(self, mock_put, dicom_file):
+        """DICOM uploader: Upload network error."""
         mock_put.side_effect = requests.exceptions.ConnectionError()
 
         uploader = DICOMUploader()

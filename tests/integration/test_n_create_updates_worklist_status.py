@@ -39,6 +39,7 @@ class TestNCreateUpdatesWorklistStatus:
         )
 
     def test_n_create_updates_worklist_status(self, tmp_dir, worklist_item):
+        """N-CREATE updates worklist status."""
         storage = MWLStorage(f"{tmp_dir}/test.db")
         study_instance_uid = generate_uid()
         accession_number = storage.store_worklist_item(worklist_item)

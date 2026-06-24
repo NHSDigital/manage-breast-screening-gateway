@@ -9,6 +9,12 @@ param(
 $logsDir = Join-Path $BaseInstallPath "logs"
 $maintenanceLogFile = Join-Path $logsDir "maintenance.log"
 
+if (-not (Test-Path $logsDir)) {
+    New-Item -Path $logsDir -ItemType Directory -Force | Out-Null
+}
+
+
+
 $services = Get-Service |
     Where-Object { $_.Name -like "Gateway-*" } |
     ForEach-Object {
@@ -203,6 +209,7 @@ switch ($Action) {
 
     "RotateLogs" {
         Stop-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
+        Rotate-LogFile -LogFile $maintenanceLogFile -RetainCount 5
         Rotate-ServiceLogs -Services $services -LogsDir $logsDir
         Start-AllServices -Services $Services -TimeoutSeconds $startStopTimeoutSeconds
     }

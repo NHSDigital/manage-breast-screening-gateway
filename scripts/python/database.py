@@ -1,101 +1,116 @@
 import logging
 import os
 import sqlite3
-from datetime import datetime
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+    format=os.getenv(
+        "LOG_FORMAT",
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    ),
 )
 logger = logging.getLogger(__name__)
 
 
-def backup_database(db_path: str, backup_dir: str) -> str:
-    """
-    Backup a SQLite database to a timestamped file in backup_dir.
+MAX_BACKUPS = int(os.getenv("MAX_BACKUPS", 5))
 
-    Returns the path of the backup file.
+
+def backup_db_path(db_path: str, backup_dir: str) -> str:
+    """
+    Returns the path of the newest backup file (.backup.0).
     """
     os.makedirs(backup_dir, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     db_filename = os.path.basename(db_path)
-    backup_path = os.path.join(backup_dir, f"{timestamp}.{db_filename}.backup")
-    with sqlite3.connect(db_path) as conn:
-        with sqlite3.connect(backup_path) as backup_conn:
-            conn.backup(backup_conn)
-    return backup_path
+    return os.path.join(backup_dir, f"{db_filename}.backup.0")
 
 
-def backup_databases():
+def rotate_backups(backup_dir: str, db_filename: str) -> None:
     """
-    Backup all configured databases.
+    Keep exactly MAX_BACKUPS backups:
+        backup.0 (newest)
+        backup.1
+        backup.2
+        backup.3
+        backup.4 (oldest)
 
-    Environment variables:
-    PACS_DB_PATH:  Path to the PACS SQLite database
-    MWL_DB_PATH:   Path to the MWL SQLite database
-    BACKUP_PATH:   Directory for backups (default: ./backups)
+    Before creating a new backup, rotate existing files upward.
     """
-    pacs_db_path = os.getenv("PACS_DB_PATH")
-    mwl_db_path = os.getenv("MWL_DB_PATH")
-    backup_path = os.getenv("BACKUP_PATH", "./backups")
+    # Remove the oldest backup first
+    oldest = os.path.join(
+        backup_dir,
+        f"{db_filename}.backup.{MAX_BACKUPS - 1}",
+    )
+    if os.path.exists(oldest):
+        os.remove(oldest)
+        logger.info("Deleted oldest backup: %s", oldest)
 
-    if not pacs_db_path and not mwl_db_path:
-        logger.warning("No database paths configured (PACS_DB_PATH or MWL_DB_PATH), skipping backup")
-        return
+    # Rotate existing backups upward
+    for i in range(MAX_BACKUPS - 2, -1, -1):
+        src = os.path.join(backup_dir, f"{db_filename}.backup.{i}")
+        dst = os.path.join(backup_dir, f"{db_filename}.backup.{i + 1}")
 
-    success = True
-
-    if pacs_db_path:
-        try:
-            pacs_backup_path = backup_database(pacs_db_path, backup_path)
-        except Exception as e:
-            logging.error(f"PACS backup failed: {e}")
-            success = False
-    else:
-        logging.info("PACS_DB_PATH not set, skipping PACS backup")
-
-    if mwl_db_path:
-        try:
-            mwl_backup_path = backup_database(mwl_db_path, backup_path)
-        except Exception as e:
-            logging.error(f"MWL backup failed: {e}")
-            success = False
-    else:
-        logging.info("MWL_DB_PATH not set, skipping MWL backup")
-
-    if success:
-        logger.info("All database backups completed successfully. Backup files:")
-        if pacs_db_path:
-            logger.info(f"  PACS backup: {pacs_backup_path}")
-        if mwl_db_path:
-            logger.info(f"  MWL backup: {mwl_backup_path}")
+        if os.path.exists(src):
+            os.rename(src, dst)
+            logger.info("Rotated backup: %s -> %s", src, dst)
 
 
-def reset_worklist_database() -> int:
+def backup_and_reset() -> int:
     """
-    Backs up and clears the MWL database..
+    Backup and reset a SQLite database.
 
-    Environment variables:
-    MWL_DB_PATH:  Path to the MWL SQLite database (default: /var/lib/pacs/worklist.db)
-    BACKUP_PATH:  Directory for database backups (default: /var/lib/pacs/backups)
+    Returns the number of rows deleted.
     """
-    mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
-    backup_path = os.getenv("BACKUP_PATH", "/var/lib/pacs/backups")
+    db_path = os.getenv("DB_PATH")
+    if not db_path:
+        logger.warning("DB_PATH not set, skipping database reset")
+        return 0
+
+    table_name = os.getenv("TABLE_NAME")
+    if table_name not in {"stored_instances", "worklist_items"}:
+        logger.warning(
+            "Invalid TABLE_NAME '%s' specified, skipping database reset",
+            table_name,
+        )
+        return 0
+
+    backup_dir = os.getenv("BACKUP_PATH", "./backups")
+    db_filename = os.path.basename(db_path)
+
+    # Rotate existing backups before creating the new one
+    rotate_backups(backup_dir, db_filename)
+
+    backup_path = backup_db_path(db_path, backup_dir)
+
     count = 0
 
     try:
-        path = backup_database(mwl_db_path, backup_path)
-        logger.info(f"Backup complete: {path}")
-    except Exception as e:
-        logger.error(f"MWL backup failed: {e}", exc_info=True)
+        with sqlite3.connect(db_path) as conn:
+            with sqlite3.connect(backup_path) as backup_conn:
+                conn.backup(backup_conn)
 
-    try:
-        with sqlite3.connect(mwl_db_path) as conn:
-            cursor = conn.execute("DELETE FROM worklist_items")
+            logger.info("Database backup complete: %s", backup_path)
+
+            cursor = conn.execute(f"DELETE FROM {table_name}")
             conn.commit()
             count = cursor.rowcount
-            logger.info(f"MWL reset complete: {count} items deleted")
-    except Exception as e:
-        logger.error(f"MWL clear failed: {e}", exc_info=True)
 
-    return count
+            logger.info(
+                "Database reset complete: %s items deleted from %s",
+                count,
+                table_name,
+            )
+
+            backup_conn.close()
+        conn.close()
+
+        return count
+
+    except Exception:
+        logger.exception("Database reset failed")
+        raise
+
+
+if __name__ == "__main__":
+    deleted = backup_and_reset()
+    logger.info("Total rows deleted: %d", deleted)
+    exit(0)

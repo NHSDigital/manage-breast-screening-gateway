@@ -7,7 +7,7 @@ import pytest
 sys.path.append(f"{Path(__file__).parent.parent.parent}/scripts/python")
 
 from database import (
-    backup_database,
+    backup_and_reset,
 )
 
 
@@ -44,7 +44,7 @@ def row_count(db_path, table):
     return count
 
 
-def test_backup_database_creates_backup(
+def test_backup_and_reset_creates_backup(
     tmp_path,
     sqlite_db,
     monkeypatch,
@@ -56,7 +56,7 @@ def test_backup_database_creates_backup(
     monkeypatch.setenv("BACKUP_PATH", str(backup_dir))
     monkeypatch.setenv("MAX_BACKUPS", "5")
 
-    deleted = backup_database()
+    deleted = backup_and_reset()
 
     assert deleted == 3
 
@@ -92,7 +92,7 @@ def test_rotation_keeps_five_backups(
         conn.commit()
         conn.close()
 
-        backup_database()
+        backup_and_reset()
 
     backups = sorted(backup_dir.glob("test.db.backup.*"))
 
@@ -123,7 +123,7 @@ def test_newest_backup_is_backup_zero(
     monkeypatch.setenv("MAX_BACKUPS", "5")
 
     # First backup contains 3 rows
-    backup_database()
+    backup_and_reset()
 
     # Add one row and create another backup
     conn = sqlite3.connect(sqlite_db)
@@ -131,7 +131,7 @@ def test_newest_backup_is_backup_zero(
     conn.commit()
     conn.close()
 
-    backup_database()
+    backup_and_reset()
 
     newest = backup_dir / "test.db.backup.0"
     previous = backup_dir / "test.db.backup.1"
@@ -152,7 +152,7 @@ def test_invalid_table_name_is_ignored(
     monkeypatch.setenv("TABLE_NAME", "users")
     monkeypatch.setenv("BACKUP_PATH", str(backup_dir))
 
-    result = backup_database()
+    result = backup_and_reset()
 
     assert result == 0
     assert not backup_dir.exists()
@@ -164,6 +164,6 @@ def test_missing_db_path_is_ignored(
     """Missing DB_PATH is ignored."""
     monkeypatch.delenv("DB_PATH", raising=False)
 
-    result = backup_database()
+    result = backup_and_reset()
 
     assert result == 0

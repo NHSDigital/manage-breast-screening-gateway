@@ -54,7 +54,7 @@ def rotate_backups(backup_dir: str, db_filename: str) -> None:
             logger.info("Rotated backup: %s -> %s", src, dst)
 
 
-def backup_database() -> int:
+def backup_and_reset() -> int:
     """
     Backup and reset a SQLite database.
 
@@ -111,6 +111,6 @@ def backup_database() -> int:
 
 
 if __name__ == "__main__":
-    deleted = backup_database()
+    deleted = backup_and_reset()
     logger.info("Total rows deleted: %d", deleted)
     exit(0)

@@ -15,6 +15,8 @@ from pynetdicom.sop_class import (
 
 sys.path.append(f"{Path(__file__).parent.parent}/src")
 
+READABLE_TEST_OUTPUT = not any("neotest" in arg for arg in sys.argv)
+
 
 def pytest_html_report_title(report):
     report.title = "Rubie Gateway Tests"
@@ -49,7 +51,7 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
 
     readable_name = _readable_test_name(item)
-    if readable_name:
+    if readable_name and READABLE_TEST_OUTPUT:
         report.nodeid = readable_name
 
 

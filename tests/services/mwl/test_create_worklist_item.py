@@ -8,12 +8,12 @@ from services.storage import MWLStorage
 
 class TestCreateWorklistItem:
     @pytest.fixture
-    def db_file(tmp_path):
-        return f"{tmp_path}/test.db"
+    def db_file(self, tmp_dir):
+        return tmp_dir / "test.db"
 
     @pytest.fixture
     def mwl_storage(self, db_file):
-        return MWLStorage(str(db_file))
+        return MWLStorage(db_file)
 
     def test_call_success(self, mwl_storage, listener_payload):
         """Create worklist item: Call success."""

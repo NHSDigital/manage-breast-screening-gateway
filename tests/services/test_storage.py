@@ -16,13 +16,13 @@ from services.storage import (
 
 
 @pytest.fixture
-def db_file(tmp_path):
-    return tmp_path / "test.db"
+def db_file(tmp_dir):
+    return tmp_dir / "test.db"
 
 
 @pytest.fixture
-def pacs_storage(db_file, tmp_path):
-    storage = PACSStorage(str(db_file), str(tmp_path))
+def pacs_storage(db_file, tmp_dir):
+    storage = PACSStorage(str(db_file), str(tmp_dir))
     return storage
 
 

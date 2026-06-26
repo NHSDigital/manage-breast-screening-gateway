@@ -4,15 +4,15 @@ from services.storage import MWLStorage, PACSStorage, WorklistItem
 
 
 @pytest.fixture
-def mwl_storage(tmp_path):
+def mwl_storage(tmp_dir):
     """Create MWLStorage instance with temp database."""
-    return MWLStorage(db_path=f"{tmp_path}/worklist.db")
+    return MWLStorage(db_path=f"{tmp_dir}/worklist.db")
 
 
 @pytest.fixture
-def pacs_storage(tmp_path):
+def pacs_storage(tmp_dir):
     """Create PACSStorage instance with temp database."""
-    return PACSStorage(db_path=f"{tmp_path}/pacs.db", storage_root=str(tmp_path / "storage"))
+    return PACSStorage(db_path=f"{tmp_dir}/pacs.db", storage_root=f"{tmp_dir}/storage")
 
 
 class TestPACSStorageUpload:

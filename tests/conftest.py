@@ -66,7 +66,7 @@ def mock_azure_credential():
 
 @pytest.fixture
 def tmp_dir():
-    return f"{Path(__file__).parent}/tmp"
+    return Path(__file__).parent / "tmp"
 
 
 @pytest.fixture(autouse=True)

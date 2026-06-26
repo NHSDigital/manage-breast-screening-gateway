@@ -12,8 +12,13 @@ from database import (
 
 
 @pytest.fixture
-def sqlite_db(tmp_path):
-    db_path = tmp_path / "test.db"
+def backup_dir(tmp_dir):
+    return tmp_dir / "backups"
+
+
+@pytest.fixture
+def sqlite_db(tmp_dir):
+    db_path = tmp_dir / "test.db"
 
     conn = sqlite3.connect(db_path)
 
@@ -45,12 +50,11 @@ def row_count(db_path, table):
 
 
 def test_backup_and_reset_creates_backup(
-    tmp_path,
+    backup_dir,
     sqlite_db,
     monkeypatch,
 ):
     """Backup database creates backup."""
-    backup_dir = tmp_path / "backups"
     monkeypatch.setenv("DB_PATH", str(sqlite_db))
     monkeypatch.setenv("TABLE_NAME", "stored_instances")
     monkeypatch.setenv("BACKUP_PATH", str(backup_dir))
@@ -71,12 +75,11 @@ def test_backup_and_reset_creates_backup(
 
 
 def test_rotation_keeps_five_backups(
-    tmp_path,
+    backup_dir,
     sqlite_db,
     monkeypatch,
 ):
     """Only 5 database backups are kept and older ones are deleted."""
-    backup_dir = tmp_path / "backups"
     monkeypatch.setenv("DB_PATH", str(sqlite_db))
     monkeypatch.setenv("TABLE_NAME", "stored_instances")
     monkeypatch.setenv("BACKUP_PATH", str(backup_dir))
@@ -110,13 +113,11 @@ def test_rotation_keeps_five_backups(
 
 
 def test_newest_backup_is_backup_zero(
-    tmp_path,
+    backup_dir,
     sqlite_db,
     monkeypatch,
 ):
     """Newest backup is always backup.0."""
-    backup_dir = tmp_path / "backups"
-
     monkeypatch.setenv("DB_PATH", str(sqlite_db))
     monkeypatch.setenv("TABLE_NAME", "stored_instances")
     monkeypatch.setenv("BACKUP_PATH", str(backup_dir))
@@ -141,13 +142,11 @@ def test_newest_backup_is_backup_zero(
 
 
 def test_invalid_table_name_is_ignored(
-    tmp_path,
+    backup_dir,
     sqlite_db,
     monkeypatch,
 ):
     """Invalid table name is ignored."""
-    backup_dir = tmp_path / "backups"
-
     monkeypatch.setenv("DB_PATH", str(sqlite_db))
     monkeypatch.setenv("TABLE_NAME", "users")
     monkeypatch.setenv("BACKUP_PATH", str(backup_dir))

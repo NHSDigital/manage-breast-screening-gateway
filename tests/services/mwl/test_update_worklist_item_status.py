@@ -28,8 +28,8 @@ class TestUpdateWorklistItemStatus:
         }
 
     @pytest.fixture
-    def db_file(self, tmp_path) -> str:
-        return f"{tmp_path}/test.db"
+    def db_file(self, tmp_dir) -> str:
+        return tmp_dir / "test.db"
 
     @pytest.fixture
     def mwl_storage(self, db_file: str):

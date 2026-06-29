@@ -55,22 +55,26 @@ jobs:
               echo "deploy_dev=true"     >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
             preprod)
               echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=true" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
             review)
               echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
               echo "deploy_review=true"  >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
             *)
               # push-to-main (empty input): deploy to both dev and preprod
               echo "deploy_dev=true"     >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=true" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
           esac
 

@@ -76,6 +76,7 @@ jobs:
       deploy_dev:     ${{ steps.envs.outputs.deploy_dev }}
       deploy_preprod: ${{ steps.envs.outputs.deploy_preprod }}
       deploy_review:  ${{ steps.envs.outputs.deploy_review }}
+      deploy_prod:    ${{ steps.envs.outputs.deploy_prod }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -88,22 +89,32 @@ jobs:
               echo "deploy_dev=true"     >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
             preprod)
               echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=true" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
             review)
               echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
               echo "deploy_review=true"  >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
+              ;;
+            prod)
+              echo "deploy_dev=false"    >> "$GITHUB_OUTPUT"
+              echo "deploy_preprod=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=true" >> "$GITHUB_OUTPUT"
               ;;
             *)
               # push-to-main (empty input): deploy to both dev and preprod
               echo "deploy_dev=true"     >> "$GITHUB_OUTPUT"
               echo "deploy_preprod=true" >> "$GITHUB_OUTPUT"
               echo "deploy_review=false" >> "$GITHUB_OUTPUT"
+              echo "deploy_prod=false" >> "$GITHUB_OUTPUT"
               ;;
           esac
 

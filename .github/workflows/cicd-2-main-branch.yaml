@@ -198,6 +198,40 @@ jobs:
       branch_name: ${{ github.ref_name }}
     secrets: inherit
 
+  deploy-infra-prod:
+    name: Deploy infra (prod)
+    needs: [resolve, deploy-app-dev]
+    if: |
+      always() &&
+      needs.resolve.outputs.deploy_prod == 'true' &&
+      (needs.deploy-app-dev.result == 'success' || needs.deploy-app-dev.result == 'skipped')
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy.yaml
+    with:
+      environments: '["prod"]'
+      commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
+    secrets: inherit
+
+  deploy-app-prod:
+    name: Deploy app (prod)
+    needs: [resolve, deploy-infra-prod]
+    if: |
+      always() &&
+      needs.resolve.outputs.deploy_prod == 'true' &&
+      needs.deploy-infra-prod.result == 'success'
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/stage-4-deploy-app.yaml
+    with:
+      environments: '["prod"]'
+      release_tag: ${{ needs.resolve.outputs.release_tag }}
+      commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
+    secrets: inherit
+
+
   # ---- review (manual only) -------------------------------------------------
 
   deploy-infra-review:

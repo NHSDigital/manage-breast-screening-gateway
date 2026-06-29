@@ -15,6 +15,7 @@ on:
           - dev
           - preprod
           - review
+          - prod
 
 concurrency: cicd-${{ github.ref }}
 

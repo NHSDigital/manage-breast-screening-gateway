@@ -7,3 +7,4 @@ TERRAFORM_MODULES_REF=main
 ENABLE_SOFT_DELETE=false
 ADO_MANAGEMENT_POOL=private-pool-dev-uks
 CLOUD_API_HOSTNAME=review.manage-breast-screening.non-live.screening.nhs.uk
+SCREENING_ENTRA_GROUP_ID="14f915c3-ef0a-471b-b9bf-31187d18f8b6"

@@ -198,6 +198,7 @@ jobs:
       branch_name: ${{ github.ref_name }}
     secrets: inherit
 
+  # ---- prod --------------------------------------------------------------
   deploy-infra-prod:
     name: Deploy infra (prod)
     needs: [resolve, deploy-app-dev]

@@ -13,10 +13,10 @@ data "azuread_service_principal" "arc_onboarding" {
 }
 
 # Look up the Entra ID group that manages this environment
-data "azuread_group" "screening" {
-  count        = var.enable_arc_servers ? 1 : 0
-  display_name = "screening_${var.app_short_name}_${var.env_config}"
-}
+# data "azuread_group" "screening" {
+#   count        = var.enable_arc_servers ? 1 : 0
+#   display_name = "screening_${var.app_short_name}_${var.env_config}"
+# }
 
 # Assign "Azure Connected Machine Onboarding" role to allow Arc server enrollment
 module "arc_onboarding_role" {
@@ -37,5 +37,7 @@ module "arc_wac_admin_login_role" {
 
   scope                = data.azurerm_resource_group.arc_enabled_servers[0].id
   role_definition_name = "Windows Admin Center Administrator Login"
-  principal_id         = data.azuread_group.screening[0].object_id
+  # principal_id         = data.azuread_group.screening[0].object_id
+  principal_id         = "3b2b22b0-ac8e-4904-a94b-9010ff08698a"
+
 }

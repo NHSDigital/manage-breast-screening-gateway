@@ -111,7 +111,7 @@ feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_proces
 feafe758d7c1e85472cc81c5c275aae9ec078cef:tests/services/dicom/test_upload_processor.py:ipv4:174
 
 # Ignore the SCREENING_ENTRA_GROUP_ID
-infrastructure/environments/prod/variables.sh:generic-api-key:10
-infrastructure/environments/preprod/variables.sh:generic-api-key:10
-infrastructure/environments/dev/variables.sh:generic-api-key:10
-infrastructure/environments/review/variables.sh:generic-api-key:10
+infrastructure/environments/prod/variables.tfvars:generic-api-key:2
+infrastructure/environments/preprod/variables.tfvars:generic-api-key:2
+infrastructure/environments/dev/variables.tfvars:generic-api-key:2
+infrastructure/environments/review/variables.tfvars:generic-api-key:2

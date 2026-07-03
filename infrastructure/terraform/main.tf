@@ -6,11 +6,11 @@ module "arc_infra" {
     azuread = azuread
   }
 
-  region              = local.region
-  app_short_name      = var.app_short_name
-  env_config          = var.env_config
-  resource_group_name = local.resource_group_name
-  enable_arc_servers  = var.enable_arc_servers
+  region                   = local.region
+  app_short_name           = var.app_short_name
+  env_config               = var.env_config
+  resource_group_name      = local.resource_group_name
+  enable_arc_servers       = var.enable_arc_servers
   screening_entra_group_id = var.screening_entra_group_id
 
   # Create the HC for the test VM in the same run as VM creation.

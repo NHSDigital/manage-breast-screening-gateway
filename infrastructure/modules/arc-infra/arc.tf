@@ -12,6 +12,7 @@ data "azuread_service_principal" "arc_onboarding" {
   display_name = "spn-azure-arc-onboarding-screening-${var.env_config}"
 }
 
+# Awaiting approval from Administrator team, 
 # Look up the Entra ID group that manages this environment
 # data "azuread_group" "screening" {
 #   count        = var.enable_arc_servers ? 1 : 0
@@ -37,7 +38,9 @@ module "arc_wac_admin_login_role" {
 
   scope                = data.azurerm_resource_group.arc_enabled_servers[0].id
   role_definition_name = "Windows Admin Center Administrator Login"
+  # Waiting for approval to be provided by the Administrator team,
+  # This is a temporary fix till approval has been provided.
   # principal_id         = data.azuread_group.screening[0].object_id
-  principal_id         = "3b2b22b0-ac8e-4904-a94b-9010ff08698a"
+  principal_id         = var.screening_entra_group_id
 
 }

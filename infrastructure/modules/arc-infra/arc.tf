@@ -12,11 +12,12 @@ data "azuread_service_principal" "arc_onboarding" {
   display_name = "spn-azure-arc-onboarding-screening-${var.env_config}"
 }
 
+# Awaiting approval from Administrator team, a bit of push back with regards to giving Group.Read.All permission to the service principal, so for now we will use the group ID from the environment variable instead of looking it up by name.
 # Look up the Entra ID group that manages this environment
-data "azuread_group" "screening" {
-  count        = var.enable_arc_servers ? 1 : 0
-  display_name = "screening_${var.app_short_name}_${var.env_config}"
-}
+# data "azuread_group" "screening" {
+#   count        = var.enable_arc_servers ? 1 : 0
+#   display_name = "screening_${var.app_short_name}_${var.env_config}"
+# }
 
 # Assign "Azure Connected Machine Onboarding" role to allow Arc server enrollment
 module "arc_onboarding_role" {
@@ -37,5 +38,8 @@ module "arc_wac_admin_login_role" {
 
   scope                = data.azurerm_resource_group.arc_enabled_servers[0].id
   role_definition_name = "Windows Admin Center Administrator Login"
-  principal_id         = data.azuread_group.screening[0].object_id
+  # Awaiting approval from Administrator team, a bit of push back with regards to giving Group.Read.All permission to the service principal, so for now we will use the group ID from the environment variable instead of looking it up by name.
+  # principal_id         = data.azuread_group.screening[0].object_id
+  principal_id = var.screening_entra_group_id
+
 }

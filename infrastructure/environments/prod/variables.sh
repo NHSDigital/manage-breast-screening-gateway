@@ -7,5 +7,7 @@ HUB=prod
 ENABLE_SOFT_DELETE=true
 ADO_MANAGEMENT_POOL=private-pool-prod-uks
 CLOUD_API_HOSTNAME=manage-breast-screening.nhs.uk
+SCREENING_ENTRA_GROUP_ID="3b2b22b0-ac8e-4904-a94b-9010ff08698a"
 # ring1 = first real sites (one per PACS vendor)
+# To onboard more rings: set GATEWAY_RINGS="ring0 ring1 ring2 ..." in this file
 GATEWAY_RINGS="ring1"

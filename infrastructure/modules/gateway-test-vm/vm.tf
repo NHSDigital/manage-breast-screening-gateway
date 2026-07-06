@@ -39,8 +39,8 @@ module "gateway_test_vm" {
 
   account_credentials = {
     admin_credentials = {
-      username                          = "arcadmin"
-      password                          = data.azurerm_key_vault_secret.vm_admin_password.value
+      username                           = "arcadmin"
+      password                           = data.azurerm_key_vault_secret.vm_admin_password.value
       generate_admin_password_or_ssh_key = false
     }
   }

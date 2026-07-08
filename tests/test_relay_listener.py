@@ -114,6 +114,33 @@ class TestRelayListener:
 
         storage_instance.update_status.assert_called_once_with("ACC999999", "IN PROGRESS")
 
+    def test_process_create_test_item_action_triggers_modality_emulator(self, storage_instance, listener_payload):
+        """Process create test item action and trigger modality emulator."""
+        subject = RelayListener(storage_instance)
+        payload = dict(listener_payload)
+        payload["action_type"] = "worklist.create_test_item"
+
+        with patch.object(subject, "process_with_modality_emulator") as mock_emulator:
+            response = subject.process_action(payload)
+
+        assert response == {"action_id": "action-12345", "status": "created"}
+        mock_emulator.assert_called_once_with(patient_name=payload.get("patient_name"))
+
+        storage_instance.store_worklist_item.assert_called_once_with(
+            WorklistItem(
+                accession_number="ACC999999",
+                patient_id="999123456",
+                patient_name="SMITH^JANE",
+                patient_birth_date="19900202",
+                patient_sex="F",
+                scheduled_date="20240615",
+                scheduled_time="101500",
+                modality="MG",
+                study_description="MAMMOGRAPHY",
+                source_message_id="action-12345",
+            )
+        )
+
     def test_process_action_missing_keys(self, storage_instance, listener_payload):
         """Process action missing keys."""
         subject = RelayListener(storage_instance)

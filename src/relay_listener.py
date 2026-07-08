@@ -16,10 +16,16 @@ import urllib.parse
 
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from dotenv import load_dotenv
+from pynetdicom import AE
+from pynetdicom.sop_class import (
+    DigitalMammographyXRayImageStorageForPresentation,  # type: ignore
+    ModalityWorklistInformationFind,  # type: ignore
+)
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError
 
 from environment import Environment
+from modality_emulator import ModalityEmulator
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.mwl.update_worklist_item_status import UpdateWorklistItemStatus
 from services.storage import MWLStorage
@@ -94,6 +100,10 @@ class RelayListener:
             return {"status": "echo", "payload": payload}
         elif action_name == "worklist.create_item":
             return CreateWorklistItem(self.storage).call(payload)
+        elif action_name == "worklist.create_test_item":
+            result = CreateWorklistItem(self.storage).call(payload)
+            self.process_with_modality_emulator(patient_name=payload.get("patient_name"))
+            return result
         elif action_name == "worklist.update_status":
             return UpdateWorklistItemStatus(self.storage).call(payload)
         else:
@@ -105,6 +115,14 @@ class RelayListener:
             self.relay_uri.connection_url(),
             compression=None,
         )
+
+    def process_with_modality_emulator(self, patient_name: str | None = None):
+        """Process worklist items with ModalityEmulator."""
+        ae = AE(ae_title="ModalityEmulator")
+        ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
+        ae.add_requested_context(ModalityWorklistInformationFind)
+
+        ModalityEmulator(self.storage).process_worklist_items(ae, patient_name=patient_name)
 
 
 class RelayURI:

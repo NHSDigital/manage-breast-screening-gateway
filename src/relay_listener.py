@@ -94,7 +94,7 @@ class RelayListener:
             return {"status": "echo", "payload": payload}
         elif action_name == "worklist.create_item":
             return CreateWorklistItem(self.storage).call(payload)
-        elif action_name == "worklist.update_item_status":
+        elif action_name == "worklist.update_status":
             return UpdateWorklistItemStatus(self.storage).call(payload)
         else:
             raise ValueError(f"Unsupported action: {action_name}")

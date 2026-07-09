@@ -105,7 +105,7 @@ class TestRelayListener:
 
         update_payload = {
             "action_id": "action-12345",
-            "action_type": "worklist.update_item_status",
+            "action_type": "worklist.update_status",
             "parameters": {"worklist_item": {"accession_number": "ACC999999", "status": "IN PROGRESS"}},
         }
 

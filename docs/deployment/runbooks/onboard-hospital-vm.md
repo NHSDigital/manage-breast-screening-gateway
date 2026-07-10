@@ -110,7 +110,11 @@ This calls [`scripts/bash/assign_arc_app_roles.sh`](../../../scripts/bash/assign
 
 ## Step 4 — Trigger Terraform to provision the Hybrid Connection
 
-Run the ADO pipeline **Deploy Arc Infrastructure - \<env\>** manually. Terraform discovers the new Arc machine and creates:
+Run the **`manage-breast-screening-gateway`** GitHub Actions workflow manually, selecting the appropriate environment (`dev`, `preprod`, or `prod`).
+
+This workflow will trigger the **Deploy to Azure - \`<env\>`** and **Deploy Gateway App - `<env>`** Azure DevOps pipelines in the **manage-breast-screening-gateway** Azure DevOps project: https://dev.azure.com/nhse-dtos/manage-breast-screening-gateway.
+
+Terraform discovers the new Arc machine and creates:
 
 - `hc-gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` in the relay namespace (`relay-manbrs-<env>`)
 - `listen` auth rule on that Hybrid Connection

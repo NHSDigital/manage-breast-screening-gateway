@@ -124,7 +124,9 @@ class TestRelayListener:
             response = subject.process_action(payload)
 
         assert response == {"action_id": "action-12345", "status": "created"}
-        mock_emulator.assert_called_once_with(patient_name=payload.get("patient_name"))
+        mock_emulator.assert_called_once_with(
+            patient_name=payload["parameters"]["worklist_item"]["participant"]["name"]
+        )
 
         storage_instance.store_worklist_item.assert_called_once_with(
             WorklistItem(

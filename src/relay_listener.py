@@ -102,7 +102,22 @@ class RelayListener:
             return CreateWorklistItem(self.storage).call(payload)
         elif action_name == "worklist.create_test_item":
             result = CreateWorklistItem(self.storage).call(payload)
-            self.process_with_modality_emulator(patient_name=payload.get("patient_name"))
+            patient_name = payload.get("parameters", {}).get("worklist_item", {}).get("participant", {}).get("name")
+
+            def _run_emulator():
+                try:
+                    self.process_with_modality_emulator(patient_name=patient_name)
+                except Exception:
+                    logger.exception("Modality emulator processing failed")
+
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # Called outside an event loop (e.g. unit tests)
+                _run_emulator()
+            else:
+                loop.create_task(asyncio.to_thread(_run_emulator))
+
             return result
         elif action_name == "worklist.update_status":
             return UpdateWorklistItemStatus(self.storage).call(payload)

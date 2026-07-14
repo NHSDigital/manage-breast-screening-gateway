@@ -159,15 +159,13 @@ class TestRelayListener:
 
         listener_payload["action_type"] = "worklist.unknown_action"
 
-        with pytest.raises(ValueError):
-            response = subject.process_action(listener_payload)
-            assert response == {
-                "status": "error",
-                "action_id": "action-12345",
-                "error": "Unknown action type: worklist.unknown_action",
-            }
+        response = subject.process_action(listener_payload)
+        assert response == {
+            "status": "error",
+            "message": "Unsupported action: worklist.unknown_action",
+        }
 
-            storage_instance.store_worklist_item.assert_not_called()
+        storage_instance.store_worklist_item.assert_not_called()
 
 
 class TestRelayURIWithDefaultAzureCredential:

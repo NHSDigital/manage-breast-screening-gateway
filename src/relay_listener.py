@@ -107,7 +107,8 @@ class RelayListener:
         elif action_name == "worklist.update_status":
             return UpdateWorklistItemStatus(self.storage).call(payload)
         else:
-            raise ValueError(f"Unsupported action: {action_name}")
+            logger.error("Unsupported action: %s", action_name)
+            return {"status": "error", "message": f"Unsupported action: {action_name}"}
 
     def _connect(self):
         """Connect to Azure Relay."""

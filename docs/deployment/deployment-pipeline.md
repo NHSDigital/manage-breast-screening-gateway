@@ -1,7 +1,7 @@
 # Deployment Pipeline
 
 > **Scope**: End-to-end flow from a GitHub tag or main-branch push through Azure DevOps pipelines to an Arc Run Command executing on hospital gateway VMs.
-> **Related docs**: [Windows Service Deploy](./windows-service-deploy.md) | [Onboard Hospital VM](./runbooks/onboard-hospital-vm.md) | [Rollback Runbook](./runbooks/rollback.md)
+> **Related docs**: [Windows Service Deploy](./windows-service-deploy.md) | [Onboard Hospital VM](./runbooks/onboard-hospital-vm.md) | [Promote VM Pre-Prod → Prod](./runbooks/promote-vm-preprod-to-prod.md) | [Rollback Runbook](./runbooks/rollback.md)
 
 ---
 

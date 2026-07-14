@@ -15,7 +15,36 @@
 - [ ] Trust ODS code confirmed via the [ODS portal](https://odsportal.nhsbsa.nhs.uk/)
 - [ ] NHS region confirmed (`nw` | `neyh` | `mids` | `eoe` | `lon` | `se` | `sw`)
 - [ ] Deployment ring agreed with the programme team
-- [ ] `arc-onboarding-spn-client-id` retrieved from Entra ID; new `arc-onboarding-spn-client-secret` generated with 1-day expiry and shared with the hospital trust IT team before the onboarding call
+- [ ] Onboarding engineer has the permissions listed below
+- [ ] Temporary onboarding secret created (Step 0) ready to share on the onboarding call
+
+## Who can run this
+
+The engineer driving the onboarding needs, for the target environment:
+
+| Requirement | Why |
+| --- | --- |
+| Membership of `screening_mbsgw_<env>` (PIM-activated) | Access to the gateway spoke subscription |
+| PIM roles activated for **both** the Core Services hub and the Manage Breast Screening spoke subscriptions | Deployment tooling runs against the hub subscription and writes to the spoke, so both are needed during onboarding |
+| **Owner** of the `spn-manbrs-web-api-<env>` enterprise application *and* its app registration | Required to run `assign-arc-app-roles` (Step 3) |
+| Rights to create client secrets on the `spn-azure-arc-onboarding-screening-<env>` app registration | Step 0 |
+
+> The pipeline's managed identity additionally requires the **Monitoring Contributor** role. This is assigned by the environment's infrastructure code, not by hand — if it is missing, fix it in code rather than in the portal.
+
+---
+
+## Step 0 — Create a temporary onboarding secret
+
+In the Azure portal: **App registrations → `spn-azure-arc-onboarding-screening-<env>` → Certificates & secrets → New client secret**, with:
+
+- **Description**: identify the hospital (e.g. `Somerset-NHS-Foundation-Trust - Arc onboarding`)
+- **Expiry**: custom, **24 hours** from creation
+
+Then:
+
+- Copy the **secret value** immediately — it is shown only once.
+- Record the **Secret ID** for audit and revocation.
+- Store the value securely. Provide it to the hospital IT engineer **only during the onboarding call** — never in advance, never over unsecured channels.
 
 ---
 
@@ -117,6 +146,8 @@ Run the ADO pipeline **Deploy Arc Infrastructure - \<env\>** manually. Terraform
 
 **Verify**: In the Azure portal, navigate to `relay-manbrs-<env>` → Hybrid Connections → `hc-gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` is present.
 
+> **If the relay namespace itself is missing** (new environment): it is provisioned by the **dtos-manage-breast-screening** repo (`enable_relay = true` in that environment's tfvars), into the Manage spoke subscription — **not** the hub. See [Create Environment](../infrastructure/create-environment.md).
+
 ## Step 5 — Deploy the gateway application
 
 Run the ADO pipeline **Deploy Gateway - \<env\>** with:
@@ -132,17 +163,53 @@ The pipeline:
 2. Sends an Arc Run Command to `gw-hull-university-teaching-hospitals-nhs-trust-rwa-01` that writes `.env` and runs `deploy.ps1`
 3. Polls for completion and reports success or failure
 
-## Step 6 — Smoke test
+## Step 6 — Verify (acceptance criteria)
 
-Run from the gateway VM or via Arc Run Command:
+Onboarding is complete when **all** of the following hold:
 
-```powershell
-Get-Service Gateway-PACS, Gateway-MWL, Gateway-Upload, Gateway-Relay | Select-Object Name, Status
+- [ ] The deployment pipeline completed with no errors or failed stages
+- [ ] The Arc machine shows **Connected** in the portal
+- [ ] The Hybrid Connection `hc-gw-<site>-<ods>-<instance>` shows **1 listener**
+- [ ] The validation command below succeeds (`executionState: Succeeded`, `exitCode: 0`) showing all four services **Running** and ports **104** and **11112** listening
+- [ ] The relay listener log ends with `Connected - waiting for worklist actions...`
+- [ ] No manual intervention was needed after the pipeline completed
+
+Validation command (or run the script block directly on the VM):
+
+```bash
+az connectedmachine run-command create \
+  --machine-name gw-<site>-<ods>-<instance> \
+  --resource-group rg-mbsgw-<env>-uks-arc-enabled-servers \
+  --location uksouth \
+  --name check-services-1 \
+  --script "Get-Service Gateway-PACS, Gateway-MWL, Gateway-Upload, Gateway-Relay | Format-Table Name, Status; Get-NetTCPConnection -State Listen | Where-Object { \$_.LocalPort -in 104, 11112 } | Format-Table LocalAddress, LocalPort"
 ```
 
-Expected: all four services **Running**.
+Expected output (in `instanceView.output`):
 
-Check Log Analytics Workspace for an initial heartbeat within 5 minutes of service start.
+```text
+Name           Status
+----           ------
+Gateway-MWL    Running
+Gateway-PACS   Running
+Gateway-Relay  Running
+Gateway-Upload Running
+
+LocalAddress LocalPort
+------------ ---------
+0.0.0.0          11112
+0.0.0.0            104
+```
+
+Relay listener check (same pattern, fresh `--name`):
+
+```bash
+  --script "Get-Content 'C:\Program Files\NHS\ManageBreastScreeningGateway\logs\Gateway-Relay.log' | Where-Object { \$_ -notmatch 'opentelemetry' } | Select-Object -Last 5"
+```
+
+Expected: the last line is `Connected - waiting for worklist actions...`
+
+> A **Running** service that has not logged `Connected - waiting` is not healthy — the relay connection is the part that matters. Do not rely on the Log Analytics heartbeat as a liveness signal: telemetry export from gateway VMs is a known issue at the time of writing.
 
 ---
 
@@ -194,6 +261,14 @@ If the script is still blocked after `Unblock-File` (e.g. due to a stricter mach
 ```powershell
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope Process
 ```
+
+### Onboarding fails: service principal not authorised to onboard machines
+
+The onboarding SPN needs the **Azure Connected Machine Onboarding** role on the spoke subscription. Check and assign via: Subscription → **Access control (IAM)** → Add role assignment → role `Azure Connected Machine Onboarding` → member `spn-azure-arc-onboarding-screening-<env>`. Allow a few minutes for propagation, then rerun the script. (This blocked the first production onboarding.)
+
+### Onboarding fails: resource providers not registered
+
+The spoke subscription must have the **`Microsoft.HybridCompute`** and **`Microsoft.HybridConnectivity`** resource providers registered. Check via: Subscription → **Resource providers** → search each → Register. Then rerun the script.
 
 ### Arc machine shows as Disconnected after onboarding
 

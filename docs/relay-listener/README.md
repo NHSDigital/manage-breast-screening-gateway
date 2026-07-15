@@ -3,6 +3,7 @@
 Relay listener uses websocket communication to Manage Breast Screening service via Azure Relay.
 The listener processes worklist actions sent from Manage/Django and creates worklist items in the Modality Worklist server.
 
+Note: SAS-based relay authentication is review-only. For dev, preprod, and prod, the listener should use managed identity and no `AZURE_RELAY_SHARED_ACCESS_KEY` should be injected into `.env`.
 
 ## Architecture
 

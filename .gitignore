@@ -64,6 +64,7 @@ mediafiles/
 *.swo
 *~
 .DS_Store
+tags
 
 # Documentation
 .structurizr

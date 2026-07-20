@@ -104,19 +104,14 @@ class RelayListener:
             result = CreateWorklistItem(self.storage).call(payload)
             patient_name = payload.get("parameters", {}).get("worklist_item", {}).get("participant", {}).get("name")
 
-            def _run_emulator():
-                try:
-                    self.process_with_modality_emulator(patient_name=patient_name)
-                except Exception:
-                    logger.exception("Modality emulator processing failed")
+            if not patient_name:
+                logger.warning("No patient name provided for ModalityEmulator test item processing")
+                return {
+                    "status": "error",
+                    "message": "No patient name provided for ModalityEmulator test item processing",
+                }
 
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                # Called outside an event loop (e.g. unit tests)
-                _run_emulator()
-            else:
-                loop.create_task(asyncio.to_thread(_run_emulator))
+            self.process_with_modality_emulator(patient_name=patient_name)
 
             return result
         elif action_name == "worklist.update_status":
@@ -138,7 +133,19 @@ class RelayListener:
         ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
         ae.add_requested_context(ModalityWorklistInformationFind)
 
-        ModalityEmulator(self.storage).process_worklist_items(ae, patient_name=patient_name)
+        def _run_emulator():
+            try:
+                ModalityEmulator(self.storage).process_worklist_items(ae, patient_name=patient_name)
+            except Exception:
+                logger.exception("Modality emulator processing failed")
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # Called outside an event loop (e.g. unit tests)
+            _run_emulator()
+        else:
+            loop.create_task(asyncio.to_thread(_run_emulator))
 
 
 class RelayURI:

@@ -143,6 +143,23 @@ class TestRelayListener:
             )
         )
 
+    def test_process_create_test_item_action_without_patient_name_returns_error(
+        self, storage_instance, listener_payload
+    ):
+        """Process create test item action without a patient name returns an error."""
+        subject = RelayListener(storage_instance)
+        payload = dict(listener_payload)
+        payload["action_type"] = "worklist.create_test_item"
+        del payload["parameters"]["worklist_item"]["participant"]["name"]
+
+        with patch.object(subject, "process_with_modality_emulator"):
+            response = subject.process_action(payload)
+
+        assert response == {
+            "status": "error",
+            "message": "No patient name provided for ModalityEmulator test item processing",
+        }
+
     def test_process_action_missing_keys(self, storage_instance, listener_payload):
         """Process action missing keys."""
         subject = RelayListener(storage_instance)

@@ -16,10 +16,16 @@ import urllib.parse
 
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from dotenv import load_dotenv
+from pynetdicom import AE
+from pynetdicom.sop_class import (
+    DigitalMammographyXRayImageStorageForPresentation,  # type: ignore
+    ModalityWorklistInformationFind,  # type: ignore
+)
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError
 
 from environment import Environment
+from modality_emulator import ModalityEmulator
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.mwl.update_worklist_item_status import UpdateWorklistItemStatus
 from services.storage import MWLStorage
@@ -94,10 +100,25 @@ class RelayListener:
             return {"status": "echo", "payload": payload}
         elif action_name == "worklist.create_item":
             return CreateWorklistItem(self.storage).call(payload)
+        elif action_name == "worklist.create_test_item":
+            result = CreateWorklistItem(self.storage).call(payload)
+            patient_name = payload.get("parameters", {}).get("worklist_item", {}).get("participant", {}).get("name")
+
+            if not patient_name:
+                logger.warning("No patient name provided for ModalityEmulator test item processing")
+                return {
+                    "status": "error",
+                    "message": "No patient name provided for ModalityEmulator test item processing",
+                }
+
+            self.process_with_modality_emulator(patient_name=patient_name)
+
+            return result
         elif action_name == "worklist.update_status":
             return UpdateWorklistItemStatus(self.storage).call(payload)
         else:
-            raise ValueError(f"Unsupported action: {action_name}")
+            logger.error("Unsupported action: %s", action_name)
+            return {"status": "error", "message": f"Unsupported action: {action_name}"}
 
     def _connect(self):
         """Connect to Azure Relay."""
@@ -105,6 +126,26 @@ class RelayListener:
             self.relay_uri.connection_url(),
             compression=None,
         )
+
+    def process_with_modality_emulator(self, patient_name: str | None = None):
+        """Process worklist items with ModalityEmulator."""
+        ae = AE(ae_title="ModalityEmulator")
+        ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
+        ae.add_requested_context(ModalityWorklistInformationFind)
+
+        def _run_emulator():
+            try:
+                ModalityEmulator(self.storage).process_worklist_items(ae, patient_name=patient_name)
+            except Exception:
+                logger.exception("Modality emulator processing failed")
+
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # Called outside an event loop (e.g. unit tests)
+            _run_emulator()
+        else:
+            loop.create_task(asyncio.to_thread(_run_emulator))
 
 
 class RelayURI:

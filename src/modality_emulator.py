@@ -128,7 +128,7 @@ class ModalityEmulator:
         self.mwl_storage = mwl_storage
         self.processed_items = set()
 
-    def process_worklist_items(self, ae: AE):
+    def process_worklist_items(self, ae: AE, patient_name: str | None = None):
         """
         Queries the MWL for items scheduled for today and sends generated DICOM files to the PACS server for each item.
         """
@@ -140,7 +140,8 @@ class ModalityEmulator:
             logger.info(f"Connected to PACS server {PACS_HOST}:{PACS_PORT} ({PACS_AET})")
 
             logger.info("Querying MWL for scheduled items...")
-            responses = mwl_assoc.send_c_find(self.c_find_dataset, query_model=ModalityWorklistInformationFind)
+            c_find_dataset = self.c_find_dataset(patient_name=patient_name)
+            responses = mwl_assoc.send_c_find(c_find_dataset, query_model=ModalityWorklistInformationFind)
             for status, ds in responses:
                 status_code = getattr(status, "Status", SUCCESS)
 
@@ -189,8 +190,7 @@ class ModalityEmulator:
         mwl_assoc.release()
         pacs_assoc.release()
 
-    @property
-    def c_find_dataset(self) -> Dataset:
+    def c_find_dataset(self, patient_name: str | None = None) -> Dataset:
         date_today = datetime.date.today()
         ds = Dataset()
         sps_dataset = Dataset()
@@ -198,6 +198,10 @@ class ModalityEmulator:
         sps_dataset.ScheduledProcedureStepStartDate = date_today.strftime("%Y%m%d")
         sps_dataset.ScheduledProcedureStepStartTime = "000000-"
         ds.ScheduledProcedureStepSequence = [sps_dataset]
+
+        if patient_name:
+            ds.PatientName = patient_name
+
         return ds
 
 

@@ -187,6 +187,36 @@ class TestModalityEmulator:
         mwl_assoc.release.assert_called_once()
         pacs_assoc.release.assert_called_once()
 
+    @patch.object(ModalityEmulator, "c_find_dataset")
+    def test_process_worklist_items_passes_patient_name_to_c_find_dataset(
+        self,
+        mock_c_find_dataset,
+        success_status,
+    ):
+        """Process worklist items passes patient_name to c_find_dataset."""
+        mwl_storage = MagicMock()
+        emulator = ModalityEmulator(mwl_storage)
+
+        query_ds = Dataset()
+        mock_c_find_dataset.return_value = query_ds
+
+        mwl_assoc = MagicMock()
+        mwl_assoc.is_established = True
+        mwl_assoc.send_c_find.return_value = [(success_status, None)]
+
+        pacs_assoc = MagicMock()
+        pacs_assoc.is_established = True
+
+        ae = MagicMock()
+        ae.associate.side_effect = [mwl_assoc, pacs_assoc]
+
+        emulator.process_worklist_items(ae, patient_name="Jane Doe")
+
+        mock_c_find_dataset.assert_called_once_with(patient_name="Jane Doe")
+        mwl_storage.update_status.assert_not_called()
+        mwl_assoc.release.assert_called_once()
+        pacs_assoc.release.assert_called_once()
+
     @patch("modality_emulator.time.sleep")
     def test_process_worklist_items_handles_failed_association(
         self,

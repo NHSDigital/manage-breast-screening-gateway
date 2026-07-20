@@ -12,7 +12,7 @@ dependencies = [
   "pylibjpeg>=2.0.0",
   "pylibjpeg-openjpeg>=2.5.0",
   "pillow>=12.2.0",
-  "websockets==16.0",
+  "websockets==16.1",
   "requests>=2.33.1",
   "python-dotenv>=1.2.2",
   "azure-monitor-opentelemetry>=1.8.7",

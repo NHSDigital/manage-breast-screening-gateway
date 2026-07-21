@@ -284,6 +284,13 @@ If disconnected, re-run the script. It is safe to re-run — the agent will reco
 
 The Arc machine must appear in the resource group before Terraform can create the HC. Confirm the machine is **Connected** in the portal (Step 2 verify), then re-run the pipeline.
 
+### Deploy pipeline hangs with no output after the ring banner
+
+The deploy job prints the `--- Ring: … ---` banner and then goes silent for 30+ minutes. Possible causes:
+
+1. **The VM is powered off or asleep.** `az connectedmachine show -n <machine> -g <rg> --query status` — anything other than **Connected** means run commands queue indefinitely against an absent machine.
+2. **Stale run commands blocking the queue.** Run commands execute serially per machine, and diagnostic commands accumulate as persistent resources. `az connectedmachine run-command list -o table` — delete anything stuck in a non-terminal state.
+
 ### Gateway services not starting after deploy
 
 Check the deployment log on the VM:

@@ -30,10 +30,10 @@ in pipeline order.
 
 ## On the gateway VM
 
-Copy `debug_toolkit.ps1` to the VM (or paste it into an editor there), then:
+The toolkit ships with the deployed release:
 
 ```powershell
-. .\debug_toolkit.ps1
+. 'C:\Program Files\NHS\ManageBreastScreeningGateway\current\scripts\powershell\debug_toolkit.ps1'
 Get-GwHealth        # start here: services, ports, relay connection, disk
 ```
 
@@ -158,8 +158,15 @@ python scripts/diagnostics/relay_echo_probe.py \
 There is also `--bearer-token` mode (see the script's docstring) to test the AAD
 bearer path Manage uses in production. To run the probe from *inside* the Manage
 container (testing Manage's actual network/DNS/identity), see the container-side
-snippet in the script's docstring — during the July 2026 incident that variant is
-what exposed the relay hostname resolving to a private endpoint IP inside the VNet.
+snippet in the script's docstring.
+
+**Interpreting in-container DNS resolution**: prod Manage reaches the relay via a
+**private endpoint**, so the relay hostname resolving to a **private IP** inside
+the VNet is *correct*. During the July 2026 incident the PE silently blackholed
+all traffic **while showing Approved** — likely an Azure-side fault or race at
+PE creation; the interim fix was pointing DNS at the public endpoint, superseded
+by deleting and recreating the PE. The health question is never "which IP family"
+or "what does the PE state say" — it is **"does the echo come back"**.
 
 Rotate the namespace key after a debugging session — nothing in a deployed
 environment uses SAS, so rotation is free.
@@ -200,30 +207,3 @@ az monitor log-analytics query --workspace <workspace-customer-id> \
 Manage-side data checks (worklist item actually created and sent?) are quickest in
 the Django admin: **Gateway actions** — a healthy send is `status: confirmed`;
 `failed` rows carry `last_error` and the retry schedule.
-
-## Pre-flight checklist (run before the clinic starts)
-
-On the VM:
-
-1. `Get-GwHealth` — all four services **Running**, ports 104 and 11112 listening,
-   relay log shows "Connected - waiting for worklist actions", disk has headroom.
-2. `Get-GwWorklist` — after the first participant is checked in on Manage, the item
-   appears here within seconds. That one check proves Manage → Relay → VM end to end.
-3. On the modality: query the worklist and confirm the participant is listed.
-
-From the laptop:
-
-4. `az relay hyco show ... --query listenerCount` returns ≥ 1.
-5. App Insights errors query over `ago(12h)` is quiet (no crash loops overnight).
-
-## During the clinic — a useful passive setup
-
-On the VM, keep two windows open:
-
-```powershell
-Watch-GwLog PACS     # window 1 — see each C-STORE arrive
-Watch-GwLog Upload   # window 2 — see each upload to Manage
-```
-
-After each participant: `Get-GwImages` should show the expected image count with
-`uploaded` equal to `images` within a minute or two.

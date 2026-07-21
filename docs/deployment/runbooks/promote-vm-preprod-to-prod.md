@@ -142,6 +142,8 @@ With the modality reconfigured and prod Rubie seeded:
 
 If step 2 fails, the Gateway action's `last_error` names the failing phase — see the [live clinic debugging runbook](./live-clinic-debugging.md) for the symptom → check mapping.
 
+Before the site's first real clinic on the promoted gateway, work through [Clinic preparation](./clinic-preparation.md).
+
 ---
 
 ## Gotchas
@@ -153,7 +155,8 @@ If step 2 fails, the Gateway action's `last_error` names the failing phase — s
 | Modality C-ECHO fails after promotion | Modality still targeting `..._PRE` AE titles | Reconfigure modality to `..._PROD` (Step 5) |
 | Hybrid Connection not created by Terraform | Arc machine not yet **Connected** in the prod RG | Confirm Step 3 verify, then re-run the infra pipeline |
 | Pre-prod relay still shows connection attempts | Orphaned pre-prod HC / registration | Complete Step 6 |
-| Rubie check-ins time out with `phase: connecting` while the listener is healthy | Rubie-side network/DNS — historically, the relay hostname resolving to a private endpoint IP inside the Rubie VNet | See [live clinic debugging](./live-clinic-debugging.md); verify the relay FQDN resolves to a **public** IP from the Rubie container |
+| Rubie check-ins time out with `phase: connecting` while the listener is healthy | Rubie-side network — most likely a **broken relay private endpoint**. Note the PE can blackhole all traffic **while showing Approved** | Delete the PE and let Terraform recreate it, then prove the path with the echo probe from the Rubie container — see [live clinic debugging](./live-clinic-debugging.md) |
+| The whole UI runs in manual-images mode | `gateway_images` flag off in the Manage repo's **`flags.production.yml`**, or Relay↔Setting mismatch, or the appointment already has a manual study | Flag change requires a Manage deploy (one-line PR, leave the other flags alone); Setting fix is one field in admin; otherwise use a fresh appointment |
 | Image uploads rejected with 403 after promotion | `Gateway.oid` still holds the old pre-prod identity | Step 4.4 — update to the new principal ID |
 | Rubie shows the manual-images flow instead of awaiting images | `Relay` record's Setting doesn't match the clinic's Setting, or the appointment already has a manual study | Fix the Setting FK in the admin; retest with a fresh appointment |
 | Sends fail after the gateway has been idle overnight | Relay listener connection died silently (known issue) | `Restart-Service Gateway-Relay`; restart before every clinic until the listener liveness fix ships |

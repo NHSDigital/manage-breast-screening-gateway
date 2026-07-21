@@ -33,7 +33,8 @@ hostname inside the VNet, which is how the July 2026 outage was found):
 
     az containerapp exec -n <app-name> -g <resource-group> --command sh
 
-    # 1. What does the relay hostname resolve to? Must be a PUBLIC IP.
+    # 1. What does the relay hostname resolve to? In an environment using a
+    #    private endpoint (prod does), a PRIVATE IP is correct.
     /app/.venv/bin/python -c "import socket; print(socket.getaddrinfo(
         'relay-manbrs-prod.servicebus.windows.net', 443)[0][4])"
 

@@ -1,3 +1,4 @@
+import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -33,31 +34,74 @@ class TestRelayListener:
         assert subject.relay_uri.hybrid_connection_name == "test-connection"
 
     @pytest.mark.asyncio
-    async def test_relay_listener_listen_echo(self, storage_instance, fake_relay):
-        """Relay listener listen echo."""
+    async def test_listen_on_connection_echo(self, storage_instance):
+        """Handle echo messages on a relay connection."""
         subject = RelayListener(storage_instance)
+        websocket = AsyncMock()
+        websocket.recv.side_effect = [
+            json.dumps({"accept": {"address": "wss://accept-url"}}),
+            asyncio.TimeoutError(),
+        ]
 
-        relay_message = json.dumps({"accept": {"address": "wss://accept-url"}})
-        client_payload = json.dumps({"action_type": "echo", "message": "Hello, Relay!"})
+        client_ws = AsyncMock()
+        client_ws.recv.return_value = json.dumps({"action_type": "echo", "message": "Hello, Relay!"})
 
-        with fake_relay(relay_message, client_payload) as client_ws:
-            await subject.listen()
+        client_cm = AsyncMock()
+        client_cm.__aenter__.return_value = client_ws
+        client_cm.__aexit__.return_value = None
 
+        with patch("relay_listener.connect", return_value=client_cm) as mock_connect:
+            with pytest.raises(asyncio.TimeoutError):
+                await subject._listen_on_connection(
+                    websocket,
+                    refresh_at=9999999999,
+                )
+
+        mock_connect.assert_called_once_with(
+            "wss://accept-url",
+            compression=None,
+        )
         client_ws.send.assert_called_once_with(
-            json.dumps({"status": "echo", "payload": {"action_type": "echo", "message": "Hello, Relay!"}})
+            json.dumps({
+                "status": "echo",
+                "payload": {
+                    "action_type": "echo",
+                    "message": "Hello, Relay!",
+                },
+            })
         )
 
     @pytest.mark.asyncio
-    async def test_relay_listener_listen(self, storage_instance, listener_payload, fake_relay):
-        """Relay listener listen."""
-        storage_instance.store_worklist_action.return_value = {"action_id": "action-12345", "status": "created"}
+    async def test_listen_on_connection_create_item(
+        self,
+        storage_instance,
+        listener_payload,
+    ):
+        """Handle create-item messages on a relay connection."""
+        storage_instance.store_worklist_action.return_value = {
+            "action_id": "action-12345",
+            "status": "created",
+        }
         subject = RelayListener(storage_instance)
+        websocket = AsyncMock()
+        websocket.recv.side_effect = [
+            json.dumps({"accept": {"address": "wss://accept-url"}}),
+            asyncio.TimeoutError(),
+        ]
 
-        relay_message = json.dumps({"accept": {"address": "wss://accept-url"}})
-        client_payload = json.dumps(listener_payload)
+        client_ws = AsyncMock()
+        client_ws.recv.return_value = json.dumps(listener_payload)
 
-        with fake_relay(relay_message, client_payload) as client_ws:
-            await subject.listen()
+        client_cm = AsyncMock()
+        client_cm.__aenter__.return_value = client_ws
+        client_cm.__aexit__.return_value = None
+
+        with patch("relay_listener.connect", return_value=client_cm):
+            with pytest.raises(asyncio.TimeoutError):
+                await subject._listen_on_connection(
+                    websocket,
+                    refresh_at=9999999999,
+                )
 
         client_ws.send.assert_called_once_with(json.dumps({"status": "created", "action_id": "action-12345"}))
         storage_instance.store_worklist_item.assert_called_once_with(
@@ -186,6 +230,45 @@ class TestRelayListener:
 
         storage_instance.store_worklist_item.assert_not_called()
 
+    @pytest.mark.asyncio
+    async def test_listen_refreshes_connection_after_timeout(
+        self,
+        storage_instance,
+    ):
+        """Listen refreshes the relay connection after a timeout."""
+        subject = RelayListener(storage_instance)
+
+        connection_cm = AsyncMock()
+        connection_cm.__aenter__.return_value = AsyncMock()
+        connection_cm.__aexit__.return_value = None
+
+        with (
+            patch.object(
+                subject.relay_uri,
+                "connection_details",
+                side_effect=[
+                    ("wss://first-url", 1),
+                    ("wss://second-url", 2),
+                ],
+            ) as mock_details,
+            patch.object(
+                subject,
+                "_connect",
+                return_value=connection_cm,
+            ) as mock_connect,
+            patch.object(
+                subject,
+                "_listen_on_connection",
+                side_effect=[asyncio.TimeoutError(), KeyboardInterrupt()],
+            ),
+        ):
+            with pytest.raises(KeyboardInterrupt):
+                await subject.listen()
+
+        assert mock_details.call_count == 2
+        mock_connect.assert_any_call("wss://first-url")
+        mock_connect.assert_any_call("wss://second-url")
+
 
 class TestRelayURIWithDefaultAzureCredential:
     """Non-production, no SAS key — uses DefaultAzureCredential."""
@@ -203,6 +286,14 @@ class TestRelayURIWithDefaultAzureCredential:
         url = subject.connection_url()
         assert url.startswith("wss://test-namespace/$hc/test-connection?sb-hc-action=listen")
         assert "sb-hc-token=Bearer+test-token" in url
+
+    def test_connection_details(self, mock_azure_credential):
+        """Relay URI with default azure credential: Connection details."""
+        subject = RelayURI()
+        url, expires_on = subject.connection_details()
+        assert url.startswith("wss://test-namespace/$hc/test-connection?sb-hc-action=listen")
+        assert "sb-hc-token=Bearer+test-token" in url
+        assert isinstance(expires_on, int)
 
     def test_uses_default_azure_credential(self, mock_azure_credential):
         """Uses default azure credential."""
@@ -229,6 +320,14 @@ class TestRelayURIWithSasToken:
         url = subject.connection_url()
         assert url.startswith("wss://test-namespace/$hc/test-connection?sb-hc-action=listen")
         assert "sb-hc-token=SharedAccessSignature" in url
+
+    def test_connection_details_includes_sas_token(self):
+        """Connection details include SAS token."""
+        subject = RelayURI()
+        url, expires_on = subject.connection_details()
+        assert url.startswith("wss://test-namespace/$hc/test-connection?sb-hc-action=listen")
+        assert "sb-hc-token=SharedAccessSignature" in url
+        assert isinstance(expires_on, int)
 
     def test_no_credential_is_created(self):
         """No credential is created."""
@@ -315,7 +414,9 @@ async def test_main_handles_connection_closed_and_keyboard_interrupt(
 
     assert relay_listener_instance.listen.call_count == 3
     mock_logger.info.assert_any_call("Socket Listener Starting...")
-    mock_logger.warning.assert_any_call("Connection closed with code 1011: Something went wrong")
+    mock_logger.warning.assert_any_call(
+        "Connection closed with code %s: %s", CloseCode.INTERNAL_ERROR, "Something went wrong"
+    )
     mock_logger.warning.assert_any_call("Retrying in 5 seconds...")
-    mock_logger.warning.assert_any_call("Connection closed with code 1014: Bad gateway")
+    mock_logger.warning.assert_any_call("Connection closed with code %s: %s", CloseCode.BAD_GATEWAY, "Bad gateway")
     mock_logger.warning.assert_any_call("\nShutting down...")

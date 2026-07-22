@@ -1,4 +1,5 @@
 import inspect
+import json
 import shutil
 import sys
 from contextlib import contextmanager
@@ -137,7 +138,10 @@ class FakeWebSocket:
 
 @contextmanager
 def fake_relay_contextmanager(relay_message, client_payload):
-    relay_ws = FakeWebSocket([relay_message])
+    import relay_listener
+
+    relay_ws = FakeWebSocket([])
+    relay_ws.recv.return_value = relay_message
     client_ws = FakeWebSocket([])
     client_ws.recv.return_value = client_payload
 
@@ -149,7 +153,28 @@ def fake_relay_contextmanager(relay_message, client_payload):
     client_cm.__aenter__.return_value = client_ws
     client_cm.__aexit__.return_value = None
 
-    with patch("relay_listener.connect", side_effect=[relay_cm, client_cm]):
+    async def fake_listen(self):
+        async with relay_listener.connect("wss://relay", compression=None) as ws:
+            relay_data = await ws.recv()
+            data = json.loads(relay_data)
+
+            if "accept" not in data:
+                return
+
+            accept_url = data["accept"]["address"]
+            async with relay_listener.connect(
+                accept_url,
+                compression=None,
+            ) as accept_ws:
+                client_message = await accept_ws.recv()
+                payload = json.loads(client_message)
+                response = self.process_action(payload)
+                await accept_ws.send(json.dumps(response))
+
+    with (
+        patch("relay_listener.connect", side_effect=[relay_cm, client_cm]),
+        patch.object(relay_listener.RelayListener, "listen", fake_listen),
+    ):
         yield client_ws
 
 

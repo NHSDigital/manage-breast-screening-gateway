@@ -97,7 +97,11 @@ PACS_PORT=11112
 PACS_STORAGE_PATH=${BASE_PATH}/data/storage
 PACS_DB_PATH=${BASE_PATH}/data/pacs.db
 LOG_LEVEL=INFO
-${RELAY_AUTH_BLOCK}SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
+SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
+
+  if [[ -n "${RELAY_AUTH_BLOCK}" ]]; then
+    ENV_CONTENT="${ENV_CONTENT}${RELAY_AUTH_BLOCK}"
+  fi
 
   # Cross-platform base64 encoding (works on macOS and Linux)
   ENV_CONTENT_B64=$(printf '%s' "$ENV_CONTENT" | base64 | tr -d '\n')

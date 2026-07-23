@@ -48,7 +48,11 @@ resource "azurerm_relay_hybrid_connection" "per_machine" {
 # Listen-only SAS rule per HC — retained for local development / break-glass access.
 # Production relay authentication uses Managed Identity (see relay_listener_role below).
 resource "azurerm_relay_hybrid_connection_authorization_rule" "per_machine_listen" {
-  for_each = var.env_config == "review" ? local.arc_machines : {}
+  for_each = {
+    for machine_name, machine_config in local.arc_machines :
+    machine_name => machine_config
+    if var.env_config == "review"
+  }
 
   name                   = "listen"
   hybrid_connection_name = azurerm_relay_hybrid_connection.per_machine[each.key].name

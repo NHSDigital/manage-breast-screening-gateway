@@ -33,3 +33,8 @@ variable "screening_entra_group_id" {
   description = "Group ID for the environment"
   type        = string
 }
+
+variable "enable_relay_sas_keys" {
+  description = "Whether to create relay SAS keys for the Arc machines. Only used in the review environment."
+  type        = bool
+}

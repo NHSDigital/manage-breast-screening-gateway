@@ -100,7 +100,8 @@ LOG_LEVEL=INFO
 SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
 
   if [[ -n "${RELAY_AUTH_BLOCK}" ]]; then
-    ENV_CONTENT="${ENV_CONTENT}${RELAY_AUTH_BLOCK}"
+    ENV_CONTENT="${ENV_CONTENT}
+${RELAY_AUTH_BLOCK}"
   fi
 
   # Cross-platform base64 encoding (works on macOS and Linux)

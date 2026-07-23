@@ -51,7 +51,7 @@ resource "azurerm_relay_hybrid_connection_authorization_rule" "per_machine_liste
   for_each = {
     for machine_name, machine_config in local.arc_machines :
     machine_name => machine_config
-    if var.env_config == "review"
+    if var.enable_relay_sas_keys
   }
 
   name                   = "listen"

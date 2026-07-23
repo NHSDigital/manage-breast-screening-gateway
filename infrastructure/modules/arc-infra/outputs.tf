@@ -37,8 +37,8 @@ output "app_insights_connection_string" {
 output "relay_listen_sas_keys" {
   description = "Per-machine relay listen SAS primary keys, keyed by Arc resource name. Populated only for the review environment."
   sensitive   = true
-  value = var.enable_arc_servers && var.env_config == "review" ? {
+  value =  {
     for k, rule in azurerm_relay_hybrid_connection_authorization_rule.per_machine_listen :
     k => rule.primary_key
-  } : {}
+  }
 }

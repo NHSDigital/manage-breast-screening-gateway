@@ -44,11 +44,6 @@ variable "bastion_sku" {
   default     = "Standard"
 }
 
-variable "screening_entra_group_id" {
-  description = "Group ID for the environment"
-  type        = string
-}
-
 variable "gateway_test_vm_size" {
   description = "SKU size for the gateway test VM"
   type        = string

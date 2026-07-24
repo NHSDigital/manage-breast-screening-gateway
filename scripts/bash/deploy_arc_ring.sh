@@ -73,6 +73,13 @@ while IFS= read -r MACHINE_JSON; do
   LOCATION=$(echo "$MACHINE_JSON" | jq -r '.location')
   echo "Preparing deploy for $MACHINE ($LOCATION)..."
 
+RELAY_AUTH_BLOCK=""
+if [[ "${ENV_CONFIG}" == "review" && -n "${AZURE_RELAY_SHARED_ACCESS_KEY:-}" ]]; then
+  RELAY_AUTH_BLOCK="AZURE_RELAY_KEY_NAME=listen
+AZURE_RELAY_SHARED_ACCESS_KEY=${AZURE_RELAY_SHARED_ACCESS_KEY}
+"
+fi
+
   # Build .env, then base64-encode to pass newlines as a run command parameter.
   # NOTE: Arc Run Command drops protectedParameters for inline source.script,
   # so EnvContentB64 travels as a regular parameter (base64-encoded, not plain text).
@@ -91,6 +98,11 @@ PACS_STORAGE_PATH=${BASE_PATH}/data/storage
 PACS_DB_PATH=${BASE_PATH}/data/pacs.db
 LOG_LEVEL=INFO
 SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
+
+  if [[ -n "${RELAY_AUTH_BLOCK}" ]]; then
+    ENV_CONTENT="${ENV_CONTENT}
+${RELAY_AUTH_BLOCK}"
+  fi
 
   # Cross-platform base64 encoding (works on macOS and Linux)
   ENV_CONTENT_B64=$(printf '%s' "$ENV_CONTENT" | base64 | tr -d '\n')

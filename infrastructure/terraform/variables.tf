@@ -55,6 +55,12 @@ variable "gateway_test_vm_size" {
   default     = "Standard_B2s"
 }
 
+variable "enable_relay_sas_keys" {
+  description = "Whether to create relay SAS keys for the Arc machines"
+  default     = false
+  type        = bool
+}
+
 locals {
   region              = "uksouth"
   resource_group_name = "rg-${var.app_short_name}-${var.environment}-uks"

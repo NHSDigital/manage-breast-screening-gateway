@@ -28,8 +28,3 @@ variable "static_arc_machine_names" {
   type        = list(string)
   default     = []
 }
-
-variable "screening_entra_group_id" {
-  description = "Group ID for the environment"
-  type        = string
-}

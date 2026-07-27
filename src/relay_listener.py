@@ -45,6 +45,10 @@ class CredentialNotAvailableError(RuntimeError):
     pass
 
 
+class RelayTokenExpiredError(RuntimeError):
+    pass
+
+
 class RelayListener:
     """
     Socket Listener for Azure Relay.
@@ -86,7 +90,7 @@ class RelayListener:
                 async with self._connect(connection_url) as websocket:
                     logger.info("Connected - waiting for worklist actions...")
                     await self._listen_on_connection(websocket, refresh_at)
-            except asyncio.TimeoutError:
+            except RelayTokenExpiredError:
                 logger.info("Refreshing Azure Relay connection before expiry.")
                 continue
 
@@ -94,7 +98,7 @@ class RelayListener:
         while True:
             timeout = refresh_at - time.time()
             if timeout <= 0:
-                raise asyncio.TimeoutError
+                raise RelayTokenExpiredError("Azure Relay token expired, refreshing.")
 
             try:
                 message = await asyncio.wait_for(websocket.recv(), timeout=timeout)

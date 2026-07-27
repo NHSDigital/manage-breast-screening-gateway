@@ -8,7 +8,7 @@ from websockets.exceptions import ConnectionClosedError
 from websockets.frames import Close, CloseCode
 
 from models import WorklistItem
-from relay_listener import RelayListener, RelayURI, main, verify_credentials
+from relay_listener import RelayListener, RelayTokenExpiredError, RelayURI, main, verify_credentials
 
 
 class TestRelayListener:
@@ -40,7 +40,7 @@ class TestRelayListener:
         websocket = AsyncMock()
         websocket.recv.side_effect = [
             json.dumps({"accept": {"address": "wss://accept-url"}}),
-            asyncio.TimeoutError(),
+            RelayTokenExpiredError("Azure Relay token expired"),
         ]
 
         client_ws = AsyncMock()
@@ -51,7 +51,7 @@ class TestRelayListener:
         client_cm.__aexit__.return_value = None
 
         with patch("relay_listener.connect", return_value=client_cm) as mock_connect:
-            with pytest.raises(asyncio.TimeoutError):
+            with pytest.raises(RelayTokenExpiredError):
                 await subject._listen_on_connection(
                     websocket,
                     refresh_at=9999999999,
@@ -259,7 +259,7 @@ class TestRelayListener:
             patch.object(
                 subject,
                 "_listen_on_connection",
-                side_effect=[asyncio.TimeoutError(), KeyboardInterrupt()],
+                side_effect=[RelayTokenExpiredError(), KeyboardInterrupt()],
             ),
         ):
             with pytest.raises(KeyboardInterrupt):

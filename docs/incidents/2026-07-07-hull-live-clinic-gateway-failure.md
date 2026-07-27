@@ -22,6 +22,7 @@ The first production use of the gateway imaging flow failed: worklist items sent
 - Built a standalone relay echo probe to test the relay → gateway path with Rubie removed; its container-side variant exposed the DNS/PE fault.
 - Fixed DNS (interim public CNAME; later superseded by PE recreation), replaced the asyncio client with the synchronous websockets client ([Rubie ADR-009](https://github.com/NHSDigital/dtos-manage-breast-screening/blob/main/docs/adr/ADR-009-Synchronous_websockets_client_for_relay_sends.md)), and adopted a pre-clinic listener restart to clear zombie connections.
 - Invoked the designed fallback: the clinic ran entirely on manual image recording, invisibly to participants.
+- Relay token refresh implemented
 
 ## Improvements made since
 - **Error reporting**: every relay failure now names its failing phase in both the admin and logs; unknown actions get structured error replies instead of silent connection closes.
@@ -34,3 +35,4 @@ The first production use of the gateway imaging flow failed: worklist items sent
 - Health must be proven by traffic, not state. Listener counts, PE connection status, and service states each individually misled us during this incident. Everything we’ve built since sends a real message and judges the reply.
 - The fallback earned its keep. Manual-images mode meant zero patient impact and removed all time pressure from diagnosis.
 - Institutional knowledge belongs in the repo. Every finding was folded into version-controlled runbooks the same week, several of which were corrected again as evidence improved.
+- We had no production gateway we could actually touch. Every diagnostic step on the gateway side ran through Arc run-commands against a hospital-owned machine – serially queued, minutes per round trip, dependent on hospital IT for RDP and power, and twice found switched off entirely. A team-operated gateway VM in the production environment (Azure-hosted, Arc-onboarded, ring0, connected to the prod relay and API but to no modality) would have let us reproduce and inspect the failures directly under real prod identity and networking.

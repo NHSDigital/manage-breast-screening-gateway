@@ -420,3 +420,31 @@ async def test_main_handles_connection_closed_and_keyboard_interrupt(
     mock_logger.warning.assert_any_call("Retrying in 5 seconds...")
     mock_logger.warning.assert_any_call("Connection closed with code %s: %s", CloseCode.BAD_GATEWAY, "Bad gateway")
     mock_logger.warning.assert_any_call("\nShutting down...")
+
+
+class TestHealthAction:
+    def test_process_action_health_returns_contract_schema(self):
+        """Health action: returns ok status with the health payload."""
+        subject = RelayListener(MagicMock())
+
+        response = subject.process_action({"schema_version": 1, "action_id": "hc-123", "action_type": "health"})
+
+        assert response["status"] == "ok"
+        assert response["action_id"] == "hc-123"
+        assert set(response["health"]) == {"healthy", "version", "listener_uptime_seconds", "checks"}
+        assert {"mwl_port", "pacs_port", "disk"} <= set(response["health"]["checks"])
+
+    def test_process_action_health_does_not_touch_storage(self):
+        """Health action: never touches the worklist database.
+
+        Health runs frequently (Manage polls it on a schedule) and is
+        processed inline in the listener's message loop. SQLite access
+        could contend with the MWL serving a clinic - a health check must
+        never be able to block real work.
+        """
+        storage = MagicMock()
+        subject = RelayListener(storage)
+
+        subject.process_action({"action_id": "hc-124", "action_type": "health"})
+
+        assert not storage.method_calls

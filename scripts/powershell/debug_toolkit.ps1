@@ -1,4 +1,4 @@
-# Live-clinic debugging toolkit for the gateway VM.
+# Live-clinic debugging toolkit for the gateway VM
 #
 # Usage: RDP to the gateway VM, open PowerShell, then dot-source this file:
 #
@@ -19,13 +19,15 @@ $script:GwServices = @("Gateway-Relay", "Gateway-MWL", "Gateway-PACS", "Gateway-
 
 function Invoke-GwSql {
     <# Run an arbitrary read-only SQL query. Usage:
-       Invoke-GwSql -Db mwl  -Query "SELECT * FROM worklist_items LIMIT 5"
-       Invoke-GwSql -Db pacs -Query "SELECT count(*) AS n FROM stored_instances" #>
+       Invoke-GwSql -Database mwl  -Query "SELECT * FROM worklist_items LIMIT 5"
+       Invoke-GwSql -Database pacs -Query "SELECT count(*) AS n FROM stored_instances" #>
     param(
-        [Parameter(Mandatory)][ValidateSet("mwl", "pacs")][string]$Db,
+        # Not "Db": advanced functions gain the common -Debug parameter, whose
+        # built-in alias "db" collides with a parameter of that name
+        [Parameter(Mandatory)][ValidateSet("mwl", "pacs")][string]$Database,
         [Parameter(Mandatory)][string]$Query
     )
-    $dbPath = if ($Db -eq "mwl") { $GwMwlDb } else { $GwPacsDb }
+    $dbPath = if ($Database -eq "mwl") { $GwMwlDb } else { $GwPacsDb }
     $dbUri = "file:///" + ($dbPath -replace '\\', '/') + "?mode=ro"
     $py = @"
 import sqlite3, json, sys
@@ -44,7 +46,7 @@ function Get-GwWorklist {
     <# Today's worklist items (or all with -All). The MWL serves these to the modality. #>
     param([switch]$All)
     $where = if ($All) { "1=1" } else { "scheduled_date = strftime('%Y%m%d','now')" }
-    Invoke-GwSql -Db mwl -Query @"
+    Invoke-GwSql -Database mwl -Query @"
 SELECT accession_number, patient_name, patient_id, scheduled_date, scheduled_time,
        status, study_instance_uid, updated_at
 FROM worklist_items WHERE $where
@@ -55,12 +57,12 @@ ORDER BY scheduled_time
 function Get-GwWorklistItem {
     <# Full detail for one worklist item. Usage: Get-GwWorklistItem ACC20260707XXXX #>
     param([Parameter(Mandatory)][string]$AccessionNumber)
-    Invoke-GwSql -Db mwl -Query "SELECT * FROM worklist_items WHERE accession_number = '$AccessionNumber'"
+    Invoke-GwSql -Database mwl -Query "SELECT * FROM worklist_items WHERE accession_number = '$AccessionNumber'"
 }
 
 function Get-GwImages {
     <# Images received today, grouped per accession, with upload progress. #>
-    Invoke-GwSql -Db pacs -Query @"
+    Invoke-GwSql -Database pacs -Query @"
 SELECT accession_number,
        count(*)                                                    AS images,
        sum(CASE WHEN upload_status = 'COMPLETE' THEN 1 ELSE 0 END) AS uploaded,
@@ -77,7 +79,7 @@ ORDER BY last_received DESC
 function Get-GwImageDetail {
     <# Per-image rows for one accession: file path, upload status, errors. #>
     param([Parameter(Mandatory)][string]$AccessionNumber)
-    Invoke-GwSql -Db pacs -Query @"
+    Invoke-GwSql -Database pacs -Query @"
 SELECT sop_instance_uid, storage_path, file_size, source_aet, created_at,
        upload_status, upload_attempt_count, last_upload_attempt, upload_error
 FROM stored_instances WHERE accession_number = '$AccessionNumber'
@@ -87,7 +89,7 @@ ORDER BY created_at
 
 function Get-GwUploadFailures {
     <# All instances not yet uploaded to Manage (PENDING/UPLOADING/FAILED), with errors. #>
-    Invoke-GwSql -Db pacs -Query @"
+    Invoke-GwSql -Database pacs -Query @"
 SELECT accession_number, sop_instance_uid, upload_status, upload_attempt_count,
        last_upload_attempt, substr(upload_error, 1, 200) AS upload_error
 FROM stored_instances

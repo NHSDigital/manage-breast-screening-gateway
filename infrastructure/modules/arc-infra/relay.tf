@@ -45,21 +45,6 @@ resource "azurerm_relay_hybrid_connection" "per_machine" {
   requires_client_authorization = true
 }
 
-# Listen-only SAS rule per HC — retained for local development / break-glass access.
-# Production relay authentication uses Managed Identity (see relay_listener_role below).
-resource "azurerm_relay_hybrid_connection_authorization_rule" "per_machine_listen" {
-  for_each = local.arc_machines
-
-  name                   = "listen"
-  hybrid_connection_name = azurerm_relay_hybrid_connection.per_machine[each.key].name
-  namespace_name         = local.relay_namespace_name
-  resource_group_name    = local.relay_namespace_rg
-
-  listen = true
-  send   = false
-  manage = false
-}
-
 # Look up each discovered Arc machine to obtain its system-assigned managed identity.
 # Static machines (registered in the same apply) are excluded — they are not yet
 # visible to the data source and will be picked up on the next apply after onboarding.

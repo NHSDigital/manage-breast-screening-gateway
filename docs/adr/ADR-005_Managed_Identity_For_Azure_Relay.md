@@ -16,16 +16,14 @@ The initial implementation used Shared Access Signature (SAS) tokens. These are 
 
 As the gateway runs inside the hospital network but is provisioned via Azure Arc, it can be assigned a managed identity through Arc-enabled infrastructure. Storing a long-lived shared secret in the environment is therefore unnecessary operational overhead and a potential security risk.
 
-That said, setting up a working Relay connection locally is already complex. Mandating managed identity for all environments would add further friction for developers, who would need Azure CLI credentials with a Relay Listener role assignment before they could run the service.
 
 ## Decision
 
-In **production** (`ENVIRONMENT=prod`), the gateway uses `ManagedIdentityCredential` exclusively. The SAS token path is unavailable regardless of what environment variables are set. The gateway's managed identity must be assigned the **Azure Relay Listener** role on the hybrid connection resource in Azure.
+All the deployed environments use `ManagedIdentityCredential` exclusively, from both the web application side and the gateway. The gateway's managed identity must be assigned the **Azure Relay Listener** role on the hybrid connection resource in Azure.
 
-In **non-production** environments, the auth method is determined by whether `AZURE_RELAY_SHARED_ACCESS_KEY` is set:
+Developers need to connect to Azure relay but cannot use a managed identity. It is required to keep a relay with SAS keys enabled for their local testing. A SAS key may be provisioned and injected into `.env`.
 
-- If set, a SAS token is generated and embedded in the WebSocket URL (`sb-hc-token`), preserving the simpler local development setup.
-- If absent, `DefaultAzureCredential` is used, which works with Azure CLI credentials (`az login`) for developers who have the Listener role assigned to their identity.
+If no SAS key is present, `DefaultAzureCredential` is used for developer scenarios that rely on `az login` and the appropriate Relay Listener role assignment.
 
 The token is passed as an `Authorization: Bearer` HTTP header on the WebSocket upgrade request for managed identity paths. Azure Relay validates it against Azure AD.
 

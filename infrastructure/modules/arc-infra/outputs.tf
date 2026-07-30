@@ -33,12 +33,3 @@ output "app_insights_connection_string" {
   sensitive   = true
   value       = var.enable_arc_servers ? module.app_insights[0].connection_string : null
 }
-
-output "relay_listen_sas_keys" {
-  description = "Per-machine relay listen SAS primary keys, keyed by Arc resource name. Used by the deploy pipeline to write .env files."
-  sensitive   = true
-  value = var.enable_arc_servers ? {
-    for k, rule in azurerm_relay_hybrid_connection_authorization_rule.per_machine_listen :
-    k => rule.primary_key
-  } : {}
-}

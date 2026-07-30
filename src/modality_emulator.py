@@ -14,6 +14,7 @@ from pynetdicom.sop_class import (
     ModalityWorklistInformationFind,  # type: ignore
 )
 
+import config
 from environment import Environment
 from services.dicom import PENDING, PENDING_WARNING, SUCCESS
 from services.mwl import MWLStatus
@@ -22,8 +23,8 @@ from services.storage import MWLStorage
 load_dotenv()
 
 logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
-    format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+    level=config.log_level(),
+    format=config.log_format(),
 )
 
 logger = logging.getLogger(__name__)
@@ -33,14 +34,14 @@ DICOM_LATERALITIES = ["L", "R"]
 DICOM_VIEWS = ["CC", "MLO", "CCID"]
 EMULATED_PROCEDURE_DURATION_SECONDS = int(os.getenv("EMULATED_PROCEDURE_DURATION_SECONDS", "5"))
 MODALITY = "MG"
-MWL_AET = os.getenv("MWL_AET", "SCREENING_MWL")
-MWL_DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
+MWL_AET = config.mwl_aet()
+MWL_DB_PATH = config.mwl_db_path()
 MWL_HOST = os.getenv("MWL_HOST", "localhost")
-MWL_PORT = int(os.getenv("MWL_PORT", "4243"))
-PACS_AET = os.getenv("PACS_AET", "SCREENING_PACS")
-PACS_DB_PATH = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
+MWL_PORT = config.mwl_port()
+PACS_AET = config.pacs_aet()
+PACS_DB_PATH = config.pacs_db_path()
 PACS_HOST = os.getenv("PACS_HOST", "localhost")
-PACS_PORT = int(os.getenv("PACS_PORT", "4244"))
+PACS_PORT = config.pacs_port()
 SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "sample_images")
 
 

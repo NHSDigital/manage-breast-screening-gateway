@@ -5,6 +5,7 @@ import os
 
 from dotenv import load_dotenv
 
+import config
 from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_listener import UploadListener
 from services.dicom.upload_processor import UploadProcessor
@@ -29,18 +30,16 @@ def main():
     UPLOAD_BATCH_SIZE: Number of pending uploads to process in each batch (default: 10)
     """
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+        level=config.log_level(),
+        format=config.log_format(),
     )
 
     poll_interval = float(os.getenv("UPLOAD_POLL_INTERVAL", "2"))
     batch_size = int(os.getenv("UPLOAD_BATCH_SIZE", "10"))
     max_retries = int(os.getenv("MAX_UPLOAD_RETRIES", "3"))
 
-    pacs_storage = PACSStorage(
-        os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db"), os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
-    )
-    mwl_storage = MWLStorage(os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db"))
+    pacs_storage = PACSStorage(config.pacs_db_path(), config.pacs_storage_path())
+    mwl_storage = MWLStorage(config.mwl_db_path())
     uploader = DICOMUploader()
 
     processor = UploadProcessor(

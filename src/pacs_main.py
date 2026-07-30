@@ -1,10 +1,10 @@
 """Entry point for PACS server."""
 
 import logging
-import os
 
 from dotenv import load_dotenv
 
+import config
 from server import PACSServer
 from telemetry import configure_telemetry
 
@@ -22,15 +22,15 @@ def main():
     PACS_DB_PATH: Path to the SQLite database file (default: /var/lib/pacs/pacs.db)
     """
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+        level=config.log_level(),
+        format=config.log_format(),
     )
 
-    pacs_aet = os.getenv("PACS_AET", "SCREENING_PACS")
-    pacs_port = int(os.getenv("PACS_PORT", "4244"))
-    pacs_storage_path = os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
-    pacs_db_path = os.getenv("PACS_DB_PATH", "/var/lib/pacs/pacs.db")
-    mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
+    pacs_aet = config.pacs_aet()
+    pacs_port = config.pacs_port()
+    pacs_storage_path = config.pacs_storage_path()
+    pacs_db_path = config.pacs_db_path()
+    mwl_db_path = config.mwl_db_path()
 
     pacs_server = PACSServer(pacs_aet, pacs_port, pacs_storage_path, pacs_db_path, block=True, mwl_db_path=mwl_db_path)
 

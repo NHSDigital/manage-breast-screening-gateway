@@ -1,10 +1,10 @@
 """Entry point for MWL server."""
 
 import logging
-import os
 
 from dotenv import load_dotenv
 
+import config
 from server import MWLServer
 from telemetry import configure_telemetry
 
@@ -21,13 +21,13 @@ def main():
     MWL_DB_PATH: Path to the SQLite database file (default: /var/lib/pacs/worklist.db)
     """
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        format=os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s"),
+        level=config.log_level(),
+        format=config.log_format(),
     )
 
-    mwl_aet = os.getenv("MWL_AET", "MWL_SCP")
-    mwl_port = int(os.getenv("MWL_PORT", "4243"))
-    mwl_db_path = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
+    mwl_aet = config.mwl_aet()
+    mwl_port = config.mwl_port()
+    mwl_db_path = config.mwl_db_path()
 
     mwl_server = MWLServer(mwl_aet, mwl_port, mwl_db_path, block=True)
 

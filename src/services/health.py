@@ -81,7 +81,14 @@ def _services_check() -> dict | None:
 
 
 def _release_version() -> str:
-    """Release version parsed from this file's deployed path."""
+    """Release version parsed from this file's deployed path.
+
+    Deployments extract each release to releases/<version>/ behind a
+    `current` junction, resolved by realpath, so this method names the
+    code that is actually executing. Deliberately not read from
+    the VERSION file, which records the last deploy invocation, not
+    necessarily what is running.
+    """
     match = re.search(r"[/\\]releases[/\\]([^/\\]+)[/\\]", os.path.realpath(__file__))
     return match.group(1) if match else "unknown"
 

@@ -16,7 +16,7 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 
 ### Components
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    MWL Server (Port 4243)                   │
 ├─────────────────────────────────────────────────────────────┤
@@ -30,12 +30,12 @@ The MWL server is a lightweight, production-ready DICOM worklist solution that:
 │         └──────────────────────┘                            │      (Task Scheduler)
 │         Query & Response                                    │                  │
 └─────────────────────────────────────────────────────────────┘                  │
-           ▲                         ▲                                    ┌───────┴────────┐
-           │                         │                                    │  reset_main.py │
-    ┌──────┴──────┐           ┌───────┴────────┐                          └────────────────┘
-    │  Modality   │           │ Relay Listener │
-    │  (SCU)      │           │ (Populates DB) │
-    └─────────────┘           └────────────────┘
+           ▲                         ▲                                   ┌───────┴────────┐
+           │                         │                                   │  reset_main.py │
+    ┌──────┴──────┐          ┌───────┴────────┐                          └────────────────┘
+    │  Modality   │          │ Relay Listener │
+    │  (SCU)      │          │ (Populates DB) │
+    └─────────────┘          └────────────────┘
 ```
 
 ### Workflow
@@ -71,7 +71,7 @@ docker compose logs -f mwl
 ### MWL server
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `MWL_AET` | `MWL_SCP` | Application Entity Title |
 | `MWL_PORT` | `4243` | DICOM service port |
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
@@ -80,7 +80,7 @@ docker compose logs -f mwl
 ### Reset script (`reset_main.py`)
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
 | `BACKUP_PATH` | `/var/lib/pacs/backups` | Directory for database backups |
 | `LOG_LEVEL` | `INFO` | Logging level |
@@ -161,10 +161,22 @@ uv run pytest tests/integration/test_request_cfind_on_worklist.py -v
 
 ## Worklist item status transitions
 
-```
-SCHEDULED ──(first C-STORE)──▶ IN PROGRESS ──(MPPS N-SET)──▶ COMPLETED
-                                     │
-                                     └────────(MPPS N-SET)──▶ DISCONTINUED
+```mermaid
+stateDiagram-v2
+    direction LR
+    state "IN PROGRESS" as IP
+
+    [*] --> SCHEDULED
+    SCHEDULED -->  IP: (first C-STORE)
+
+    state fork_state <<fork>>
+    IP --> fork_state: (MPPS N-SET)
+
+    fork_state --> COMPLETED
+    fork_state --> DISCONTINUED
+
+    COMPLETED --> [*]
+    DISCONTINUED --> [*]
 ```
 
 See [ADR-003: Separate containers for PACS and MWL](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md) and [ADR-004: Daily backup and reset of the MWL database](../adr/ADR-004_MWL_Daily_Backup_And_Reset.md) for architectural decisions.

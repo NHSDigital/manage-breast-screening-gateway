@@ -24,8 +24,10 @@ from pynetdicom.sop_class import (
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError
 
+import config
 from environment import Environment
 from modality_emulator import ModalityEmulator
+from services.health import collect_health
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.mwl.update_worklist_item_status import UpdateWorklistItemStatus
 from services.storage import MWLStorage
@@ -35,7 +37,7 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
+DB_PATH = config.mwl_db_path()
 AZURE_RELAY_SCOPE = "https://relay.azure.net/.default"
 SAS_TOKEN_EXPIRY_SECONDS = 3600
 RELAY_REFRESH_MARGIN_SECONDS = 300
@@ -133,6 +135,12 @@ class RelayListener:
 
         if action_name == "echo":
             return {"status": "echo", "payload": payload}
+        if action_name == "health":
+            return {
+                "status": "ok",
+                "action_id": payload.get("action_id"),
+                "health": collect_health(),
+            }
         if action_name == "worklist.create_item":
             return CreateWorklistItem(self.storage).call(payload)
         if action_name == "worklist.create_test_item":
@@ -290,11 +298,8 @@ def verify_credentials():
 
 async def main():
     logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO").upper(),
-        format=os.getenv(
-            "LOG_FORMAT",
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        ),
+        level=config.log_level(),
+        format=config.log_format(),
     )
     configure_telemetry(service_name="relay-listener")
 

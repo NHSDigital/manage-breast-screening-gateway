@@ -12,6 +12,7 @@ from typing import Optional
 import requests
 from azure.identity import ManagedIdentityCredential
 
+import config
 from environment import Environment
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class DICOMUploader:
     def __init__(self, api_endpoint: str | None = None, timeout: int = 30, verify_ssl: bool = True):
-        self.api_endpoint = api_endpoint or os.getenv("CLOUD_API_ENDPOINT", "http://localhost:8000/api/v1/dicom")
+        self.api_endpoint = api_endpoint or config.cloud_api_endpoint()
         self.timeout = timeout
         self.verify_ssl = verify_ssl
 

@@ -56,8 +56,8 @@ def log_format() -> str:
 
 
 def import_directory() -> str:
-    return os.getenv("IMPORT_DIRECTORY", "/var/lib/pacs/import")
+    return os.getenv("IMPORT_DIRECTORY", "/var/lib/pacs/storage/import")
 
 
 def import_poll_interval() -> float:
-    return float(os.getenv("IMPORT_POLL_INTERVAL", "60.0"))
+    return float(os.getenv("IMPORT_POLL_INTERVAL", "30.0"))

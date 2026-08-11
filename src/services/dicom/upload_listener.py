@@ -8,6 +8,7 @@ and uploads them to the Manage Breast Screening HTTP API endpoint.
 import logging
 import time
 
+from services.network import Rubie
 from services.dicom.upload_processor import UploadProcessor
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,12 @@ class UploadListener:
 
         while self._running:
             try:
+                if not Rubie.is_connected():
+                    poll_interval = self.poll_interval * 15
+                    logger.warning("Rubie connection not established. Retrying in %s seconds...", poll_interval)
+                    time.sleep(poll_interval)
+                    continue
+
                 self.processor.process_batch(limit=self.batch_size)
 
                 # Add backoff delay to poll interval when experiencing failures

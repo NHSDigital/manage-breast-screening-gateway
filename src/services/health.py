@@ -23,6 +23,9 @@ DISK_MINIMUM_FREE_PERCENT = 5.0
 SIBLING_SERVICES = ("Gateway-MWL", "Gateway-PACS", "Gateway-Upload")
 SERVICE_QUERY_TIMEOUT_SECONDS = 2
 _SERVICE_STATE_RUNNING = 4  # SERVICE_RUNNING in the Windows Service Control Manager
+# Rule names must match those created by scripts/powershell/deploy.ps1.
+FIREWALL_RULE_NAMES = ("Rubie Gateway MWL", "Rubie Gateway PACS")
+FIREWALL_QUERY_TIMEOUT_SECONDS = 5
 
 _STARTED_AT = time.time()
 
@@ -80,6 +83,34 @@ def _services_check() -> dict | None:
     return {"ok": all(s["ok"] for s in states.values()), "services": states}
 
 
+def _firewall_check() -> dict | None:
+    """Presence of the inbound firewall rules for the DICOM ports."""
+    if platform.system() != "Windows":
+        return None
+
+    names = ",".join(f"'{name}'" for name in FIREWALL_RULE_NAMES)
+    command = (
+        f"(Get-NetFirewallRule -DisplayName {names} -ErrorAction SilentlyContinue"
+        " | Where-Object { $_.Enabled -eq 'True' }).Count"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=FIREWALL_QUERY_TIMEOUT_SECONDS,
+        )
+        enabled_count = int(result.stdout.strip() or 0)
+    except (OSError, subprocess.TimeoutExpired, ValueError) as e:
+        return {"ok": False, "error": str(e)}
+
+    return {
+        "ok": enabled_count == len(FIREWALL_RULE_NAMES),
+        "enabled_rules": enabled_count,
+        "expected_rules": len(FIREWALL_RULE_NAMES),
+    }
+
+
 def _release_version() -> str:
     """Release version parsed from this file's deployed path.
 
@@ -104,6 +135,10 @@ def collect_health() -> dict:
     services = _services_check()
     if services is not None:
         checks["services"] = services
+
+    firewall = _firewall_check()
+    if firewall is not None:
+        checks["firewall_rules"] = firewall
 
     return {
         "healthy": all(check["ok"] for check in checks.values()),

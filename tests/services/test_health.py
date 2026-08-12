@@ -4,6 +4,7 @@ import socket
 
 from services import health
 from services.health import (
+    _firewall_check,
     _port_check,
     _release_version,
     _service_state,
@@ -105,6 +106,38 @@ SERVICE_NAME: Gateway-Upload
 
         assert result["ok"] is True
         assert set(result["services"]) == {"Gateway-MWL", "Gateway-PACS", "Gateway-Upload"}
+
+
+class TestFirewallCheck:
+    def _fake_run(self, stdout, returncode=0):
+        import subprocess
+
+        return subprocess.CompletedProcess(args=["powershell"], returncode=returncode, stdout=stdout, stderr="")
+
+    def test_both_rules_enabled_reports_ok(self, monkeypatch):
+        """Health: firewall check ok when both named rules are enabled."""
+        monkeypatch.setattr(health.platform, "system", lambda: "Windows")
+        monkeypatch.setattr(health.subprocess, "run", lambda *a, **k: self._fake_run("2\n"))
+
+        result = _firewall_check()
+
+        assert result == {"ok": True, "enabled_rules": 2, "expected_rules": 2}
+
+    def test_missing_rule_reports_not_ok(self, monkeypatch):
+        """Health: firewall check fails when a rule is missing or disabled."""
+        monkeypatch.setattr(health.platform, "system", lambda: "Windows")
+        monkeypatch.setattr(health.subprocess, "run", lambda *a, **k: self._fake_run("1\n"))
+
+        result = _firewall_check()
+
+        assert result["ok"] is False
+        assert result["enabled_rules"] == 1
+
+    def test_omitted_off_windows(self, monkeypatch):
+        """Health: firewall check is omitted on non-Windows platforms."""
+        monkeypatch.setattr(health.platform, "system", lambda: "Linux")
+
+        assert _firewall_check() is None
 
 
 class TestReleaseVersion:

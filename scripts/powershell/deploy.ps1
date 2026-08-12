@@ -499,6 +499,22 @@ foreach ($rel in $oldReleases) {
 if (Test-Path $currentJunction) { (Get-Item $currentJunction).Delete() }
 New-Item -ItemType Junction -Path $currentJunction -Target $versionDir -Force | Out-Null
 
+# -- Firewall rules -----------------------------------------------------------
+
+$firewallRules = @(
+    @{ Name = "Rubie Gateway MWL";  Port = 104 },
+    @{ Name = "Rubie Gateway PACS"; Port = 11112 }
+)
+foreach ($rule in $firewallRules) {
+    if (-not (Get-NetFirewallRule -DisplayName $rule.Name -ErrorAction SilentlyContinue)) {
+        New-NetFirewallRule -DisplayName $rule.Name -Direction Inbound `
+            -Protocol TCP -LocalPort $rule.Port -Action Allow | Out-Null
+        Write-Log "Created inbound firewall rule: $($rule.Name) (TCP $($rule.Port))" "INFO"
+    } else {
+        Write-Log "Inbound firewall rule already present: $($rule.Name)" "INFO"
+    }
+}
+
 # Register and start services
 $startedServices = @()
 $cutoverFailed = $false

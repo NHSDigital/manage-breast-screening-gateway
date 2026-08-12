@@ -171,6 +171,7 @@ Onboarding is complete when **all** of the following hold:
 - [ ] The Arc machine shows **Connected** in the portal
 - [ ] The Hybrid Connection `hc-gw-<site>-<ods>-<instance>` shows **1 listener**
 - [ ] The validation command below succeeds (`executionState: Succeeded`, `exitCode: 0`) showing all four services **Running** and ports **104** and **11112** listening
+- [ ] Inbound Windows Firewall rules are present and enabled for TCP 104 and 11112 (`Get-NetFirewallRule -DisplayName "Rubie Gateway*")
 - [ ] The relay listener log ends with `Connected - waiting for worklist actions...`
 - [ ] No manual intervention was needed after the pipeline completed
 
@@ -290,6 +291,19 @@ The deploy job prints the `--- Ring: … ---` banner and then goes silent for 30
 
 1. **The VM is powered off or asleep.** `az connectedmachine show -n <machine> -g <rg> --query status` — anything other than **Connected** means run commands queue indefinitely against an absent machine.
 2. **Stale run commands blocking the queue.** Run commands execute serially per machine, and diagnostic commands accumulate as persistent resources. `az connectedmachine run-command list -o table` — delete anything stuck in a non-terminal state.
+
+### Modality C-ECHO to the gateway times out
+
+The usual cause of a timeout is missing **inbound Windows Firewall rules on
+the gateway VM**.
+
+```powershell
+New-NetFirewallRule -DisplayName "Rubie Gateway MWL"  -Direction Inbound -Protocol TCP -LocalPort 104   -Action Allow
+New-NetFirewallRule -DisplayName "Rubie Gateway PACS" -Direction Inbound -Protocol TCP -LocalPort 11112 -Action Allow
+```
+
+If rules exist but C-ECHO still times out, check whether centrally-managed
+firewall policy overrides local rules, then the trust network path.
 
 ### Gateway services not starting after deploy
 

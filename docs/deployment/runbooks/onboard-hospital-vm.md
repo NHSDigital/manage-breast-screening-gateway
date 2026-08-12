@@ -4,16 +4,51 @@
 > **When to use**: Onboarding a new NHS hospital gateway VM to Azure Arc for the first time
 
 ---
-
 ## Prerequisites
 
-- [ ] Hospital IT has provisioned the gateway VM (Windows Server 2022 or later)
-- [ ] VM has outbound internet access to:
-  - `*.arc.azure.com`
-  - `*.his.arc.azure.com`
-  - `relay-manbrs-<env>.servicebus.windows.net`
-- [ ] Trust ODS code confirmed via the [ODS portal](https://odsportal.nhsbsa.nhs.uk/)
+### Machine specification
+
+- **OS**: Windows Server 2022 or later preferred.
+- **Sizing**: 2 vCPU / 8 GB RAM / 120 GB disk minimum. No virtualisation
+  features are required (the gateway runs as native Windows services).
+- **Power**: the machine must stay on permanently — sleep/hibernate disabled,
+  auto-restart after updates.
+- **Fixed IP** (static or DHCP reservation) — the mammography modality is
+  configured to target it.
+- **Time sync** (NTP), PowerShell 5.1+, .NET Framework 4.7.2+.
+
+### Network requirements
+
+**Outbound to the internet (TCP 443 only — no inbound from the internet):**
+| Destination | Purpose |
+|---|---|
+| `*.arc.azure.com`, `*.his.arc.azure.com` | Azure Arc management |
+| `management.azure.com`, `login.microsoftonline.com` | Azure control plane / identity |
+| `relay-manbrs-<env>.servicebus.windows.net` | Worklist delivery (outbound-initiated listener) |
+| `<env hostname, e.g. manage-breast-screening.nhs.uk>` | Image upload to the national service |
+| `*.in.applicationinsights.azure.com`, `*.livediagnostics.monitor.azure.com` | Service telemetry |
+| `community.chocolatey.org`, `www.python.org`, `astral.sh`, `github.com`, `objects.githubusercontent.com`, `download.microsoft.com` | Deployment-time software downloads |
+
+**Hospital LAN (inbound, from the mammography modality only):** TCP 104
+(DICOM worklist) and TCP 11112 (DICOM image store) to the gateway machine.
+Note the deployment process creates the Windows Firewall rules on the machine
+itself.
+
+### Access and software (for trust security review)
+
+- Local Administrator access is needed **once**, during the onboarding call,
+  to run the Arc setup script. All subsequent deployment and management is
+  remote via Azure Arc — no standing trust-side access, no inbound
+  connections, no credentials held by the programme.
+- Software installed on the machine: Chocolatey, Python, uv, NSSM (service
+  manager), the gateway application (four Windows services), scheduled
+  maintenance tasks (log rotation, local database backups), and two inbound
+  firewall rules for the DICOM ports.
+
+### Configuration parameters
+
 - [ ] NHS region confirmed (`nw` | `neyh` | `mids` | `eoe` | `lon` | `se` | `sw`)
+- [ ] Trust ODS code confirmed via the [ODS portal](https://odsportal.nhsbsa.nhs.uk/)
 - [ ] Deployment ring agreed with the programme team
 - [ ] Onboarding engineer has the permissions listed below
 - [ ] Temporary onboarding secret created (Step 0) ready to share on the onboarding call

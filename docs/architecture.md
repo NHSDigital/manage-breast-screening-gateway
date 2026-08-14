@@ -177,7 +177,7 @@ graph TB
 - `SCHEDULED` when created from relay message.
 - Moves to `IN PROGRESS` when image activity begins (`C-STORE` observed).
 - Finalised by MPPS events (`COMPLETED` or `DISCONTINUED`).
-- Daily backup-and-clear is run by scheduled task (`reset_main.py`), preparing next day’s workload.
+- Backup-and-clear is run by a scheduled task (`Gateway-MWL-Maintenance`, registered by `deploy.ps1`), which invokes `maintenance.ps1 -Action BackupMWLDatabase` → `scripts/python/database.py`. An equivalent task clears the PACS metadata database. See [ADR-004](adr/ADR-004_MWL_Daily_Backup_And_Reset.md).
 
 ## Storage and Processing Notes
 

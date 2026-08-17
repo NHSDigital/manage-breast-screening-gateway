@@ -75,11 +75,16 @@ function Write-Log {
 
 # -- Write .env (when deployed via Arc Run Command) ---------------------------
 
+# Single source for the machine's configuration file; the services load it
+# via python-dotenv from their working directory, and the firewall block
+# below reads the DICOM ports from it.
+$envFilePath = Join-Path $BaseInstallPath ".env"
+
 if ($EnvContentB64) {
     Write-Log "Writing .env from deployment parameter..." "INFO"
     $envBytes = [System.Convert]::FromBase64String($EnvContentB64)
     $envContent = [System.Text.Encoding]::UTF8.GetString($envBytes)
-    [System.IO.File]::WriteAllText((Join-Path $BaseInstallPath ".env"), $envContent, (New-Object System.Text.UTF8Encoding $false))
+    [System.IO.File]::WriteAllText($envFilePath, $envContent, (New-Object System.Text.UTF8Encoding $false))
     Write-Log "Written .env to $BaseInstallPath" "SUCCESS"
 }
 
@@ -500,18 +505,38 @@ if (Test-Path $currentJunction) { (Get-Item $currentJunction).Delete() }
 New-Item -ItemType Junction -Path $currentJunction -Target $versionDir -Force | Out-Null
 
 # -- Firewall rules -----------------------------------------------------------
+# Ports are read from the .env this deployment wrote, so the rules always
+# match what the services bind; the defaults are only a fallback for a
+# missing entry. Rule names must match FIREWALL_RULE_NAMES in
+# src/services/health.py, which verifies their presence.
+
+function Get-EnvPort {
+    param([string]$EnvPath, [string]$Name, [int]$Default)
+    if (Test-Path $EnvPath) {
+        $match = Select-String -Path $EnvPath -Pattern "^$Name=(\d+)\s*$" | Select-Object -First 1
+        if ($match) { return [int]$match.Matches[0].Groups[1].Value }
+    }
+    return $Default
+}
 
 $firewallRules = @(
-    @{ Name = "Rubie Gateway MWL";  Port = 104 },
-    @{ Name = "Rubie Gateway PACS"; Port = 11112 }
+    @{ Name = "Rubie Gateway MWL";  Port = (Get-EnvPort -EnvPath $envFilePath -Name "MWL_PORT" -Default 104) },
+    @{ Name = "Rubie Gateway PACS"; Port = (Get-EnvPort -EnvPath $envFilePath -Name "PACS_PORT" -Default 11112) }
 )
 foreach ($rule in $firewallRules) {
-    if (-not (Get-NetFirewallRule -DisplayName $rule.Name -ErrorAction SilentlyContinue)) {
+    $existing = Get-NetFirewallRule -DisplayName $rule.Name -ErrorAction SilentlyContinue
+    if (-not $existing) {
         New-NetFirewallRule -DisplayName $rule.Name -Direction Inbound `
             -Protocol TCP -LocalPort $rule.Port -Action Allow | Out-Null
         Write-Log "Created inbound firewall rule: $($rule.Name) (TCP $($rule.Port))" "INFO"
     } else {
-        Write-Log "Inbound firewall rule already present: $($rule.Name)" "INFO"
+        $currentPort = ($existing | Get-NetFirewallPortFilter).LocalPort
+        if ("$currentPort" -ne "$($rule.Port)") {
+            Set-NetFirewallRule -DisplayName $rule.Name -LocalPort $rule.Port
+            Write-Log "Updated firewall rule $($rule.Name): TCP $currentPort -> $($rule.Port)" "INFO"
+        } else {
+            Write-Log "Inbound firewall rule already present: $($rule.Name) (TCP $($rule.Port))" "INFO"
+        }
     }
 }
 

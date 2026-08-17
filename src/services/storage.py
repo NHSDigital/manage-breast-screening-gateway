@@ -1,3 +1,4 @@
+import glob
 import hashlib
 import logging
 import os
@@ -83,7 +84,7 @@ class PACSStorage(Storage):
 
         logger.info(f"PACS storage initialized: db={db_path}, storage={storage_root}")
 
-    def _compute_storage_path(self, sop_instance_uid: str) -> str:
+    def _compute_storage_path(self, sop_instance_uid: str, suffix: str = "dcm") -> str:
         """
         Compute hash-based storage path for a SOP Instance UID.
 
@@ -99,7 +100,7 @@ class PACSStorage(Storage):
         # Hash the UID to get consistent path
         hex = hashlib.sha256(sop_instance_uid.encode()).hexdigest()
 
-        return f"{hex[:2]}/{hex[2:4]}/{hex[:16]}.dcm"
+        return f"{hex[:2]}/{hex[2:4]}/{hex[:16]}.{suffix}"
 
     def store_instance(
         self, sop_instance_uid: str, file_data: bytes, metadata: Dict, source_aet: str = "UNKNOWN"
@@ -163,11 +164,11 @@ class PACSStorage(Storage):
             )
             return cursor.fetchone() is not None
 
-    def store_file(self, sop_instance_uid: str, file_data: bytes) -> tuple[str, Path, int, str]:
+    def store_file(self, sop_instance_uid: str, file_data: bytes, suffix: str = "dcm") -> tuple[str, Path, int, str]:
         """
         Store file data on disk in hash-based directory structure.
         """
-        rel_path = self._compute_storage_path(sop_instance_uid)
+        rel_path = self._compute_storage_path(sop_instance_uid, suffix=suffix)
         abs_path = self.storage_root / rel_path
 
         abs_path.parent.mkdir(parents=True, exist_ok=True)
@@ -199,8 +200,8 @@ class PACSStorage(Storage):
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def get_instance_by_accession(self, accession_number: str) -> Optional[Dict]:
-        """Get a stored instance by accession number."""
+    def get_instances_by_accession(self, accession_number: str) -> List[Dict]:
+        """Get a stored instances by accession number."""
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
@@ -212,8 +213,17 @@ class PACSStorage(Storage):
                 """,
                 (accession_number,),
             )
-            row = cursor.fetchone()
-            return dict(row) if row else None
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_image_paths_by_accession_number(self, accession_number: str) -> List[str]:
+        """Get paths to stored images by accession number."""
+        image_paths = []
+        for instance in self.get_instances_by_accession(accession_number):
+            matches = glob.glob(f"{self.storage_root}/{instance['storage_path'][:-4]}*.jpg")
+            for match in matches:
+                image_paths.append(os.path.relpath(match, self.storage_root))
+
+        return image_paths
 
     def get_pending_uploads(self, limit: int = 10, max_retries: int = 3) -> List[Dict]:
         """Get stored instances pending upload"""

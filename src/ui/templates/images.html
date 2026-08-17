@@ -1,0 +1,86 @@
+<p class="nhsuk-body">Appointment status: {{ item.status }}</p>
+
+<div class="app-mammogram-cards">
+  <div class="app-mammogram-card">
+    <div class="nhsuk-card nhsuk-card--feature">
+      <div class="nhsuk-card__content">
+        <h2 class="nhsuk-card__heading">
+          Right breast
+        </h2>
+        <div class="app-mammogram-views">
+          <div class="app-mammogram-view--right">
+            <div class="app-mammogram-thumbnail app-mammogram-thumbnail--right">
+              {% for image_path in images['RCC'] %}
+                <div class="app-mammogram-thumbnail__image-wrapper app-mammogram-thumbnail__image-wrapper--large">
+                  <span class="app-mammogram-thumbnail__label">RCC</span>
+                  <img class="app-mammogram-thumbnail__image" src="/appointment/{{accession_number}}/image/{{image_path}}" alt="Right breast RCC view">
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="app-mammogram-view--right">
+            <div class="app-mammogram-thumbnail app-mammogram-thumbnail--right">
+              {% for image_path in images['RCCID'] %}
+                <div class="app-mammogram-thumbnail__image-wrapper app-mammogram-thumbnail__image-wrapper--large">
+                  <span class="app-mammogram-thumbnail__label">RCCID</span>
+                  <img class="app-mammogram-thumbnail__image" src="/appointment/{{accession_number}}/image/{{image_path}}" alt="Right breast RCCID view">
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="app-mammogram-view--right">
+            <div class="app-mammogram-thumbnail app-mammogram-thumbnail--right">
+              {% for image_path in images['RMLO'] %}
+                <div class="app-mammogram-thumbnail__image-wrapper app-mammogram-thumbnail__image-wrapper--large">
+                  <span class="app-mammogram-thumbnail__label">RMLO</span>
+                  <img class="app-mammogram-thumbnail__image" src="/appointment/{{accession_number}}/image/{{image_path}}" alt="Right breast RMLO view">
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="app-mammogram-card">
+    <div class="nhsuk-card nhsuk-card--feature">
+      <div class="nhsuk-card__content">
+        <h2 class="nhsuk-card__heading">
+          Left breast
+        </h2>
+        <div class="app-mammogram-views">
+          <div class="app-mammogram-view--left">
+            <div class="app-mammogram-thumbnail app-mammogram-thumbnail--left">
+              {% for image_path in images['LCC'] %}
+                <div class="app-mammogram-thumbnail__image-wrapper app-mammogram-thumbnail__image-wrapper--large">
+                  <span class="app-mammogram-thumbnail__label">LCC</span>
+                  <img class="app-mammogram-thumbnail__image" src="/appointment/{{accession_number}}/image/{{image_path}}" alt="Left breast LCC view">
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="app-mammogram-view--left">
+            <div class="app-mammogram-thumbnail app-mammogram-thumbnail--left">
+              {% for image_path in images['LCCID'] %}
+                <div class="app-mammogram-thumbnail__image-wrapper app-mammogram-thumbnail__image-wrapper--large">
+                  <span class="app-mammogram-thumbnail__label">LCCID</span>
+                  <img class="app-mammogram-thumbnail__image" src="/appointment/{{accession_number}}/image/{{image_path}}" alt="Left breast LCCID view">
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="app-mammogram-view--left">
+            <div class="app-mammogram-thumbnail app-mammogram-thumbnail--left">
+              {% for image_path in images['LMLO'] %}
+                <div class="app-mammogram-thumbnail__image-wrapper app-mammogram-thumbnail__image-wrapper--large">
+                  <span class="app-mammogram-thumbnail__label">LMLO</span>
+                  <img class="app-mammogram-thumbnail__image" src="/appointment/{{accession_number}}/image/{{image_path}}" alt="Left breast LMLO view">
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

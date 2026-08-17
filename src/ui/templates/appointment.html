@@ -10,8 +10,25 @@
   <p class="nhsuk-body">Appointment for {{item.patient_name}} (NHS: {{item.patient_id}}) has been started.</p>
   <p class="nhsuk-body">Scheduled time: {{ item.scheduled_time[0:2] }}:{{item.scheduled_time[2:4]}}</p>
   <p class="nhsuk-body">Date of birth: {{ item.patient_birth_date[0:4] }}/{{ item.patient_birth_date[4:6] }}/{{ item.patient_birth_date[6:8] }}</p>
-  <p class="nhsuk-body">Appointment status: {{ item.status }}</p>
+  <div id="images">
+    <p class="nhsuk-body">Appointment status: {{ item.status }}</p>
+  </div>
 {% else %}
   <p class="nhsuk-body">No appointment details available.</p>
 {% endif %}
+<script>
+  const eventSource = new EventSource('/appointment/images/{{ item.accession_number }}')
+  const imagesDiv = document.getElementById('images')
+
+  eventSource.addEventListener(
+    'images',
+    /** @param {MessageEvent<string>} event */ (event) => {
+      imagesDiv.innerHTML = event.data
+    }
+  )
+
+  eventSource.addEventListener('error', () => {
+    console.warn('Image stream: SSE connection error, reconnecting...')
+  })
+</script>
 {% endblock %}

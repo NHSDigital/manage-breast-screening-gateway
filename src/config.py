@@ -61,3 +61,7 @@ def import_directory() -> str:
 
 def import_poll_interval() -> float:
     return float(os.getenv("IMPORT_POLL_INTERVAL", "30.0"))
+
+
+def store_images() -> bool:
+    return os.getenv("STORE_IMAGES", "true").lower() == "true"

@@ -116,12 +116,12 @@ services:
     restart: unless-stopped
     network_mode: host
 
-  import_monitor:
+  gateway-ui:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: import-monitor
-    command: ["uv", "run", "python", "-m", "src.import_monitor"]
+    container_name: gateway-ui
+    command: ["uv", "run", "flask", "--app", "src/ui", "run" ]
     volumes:
       - pacs-storage:/var/lib/pacs/storage
       - pacs-db:/var/lib/pacs

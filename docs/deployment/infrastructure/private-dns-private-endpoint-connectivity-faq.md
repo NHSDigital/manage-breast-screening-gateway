@@ -2,6 +2,8 @@
 
 ## Current Flow
 
+![Private Endpoint connectivity flow](./images/private-endpoint-flow.png)
+
 ## Symptoms
 
 In some cases, a newly created Azure Private Endpoint may not function
@@ -16,6 +18,7 @@ Although DNS resolution continued to work correctly, network
 connectivity to the resolved private IP address failed.
 
 ## How to Verify
+See [Live Clinic Debugging](../runbooks/live-clinic-debugging.md)
 
 First, connect to the running Container App:
 

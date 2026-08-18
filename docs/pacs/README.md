@@ -7,7 +7,7 @@ DICOM PACS (Picture Archiving and Communication System) server for receiving and
 The PACS server is a lightweight, production-ready DICOM storage solution that:
 
 - Receives medical images via DICOM C-STORE protocol
-- Stores the images using hash-based directory structure
+- Stores the images using [hash-based directory structure](https://en.wikipedia.org/wiki/Content-addressable_storage)
 - Indexes metadata in SQLite database
 - Runs in a separate container alongside the [MWL Server](../mwl/README.md) (see [ADR-003](../adr/ADR-003_Separate_containers_for_PACS_and_MWL.md))
 
@@ -15,7 +15,7 @@ The PACS server is a lightweight, production-ready DICOM storage solution that:
 
 ### Components
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       PACS Server (Port 4244)                       │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -60,7 +60,7 @@ Modalities send images in JPEG Lossless transfer syntax. The gateway PACS does n
 
 **Hash-based Directory Layout:**
 
-```
+```text
 storage/
 ├── b2/
 │   └── 51/
@@ -122,7 +122,7 @@ docker compose down -v
 Environment variables:
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `PACS_AET` | `SCREENING_PACS` | Application Entity Title |
 | `PACS_PORT` | `4244` | DICOM service port |
 | `PACS_STORAGE_PATH` | `/var/lib/pacs/storage` | Directory for DICOM files |

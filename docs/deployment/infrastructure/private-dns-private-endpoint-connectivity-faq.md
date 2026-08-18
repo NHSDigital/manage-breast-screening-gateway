@@ -37,15 +37,18 @@ Verify that the hostname resolves to the expected private IP:
 
 **Expected output:**
 
-``` text
+(example address within the prod hub VNet range 10.11.0.0/16):
+
 ('10.11.4.8', 443)
-```
 
 This confirms that Private DNS resolution is functioning correctly.
 
-Next, test network connectivity to the resolved IP:
+The exact private IP may vary if the Private Endpoint is recreated, but it should remain within the 10.11.0.0/16 range for this environment.
 
-``` bash
+Next, test network connectivity to the resolved private IP:
+- Assuming the IP is 10.11.4.8
+
+```bash
 nc -v 10.11.4.8 443
 ```
 

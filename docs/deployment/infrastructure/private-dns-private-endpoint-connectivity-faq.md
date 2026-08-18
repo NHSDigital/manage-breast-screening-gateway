@@ -98,6 +98,11 @@ The issue was resolved by:
 
 Once recreated, connectivity was immediately restored.
 
+### Temporary Fix
+
+If a private endpoint is silently blackholing traffic, a short-term emergency mitigation is to temporarily repoint the relay hostname to the public endpoint while the PE is recreated or repaired. This should only be used as a temporary fallback and should be reverted as soon as private connectivity is restored.
+
+
 ## Lessons Learned
 
 -   Successful Private DNS resolution **does not guarantee** that the

@@ -37,9 +37,9 @@ Verify that the hostname resolves to the expected private IP:
 
 **Expected output:**
 
-(example address within the prod hub VNet range 10.11.0.0/16):
+This should return address within the prod hub VNet range 10.11.0.0/16:
 
-('10.11.4.8', 443)
+Example address: '10.11.4.8', 443
 
 This confirms that Private DNS resolution is functioning correctly.
 

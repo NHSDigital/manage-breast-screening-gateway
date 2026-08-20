@@ -59,15 +59,15 @@ def import_worklist_post():
     try:
         if 'import-file' not in request.files:
             flash('Import file was not uploaded', 'error')
-            return redirect(request.url)
+            return redirect("/worklist/import")
 
         file = request.files['import-file']
         filename = secure_filename(file.filename)
         if filename == '':
             flash('Please select a file to import', 'error')
-            return redirect(request.url)
+            return redirect("/worklist/import")
 
-        file_path = os.path.join(config.import_directory(), filename)
+        file_path = safe_join(config.import_directory(), filename)
         file.save(file_path)
 
         ClinicImporter(mwl_storage, {"source": "file", "file_path": file_path}).import_data()
@@ -77,7 +77,7 @@ def import_worklist_post():
         return redirect("/worklist")
     except Exception as e:
         flash(f'Error importing worklist file: {str(e)}', 'error')
-        return redirect(request.url)
+        return redirect("/worklist/import")
 
 
 @app.get("/worklist")
@@ -126,7 +126,6 @@ def appointment_images_stream(accession_number: str):
                         if view in ordered_views:
                             if path_str not in ordered_views[view]:
                                 ordered_views[view].append(path_str)
-                    new_images = []
                     yield format_sse_event(
                         "images",
                         render_template(

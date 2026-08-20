@@ -37,7 +37,6 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = config.mwl_db_path()
 AZURE_RELAY_SCOPE = "https://relay.azure.net/.default"
 SAS_TOKEN_EXPIRY_SECONDS = 3600
 RELAY_REFRESH_MARGIN_SECONDS = 300
@@ -297,6 +296,7 @@ def verify_credentials():
 
 
 async def main():
+    retry_interval = 5
     logging.basicConfig(
         level=config.log_level(),
         format=config.log_format(),
@@ -305,7 +305,7 @@ async def main():
 
     logger.info("Socket Listener Starting...")
     verify_credentials()
-    storage = MWLStorage(db_path=DB_PATH)
+    storage = MWLStorage(db_path=config.mwl_db_path())
 
     while True:
         try:
@@ -317,12 +317,12 @@ async def main():
             code = e.rcvd.code if e.rcvd else "N/A"
             reason = e.rcvd.reason if e.rcvd else "N/A"
             logger.warning("Connection closed with code %s: %s", code, reason)
-            logger.warning("Retrying in 5 seconds...")
-            await asyncio.sleep(5)
+            logger.warning("Retrying in %s seconds...", retry_interval)
+            await asyncio.sleep(retry_interval)
         except Exception as e:
             logger.warning("Connection error: %s", e)
-            logger.warning("Retrying in 5 seconds...")
-            await asyncio.sleep(5)
+            logger.warning("Retrying in %s seconds...", retry_interval)
+            await asyncio.sleep(retry_interval)
 
 
 if __name__ == "__main__":

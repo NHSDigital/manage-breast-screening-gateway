@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Import Worklist{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  <div class="nhsuk-form-group nhsuk-file-upload" data-module="nhsuk-file-upload">
+    <h1 class="nhsuk-label-wrapper">
+      <label class="nhsuk-label nhsuk-label--l" for="file-hint">
+        Upload clinic worklist file exported from Rubie.
+      </label>
+    </h1>
+    <input class="nhsuk-file-upload__input" id="file-hint" name="import-file" type="file">
+  </div>
+  <button class="nhsuk-button" type="submit">Upload</button>
+</form>
+{% endblock %}

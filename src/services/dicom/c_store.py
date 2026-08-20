@@ -1,6 +1,11 @@
 import logging
 from io import BytesIO
 
+import config
+
+import numpy as np
+
+from PIL import Image as PILImage
 from pydicom import Dataset, dcmwrite
 from pynetdicom.events import Event
 
@@ -80,6 +85,15 @@ class CStore:
                 },
                 event.assoc.requestor.ae_title,
             )
+            # TODO: Move to a utility module.
+            if config.store_images():
+                image_bytes = self.dataset_to_jpeg_bytes(sop_instance_uid, compressed_ds)
+                laterality = getattr(ds, "ImageLaterality", "")
+                view_position = getattr(ds, "ViewPosition", "")
+                implant_present = "ID" if getattr(ds, "BreastImplantPresent", "") == "YES" else ""
+                suffix = f"{laterality}{view_position}{implant_present}.jpg"
+                self.storage.store_file(sop_instance_uid, image_bytes, suffix=suffix)
+
             self._mark_in_progress(accession_number)
             return SUCCESS
 
@@ -119,3 +133,24 @@ class CStore:
             return
 
         self.notifier.notify(source_message_id, error)
+
+    # TODO: This should live in a utility module.
+    def dataset_to_jpeg_bytes(self, sop_uid: str, ds: pydicom.Dataset) -> bytes:
+        """Convert a DICOM dataset to a JPEG image and return it as bytes."""
+        # Normalize pixel data to 0-255 and convert to uint8
+        pixel_array = ds.pixel_array
+        pixel_array = pixel_array.astype(np.float32)
+
+        if getattr(ds, "PhotometricInterpretation", "") == "MONOCHROME1":
+            pixel_array = np.max(pixel_array) - pixel_array
+
+        pixel_array -= pixel_array.min()
+        pixel_array /= pixel_array.max()
+        pixel_array *= 255.0
+        pixel_array = pixel_array.astype(np.uint8)
+        image = PILImage.fromarray(pixel_array, mode="L")
+
+        img_bytes = BytesIO()
+        image.save(img_bytes, format="JPEG")
+        img_bytes.seek(0)
+        return img_bytes.getvalue()

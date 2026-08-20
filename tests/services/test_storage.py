@@ -36,6 +36,7 @@ def mwl_storage(db_file):
 def result():
     return {
         "accession_number": "ACC123456",
+        "clinic_id": "CLINIC123",
         "patient_id": "999123456",
         "patient_name": "SMITH^JANE",
         "patient_birth_date": "19800101",
@@ -170,6 +171,7 @@ class TestMWLStorage:
         "query_param_name, query_param_value",
         [
             ("accession_number", "ACC123456"),
+            ("clinic_id", "CLINIC123"),
             ("patient_id", "999123456"),
             ("modality", "MG"),
             ("scheduled_date", "20240101"),
@@ -189,6 +191,7 @@ class TestMWLStorage:
 
         results = mwl_storage.find_worklist_items(
             accession_number="ACC123456",
+            clinic_id="CLINIC123",
             modality="MG",
             scheduled_date="20240101",
             patient_id="999123456",
@@ -249,8 +252,7 @@ class TestMWLStorage:
     def test_find_worklist_items_with_filters_completed_items(self, mwl_storage, result):
         """Find worklist items with filters completed items."""
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
-        mwl_storage.update_status(item.accession_number, "COMPLETED")
+        mwl_storage.update_status_without_transition_check(item.accession_number, "COMPLETED")
 
         results = mwl_storage.find_worklist_items(
             accession_number="ACC123456",
@@ -264,8 +266,7 @@ class TestMWLStorage:
     def test_find_worklist_items_with_filters_discontinued_items(self, mwl_storage, result):
         """Find worklist items with filters discontinued items."""
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
-        mwl_storage.update_status(item.accession_number, "DISCONTINUED")
+        mwl_storage.update_status_without_transition_check(item.accession_number, "DISCONTINUED")
 
         results = mwl_storage.find_worklist_items(
             accession_number="ACC123456",
@@ -291,7 +292,7 @@ class TestMWLStorage:
     def test_update_status(self, mwl_storage, result):
         """MWL storage: Update status."""
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+        mwl_storage.update_status_without_transition_check(item.accession_number, "IN PROGRESS")
 
         returned = mwl_storage.update_status(item.accession_number, "COMPLETED")
 
@@ -305,7 +306,7 @@ class TestMWLStorage:
     def test_update_status_with_mpps(self, mwl_storage, result):
         """MWL storage: Update status with MPPS."""
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+        mwl_storage.update_status_without_transition_check(item.accession_number, "IN PROGRESS")
 
         returned = mwl_storage.update_status(
             item.accession_number,
@@ -364,7 +365,7 @@ class TestMWLStorage:
         """MPPS instance exists."""
         uid = generate_uid()
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+        mwl_storage.update_status_without_transition_check(item.accession_number, "IN PROGRESS")
 
         mwl_storage.update_status(item.accession_number, "COMPLETED", mpps_instance_uid=uid)
 
@@ -378,7 +379,7 @@ class TestMWLStorage:
         """Get worklist item by MPPS instance UID."""
         uid = generate_uid()
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+        mwl_storage.update_status_without_transition_check(item.accession_number, "IN PROGRESS")
 
         mwl_storage.update_status(item.accession_number, "COMPLETED", mpps_instance_uid=uid)
 
@@ -398,15 +399,23 @@ class TestMWLStorage:
         """MWL storage: Update status scheduled to in progress."""
         item = self._insert_item(mwl_storage, result)
 
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+        mwl_storage.update_status_without_transition_check(item.accession_number, "IN PROGRESS")
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "IN PROGRESS"
 
     def test_update_status_in_progress_to_discontinued(self, mwl_storage, result):
         """MWL storage: Update status in progress to discontinued."""
         item = self._insert_item(mwl_storage, result)
-        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
 
+        mwl_storage.update_status_without_transition_check(item.accession_number, "IN PROGRESS")
         mwl_storage.update_status(item.accession_number, "DISCONTINUED")
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "DISCONTINUED"
+
+    def test_update_status_without_transition_check(self, mwl_storage, result):
+        """MWL storage: Update status without transition check."""
+        item = self._insert_item(mwl_storage, result)
+
+        for status in ["DISCONTINUED", "COMPLETED", "SCHEDULED", "IN PROGRESS", "READY", "ARRIVED"]:
+            mwl_storage.update_status_without_transition_check(item.accession_number, status)
+            assert mwl_storage.get_worklist_item(item.accession_number).status == status

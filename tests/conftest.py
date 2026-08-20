@@ -204,6 +204,9 @@ def listener_payload():
                     "modality": "MG",
                     "study_description": "MAMMOGRAPHY",
                 },
+                "source_reference": {
+                    "clinic_id": "CLINIC123",
+                },
                 "accession_number": "ACC999999",
             }
         },

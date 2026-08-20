@@ -9,6 +9,7 @@ class WorklistItem:
     accession_number: str = field(
         doc="A departmental Information System generated number that identifies the Imaging Service Request.",
     )
+    clinic_id: str = field(doc="Identifier for the clinic or department where the procedure is scheduled.")
     modality: str = field(doc="Code for type of equipment that will perform the procedure.")
     patient_birth_date: str = field(doc="Date of Birth of the Patient.")
     patient_id: str = field(doc="Patient NHS Number", hash=True)

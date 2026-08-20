@@ -10,6 +10,12 @@ at call time - after the entry point's load_dotenv() has run.
 
 import os
 
+def storage_root() -> str:
+    return os.getenv("STORAGE_ROOT", "/home/steve/Development")
+
+def rubie_base_url() -> str:
+    return os.getenv("RUBIE_BASE_URL", "http://localhost:8000")
+
 
 def mwl_db_path() -> str:
     return os.getenv("MWL_DB_PATH", "/var/lib/pacs/worklist.db")
@@ -40,7 +46,7 @@ def pacs_port() -> int:
 
 
 def cloud_api_endpoint() -> str:
-    return os.getenv("CLOUD_API_ENDPOINT", "http://localhost:8000/api/v1/dicom")
+    return f"{rubie_base_url()}/api/v1/dicom"
 
 
 def log_level() -> str:
@@ -49,3 +55,18 @@ def log_level() -> str:
 
 def log_format() -> str:
     return os.getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+
+def import_directory() -> str:
+    return os.getenv("IMPORT_DIRECTORY", "/var/lib/pacs/storage/import")
+
+
+def import_poll_interval() -> float:
+    return float(os.getenv("IMPORT_POLL_INTERVAL", "30.0"))
+
+
+def store_images() -> bool:
+    return os.getenv("STORE_IMAGES", "true").lower() == "true"
+
+def export_directory() -> str:
+    return os.getenv("EXPORT_DIRECTORY", "/var/lib/pacs/storage/export")

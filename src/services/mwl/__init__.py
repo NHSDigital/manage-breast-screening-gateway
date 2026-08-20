@@ -1,5 +1,4 @@
 """Modality Worklist (MWL) services for DICOM worklist management."""
-
 from enum import Enum
 
 
@@ -11,6 +10,8 @@ class InvalidStatusTransitionError(Exception):
 
 class MWLStatus(Enum):
     SCHEDULED = "SCHEDULED"
+    ARRIVED = "ARRIVED"
+    READY = "READY"
     IN_PROGRESS = "IN PROGRESS"
     COMPLETED = "COMPLETED"
     DISCONTINUED = "DISCONTINUED"
@@ -18,7 +19,9 @@ class MWLStatus(Enum):
 
 class MWLStatusManager:
     _TRANSITIONS = {
-        MWLStatus.IN_PROGRESS: MWLStatus.SCHEDULED,
+        MWLStatus.ARRIVED: MWLStatus.SCHEDULED,
+        MWLStatus.READY: MWLStatus.ARRIVED,
+        MWLStatus.IN_PROGRESS: MWLStatus.READY,
         MWLStatus.COMPLETED: MWLStatus.IN_PROGRESS,
         MWLStatus.DISCONTINUED: MWLStatus.IN_PROGRESS,
     }

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Worklist{% endblock %}
+
+{% block content %}
+
+<h1 class="nhsuk-heading-l app-header">
+  Worklist
+</h1>
+
+{% if worklist|length > 0 %}
+{% set clinic_id = worklist[0].clinic_id %}
+<form method="post" action="/worklist/export">
+  <input type="hidden" name="clinic_id" value="{{clinic_id}}">
+  <button class="nhsuk-button" type="submit">Export DICOM</button>
+</form>
+<table class="nhsuk-table">
+  <thead class="nhsuk-table__head">
+    <tr class="nhsuk-table__row">
+      <th class="nhsuk-table__header" scope="col">Start</th>
+      <th class="nhsuk-table__header" scope="col">Details</th>
+      <th class="nhsuk-table__header" scope="col">Date of birth</th>
+      <th class="nhsuk-table__header" scope="col">Appointment status</th>
+      <th class="nhsuk-table__header" scope="col">Actions</th>
+    </tr>
+  </thead>
+  <tbody class="nhsuk-table__body">
+    {% for item in worklist %}
+    {% set patient_names = item.patient_name.split("^") %}
+    <tr class="nhsuk-table__row">
+      <td class="nhsuk-table__cell">{{ item.scheduled_time[0:2] }}:{{item.scheduled_time[2:4]}}</td>
+      <td class="nhsuk-table__cell">
+        <p class="nhsuk-u-margin-bottom-1 nhsuk-u-font-weight-bold">
+          {{ patient_names[1] }} {{ patient_names[0] }}
+        </p>
+        <p class="nhsuk-u-secondary-text-colour nhsuk-u-margin-bottom-1">
+          NHS: {{ item.patient_id }}
+        </p>
+      </td>
+      <td class="nhsuk-table__cell">{{ item.patient_birth_date[0:4] }}/{{ item.patient_birth_date[4:6] }}/{{ item.patient_birth_date[6:8] }}</td>
+      <td class="nhsuk-table__cell">{{ item.status }}</td>
+      <td class="nhsuk-table__cell">
+        {% if item.status == "ARRIVED" %}
+          <a class="nhsuk-link" href="/worklist/start/{{item.accession_number}}">Start appointment</a>
+        {% elif item.status == "SCHEDULED" %}
+          <a class="nhsuk-link" href="/worklist/check-in/{{item.accession_number}}">Check in</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No worklist items found.</p>
+<a class="nhsuk-button" href="/worklist/import">Import worklist</a>
+{% endif %}
+{% endblock %}

@@ -110,6 +110,7 @@ class DicomExample:
         ds.InstanceNumber = 1
 
         if self.view.endswith("ID"):
+            ds.BreastImplantPresent = "YES"
             view_modifier_code_sequence = Dataset()
             view_modifier_code_sequence.CodeValue = "R-102D5"
             view_modifier_code_sequence.CodingSchemeDesignator = "SRT"
@@ -175,8 +176,9 @@ class ModalityEmulator:
                                 f"Sent DICOM for {laterality}{view} of worklist item {accession_number}. Series# {series_number}"
                             )
                             series_number += 1
+                            time.sleep(1)
 
-                    time.sleep(1)  # Allow C-STORE operations to complete before updating status
+                    time.sleep(5)  # Allow C-STORE operations to complete before updating status
 
                     self.mwl_storage.update_status(accession_number, MWLStatus.COMPLETED.value)
                     logger.info(f"Completed processing for worklist item {accession_number}")

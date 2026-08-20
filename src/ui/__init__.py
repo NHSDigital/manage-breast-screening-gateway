@@ -5,38 +5,23 @@ import config
 import logging
 import os
 import time
+from services.clinic_exporter import ClinicExporter
 from services.clinic_importer import ClinicImporter
 from services.network import Rubie
 from services.storage import MWLStorage, PACSStorage
 from services.mwl import MWLStatus
 
-from logging.config import dictConfig
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-dictConfig({
-    'version': 1,
-    'formatters': {'default': {
-        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-    }},
-    'handlers': {'wsgi': {
-        'class': 'logging.StreamHandler',
-        'stream': 'ext://flask.logging.wsgi_errors_stream',
-        'formatter': 'default'
-    }},
-    'root': {
-        'level': 'INFO',
-        'handlers': ['wsgi']
-    }
-})
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 mwl_storage = MWLStorage(db_path=config.mwl_db_path())
-pacs_storage = PACSStorage(db_path=config.pacs_db_path())
+pacs_storage = PACSStorage(db_path=config.pacs_db_path(), storage_root=config.pacs_storage_path())
 
-logger = logging.getLogger(__name__)
-
+os.makedirs(config.export_directory(), exist_ok=True)
 os.makedirs(config.import_directory(), exist_ok=True)
-
 
 
 @app.route("/")
@@ -67,30 +52,48 @@ def import_worklist_post():
             flash('Please select a file to import', 'error')
             return redirect("/worklist/import")
 
-        file_path = safe_join(config.import_directory(), filename)
+        file_path = os.path.join(config.import_directory(), filename)
         file.save(file_path)
+
+        logger.info(f'Importing worklist file from {file_path}')
 
         ClinicImporter(mwl_storage, {"source": "file", "file_path": file_path}).import_data()
 
-        logger.info('Worklist file successfully imported')
+        flash('Worklist file successfully imported')
 
         return redirect("/worklist")
     except Exception as e:
         flash(f'Error importing worklist file: {str(e)}', 'error')
         return redirect("/worklist/import")
 
+@app.post("/worklist/export")
+def export_worklist():
+    try:
+        clinic_id = request.form["clinic_id"]
+        if not clinic_id:
+            flash('Clinic ID is required for export', 'error')
+            return redirect("/worklist")
+
+        exporter = ClinicExporter(mwl_storage, pacs_storage, clinic_id)
+        exporter.export_archive()
+
+        logger.info(f'Worklist for clinic {clinic_id} successfully exported to {exporter.zip_file_path}')
+
+        return send_file(exporter.zip_file_path, as_attachment=True)
+    except Exception as e:
+        flash(f'Error exporting worklist: {str(e)}', 'error')
+        return redirect("/worklist")
 
 @app.get("/worklist")
 def view_worklist():
     worklist = mwl_storage.find_worklist_items()
     return render_template("worklist.html", worklist=worklist)
 
-
 @app.get("/worklist/check-in/<accession_number>")
 def check_in(accession_number: str):
     try:
         mwl_storage.update_status(accession_number, MWLStatus.ARRIVED)
-        app.logger.info(f'Worklist item {accession_number} checked in successfully')
+        logger.info(f'Worklist item {accession_number} checked in successfully')
     except Exception as e:
         flash(f'Error checking in worklist item {accession_number}: {str(e)}')
     return redirect("/worklist")
@@ -102,7 +105,7 @@ def start_procedure(accession_number: str):
         mwl_storage.update_status(accession_number, "READY")
         item = mwl_storage.get_worklist_item(accession_number)
 
-        app.logger.info(f'Worklist item {accession_number} started successfully')
+        logger.info(f'Worklist item {accession_number} started successfully')
     except Exception as e:
         flash(f'Error starting worklist item {accession_number}: {str(e)}')
 

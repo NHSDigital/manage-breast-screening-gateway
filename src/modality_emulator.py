@@ -176,7 +176,7 @@ class ModalityEmulator:
                                 f"Sent DICOM for {laterality}{view} of worklist item {accession_number}. Series# {series_number}"
                             )
                             series_number += 1
-                            time.sleep(5)
+                            time.sleep(1)
 
                     time.sleep(5)  # Allow C-STORE operations to complete before updating status
 

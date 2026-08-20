@@ -78,6 +78,7 @@ class PACSStorage(Storage):
             db_path: Path to SQLite database
             storage_root: Root directory for DICOM file storage
         """
+        logger.info(f"Initializing PACS storage: db={db_path}, storage={storage_root}")
         super().__init__(db_path, f"{Path(__file__).parent}/init_pacs_db.sql", "stored_instances")
         self.storage_root = Path(storage_root)
         self.storage_root.mkdir(parents=True, exist_ok=True)
@@ -343,8 +344,12 @@ class MWLStorage(Storage):
                     worklist_item.__dict__,
                 )
                 conn.commit()
-        except sqlite3.IntegrityError:
-            raise WorklistItemExistsError(f"Worklist item already exists: {worklist_item.accession_number}")
+        except sqlite3.IntegrityError as e:
+            if e.args[0].startswith("UNIQUE constraint failed: worklist_items.accession_number"):
+                raise WorklistItemExistsError(f"Worklist item already exists: {worklist_item.accession_number}")
+            else:
+                logger.exception(f"Failed to store worklist item: {worklist_item.accession_number}")
+                raise
 
         return worklist_item.accession_number
 
@@ -409,7 +414,7 @@ class MWLStorage(Storage):
             params.append(patient_id)
 
         if patient_name:
-            # Convert DICOM wildcards (* → %, ? → _) to SQL LIKE syntax.
+            # Convert DICOM wildcare80c03014ab4dc307520fd69fe14567da2f3f090ds (* → %, ? → _) to SQL LIKE syntax.
             sql_pattern = patient_name.replace("*", "%").replace("?", "_")
             if sql_pattern == patient_name:  # no wildcards were present
                 where_clauses.append("UPPER(patient_name) = UPPER(?)")

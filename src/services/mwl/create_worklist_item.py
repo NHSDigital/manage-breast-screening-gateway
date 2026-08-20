@@ -19,7 +19,7 @@ class CreateWorklistItem:
             participant = item.get("participant", {})
             scheduled = item.get("scheduled", {})
             procedure = item.get("procedure", {})
-            source_reference = item.get("source_reference", {})
+            source_reference = payload.get("source_reference", {})
 
             self.storage.store_worklist_item(
                 WorklistItem(

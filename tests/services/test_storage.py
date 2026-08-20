@@ -171,6 +171,7 @@ class TestMWLStorage:
         "query_param_name, query_param_value",
         [
             ("accession_number", "ACC123456"),
+            ("clinic_id", "CLINIC123"),
             ("patient_id", "999123456"),
             ("modality", "MG"),
             ("scheduled_date", "20240101"),
@@ -190,6 +191,7 @@ class TestMWLStorage:
 
         results = mwl_storage.find_worklist_items(
             accession_number="ACC123456",
+            clinic_id="CLINIC123",
             modality="MG",
             scheduled_date="20240101",
             patient_id="999123456",

@@ -9,6 +9,11 @@
 </h1>
 
 {% if worklist|length > 0 %}
+{% set clinic_id = worklist[0].clinic_id %}
+<form method="post" action="/worklist/export">
+  <input type="hidden" name="clinic_id" value="{{clinic_id}}">
+  <button class="nhsuk-button" type="submit">Export DICOM</button>
+</form>
 <table class="nhsuk-table">
   <thead class="nhsuk-table__head">
     <tr class="nhsuk-table__row">

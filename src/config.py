@@ -10,6 +10,8 @@ at call time - after the entry point's load_dotenv() has run.
 
 import os
 
+def storage_root() -> str:
+    return os.getenv("STORAGE_ROOT", "/home/steve/Development")
 
 def rubie_base_url() -> str:
     return os.getenv("RUBIE_BASE_URL", "http://localhost:8000")
@@ -65,3 +67,6 @@ def import_poll_interval() -> float:
 
 def store_images() -> bool:
     return os.getenv("STORE_IMAGES", "true").lower() == "true"
+
+def export_directory() -> str:
+    return os.getenv("EXPORT_DIRECTORY", "/var/lib/pacs/storage/export")

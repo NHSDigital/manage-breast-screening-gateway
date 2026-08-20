@@ -19,10 +19,12 @@ class CreateWorklistItem:
             participant = item.get("participant", {})
             scheduled = item.get("scheduled", {})
             procedure = item.get("procedure", {})
+            source_reference = item.get("source_reference", {})
 
             self.storage.store_worklist_item(
                 WorklistItem(
                     accession_number=accession_number,
+                    clinic_id=source_reference.get("clinic_id"),
                     patient_id=participant.get("nhs_number"),
                     patient_name=participant.get("name"),
                     patient_birth_date=participant.get("birth_date"),

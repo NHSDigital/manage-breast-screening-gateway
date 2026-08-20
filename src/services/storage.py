@@ -332,10 +332,10 @@ class MWLStorage(Storage):
             with self._get_connection() as conn:
                 conn.execute(
                     (
-                        "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
+                        "INSERT INTO worklist_items (accession_number, clinic_id, modality, patient_birth_date, "
                         "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
                         "scheduled_time, source_message_id, study_description, study_instance_uid) "
-                        "VALUES (:accession_number, :modality, :patient_birth_date, "
+                        "VALUES (:accession_number, :clinic_id, :modality, :patient_birth_date, "
                         ":patient_id, :patient_name, :patient_sex, :procedure_code, "
                         ":scheduled_date, :scheduled_time, :source_message_id, "
                         ":study_description, :study_instance_uid)"
@@ -372,7 +372,7 @@ class MWLStorage(Storage):
             List of WorklistItem instances matching the criteria
         """
         query = (
-            "SELECT accession_number, modality, patient_birth_date, patient_id, "
+            "SELECT accession_number, clinic_id, modality, patient_birth_date, patient_id, "
             "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
             "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
             "FROM worklist_items"
@@ -455,7 +455,7 @@ class MWLStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute(
                 (
-                    "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                    "SELECT accession_number, clinic_id, modality, patient_birth_date, patient_id, "
                     "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                     "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
                     "FROM worklist_items WHERE accession_number = ?"
@@ -504,6 +504,34 @@ class MWLStorage(Storage):
                 (accession_number,),
             ).fetchone()
             return result["source_message_id"] if result is not None else None
+
+    def update_status_without_transition_check(self, accession_number: str, status: str) -> bool:
+        """
+        Update the status of a worklist item without enforcing state transitions.
+
+        Args:
+            accession_number: The accession number of the worklist item to update
+            status: Target status
+
+        Returns:
+            True if item was updated, False if not found
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                UPDATE worklist_items
+                SET status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
+                (status, accession_number),
+            )
+            conn.commit()
+
+            if cursor.rowcount == 0:
+                raise WorklistItemNotFoundError(f"Worklist item not found: {accession_number}")
+
+            return True
 
     def update_study_instance_uid(self, accession_number: str, study_instance_uid: str) -> bool:
         """
@@ -578,7 +606,7 @@ class MWLStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute(
                 (
-                    "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                    "SELECT accession_number, clinic_id, modality, patient_birth_date, patient_id, "
                     "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                     "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
                     "FROM worklist_items WHERE mpps_instance_uid = ?"

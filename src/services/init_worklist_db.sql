@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS worklist_items (
     -- Unique identifier for the scheduled procedure
     accession_number TEXT PRIMARY KEY,
 
+    -- Unique identifier for the clinic this worklist item belongs to
+    clinic_id TEXT NOT NULL,
+
     -- Patient demographics
     patient_id TEXT NOT NULL,
     patient_name TEXT NOT NULL,              -- DICOM format: FAMILY^GIVEN

@@ -89,7 +89,7 @@ From here, follow the onboarding runbook against **prod**:
 
 1. **Grant API access** — `make prod assign-arc-app-roles` ([Step 3](./onboard-hospital-vm.md#step-3--grant-api-access)). This assigns `Gateway.Access` on `spn-manbrs-web-api-prod` to the machine's new prod managed identity. The old pre-prod assignment is irrelevant (different identity) and is cleaned up in Step 6.
 2. **Provision the Hybrid Connection** — run **Deploy Arc Infrastructure - prod** ([Step 4](./onboard-hospital-vm.md#step-4--trigger-terraform-to-provision-the-hybrid-connection)). Creates `hc-gw-<...>-rwa-01` in `relay-manbrs-prod`.
-3. **Deploy the application** — run **Deploy Gateway - prod** with a **released** `releaseTag` (not a pre-prod build) ([Step 5](./onboard-hospital-vm.md#step-5--deploy-the-gateway-application)). This writes a fresh prod `.env` (prod relay namespace, `CLOUD_API_HOSTNAME=manage-breast-screening.nhs.uk`, prod AE titles), fully replacing the pre-prod `.env`.
+3. **Deploy the application** — run **Deploy Gateway - prod** with a **released** `releaseTag` (not a pre-prod build) ([Step 5](./onboard-hospital-vm.md#step-5--deploy-the-gateway-application)). This writes a fresh prod `.env` (prod relay namespace, `CLOUD_API_HOSTNAME=run-breast-screening.nhs.uk`, prod AE titles), fully replacing the pre-prod `.env`.
 4. **Update prod Rubie's `Gateway` record with the machine's new identity.** Re-onboarding created a **new managed identity** — the pre-prod OID is dead. Image uploads are authorised against `Gateway.oid`, so until this is updated every upload will be rejected with a 403. Get the new principal ID and set it on the Gateway record in the prod Django admin:
 
    ```bash

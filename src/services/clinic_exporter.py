@@ -2,6 +2,7 @@ import json
 import os
 from pathlib import Path
 from zipfile import ZipFile
+from werkzeug.utils import secure_filename
 import config
 from services.storage import MWLStorage, PACSStorage
 
@@ -11,7 +12,10 @@ class ClinicExporter:
         self.mwl_storage = mwl_storage
         self.pacs_storage = pacs_storage
         self.clinic_id = clinic_id
-        self.zip_file_path = Path(config.export_directory()) / f"clinic-export-{self.clinic_id}.zip"
+        safe_clinic_id = secure_filename(clinic_id)
+        if safe_clinic_id == "":
+            raise ValueError("Invalid clinic_id")
+        self.zip_file_path = Path(config.export_directory()) / f"clinic-export-{safe_clinic_id}.zip"
 
     def export_archive(self):
         worklist_items = self.mwl_storage.find_worklist_items(clinic_id=self.clinic_id)

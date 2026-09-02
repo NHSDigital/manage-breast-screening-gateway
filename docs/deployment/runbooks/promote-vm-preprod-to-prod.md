@@ -36,10 +36,10 @@ hostname
 Get-Service Gateway-* | Format-Table Name, Status
 ```
 
-Then run the cleanup script, which stops and removes the services and **removes the installation directory including all pre-prod data** (`worklist.db`, `pacs.db`, `data\storage`):
+Copy [scripts/powershell/cleanup.ps1]() to the VM, and to a directory outside of the gateway installation. Then run from an elevated PowerShell session. This stops and removes the services and **removes the installation directory including all pre-prod data** (`worklist.db`, `pacs.db`, `data\storage`):
 
 ```powershell
-.\scripts\powershell\cleanup.ps1
+.\cleanup.ps1
 ```
 
 **Verify**: no `Gateway-*` services remain and `C:\Program Files\NHS\ManageBreastScreeningGateway` is gone (see [Cleanup runbook — Verify](./cleanup.md)):
@@ -54,10 +54,10 @@ Test-Path 'C:\Program Files\NHS\ManageBreastScreeningGateway'   # must be False
 Still on the VM, elevated:
 
 ```powershell
-azcmagent disconnect
+azcmagent disconnect --force-local-only
 ```
 
-This removes the machine's registration from the pre-prod resource group. The Arc **agent stays installed** — only the registration is removed, so re-onboarding in Step 3 skips the agent install.
+This removes the machine's registration from the local Arc agent. The Arc **agent stays installed** — only the registration is removed, so re-onboarding in Step 3 skips the agent install. The machine's registration will still exist in the pre-prod subscription until the pre-prod Arc resource group is cleaned up in Step 6.
 
 **Verify**: `azcmagent show` reports the agent as **Disconnected**.
 
@@ -66,19 +66,7 @@ This removes the machine's registration from the pre-prod resource group. The Ar
 This is [Onboarding runbook Step 2](./onboard-hospital-vm.md#step-2--run-arc-onboarding-script-on-the-gateway-vm) with **prod parameters**. The site parameters (`SiteName`, `ODSCode`, `Instance`) are unchanged, so the Arc resource name is identical — but it is now created in the prod resource group.
 
 ```powershell
-.\arc-setup.ps1 `
-    -SubscriptionId         "<prod-spoke-subscription-id>" `
-    -TenantId               "<tenant-id>" `
-    -ResourceGroup          "rg-mbsgw-prod-uks-arc-enabled-servers" `
-    -Location               "uksouth" `
-    -ServicePrincipalId     "<arc-onboarding-spn-client-id>" `
-    -ServicePrincipalSecret "<prod-arc-onboarding-spn-client-secret>" `
-    -SiteName               "Hull-University-Teaching-Hospitals-NHS-Trust" `
-    -ODSCode                "RWA" `
-    -Instance               "01" `
-    -NHSRegion              "neyh" `
-    -SiteType               "static" `
-    -DeploymentRing         "ring1"
+.\arc-setup.ps1 -SubscriptionId "<prod-spoke-subscription-id>" -TenantId "<tenant-id>" -ResourceGroup "rg-mbsgw-prod-uks-arc-enabled-servers" -Location "uksouth" -ServicePrincipalId "<arc-onboarding-spn-client-id>" -ServicePrincipalSecret "<prod-arc-onboarding-spn-client-secret>" -SiteName "Hull-University-Teaching-Hospitals-NHS-Trust" -ODSCode "RWA" -Instance "01" -NHSRegion "neyh" -SiteType "static" -DeploymentRing "ring1"
 ```
 
 **Verify**: in the Azure portal, `rg-mbsgw-prod-uks-arc-enabled-servers` → Azure Arc machines → `gw-<...>-rwa-01` is **Connected**.

@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS worklist_items (
     -- Unique identifier for the scheduled procedure
     accession_number TEXT PRIMARY KEY,
 
+    -- Unique identifier for the clinic this worklist item belongs to
+    clinic_id TEXT NOT NULL,
+
     -- Patient demographics
     patient_id TEXT NOT NULL,
     patient_name TEXT NOT NULL,              -- DICOM format: FAMILY^GIVEN
@@ -26,7 +29,7 @@ CREATE TABLE IF NOT EXISTS worklist_items (
     procedure_code TEXT,
 
     -- Status tracking
-    status TEXT DEFAULT 'SCHEDULED' CHECK(status IN ('SCHEDULED', 'IN PROGRESS', 'COMPLETED', 'DISCONTINUED')),
+    status TEXT DEFAULT 'SCHEDULED' CHECK(status IN ('SCHEDULED', 'ARRIVED', 'READY', 'IN PROGRESS', 'COMPLETED', 'DISCONTINUED')),
 
     -- DICOM identifiers
     study_instance_uid TEXT,

@@ -193,7 +193,9 @@ class TestEndToEndRelayToUpload:
             pacs_server.stop()
 
         # Verify image was stored
-        instance = pacs_storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
+        instances = pacs_storage.get_instances_by_accession(TEST_ACCESSION_NUMBER)
+        assert len(instances) == 1
+        instance = instances[0]
         assert instance is not None, "DICOM instance not found in storage"
         assert instance["accession_number"] == TEST_ACCESSION_NUMBER
         assert instance["patient_id"] == TEST_PATIENT_ID

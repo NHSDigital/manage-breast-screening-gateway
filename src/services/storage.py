@@ -1,3 +1,4 @@
+import glob
 import hashlib
 import logging
 import os
@@ -77,13 +78,14 @@ class PACSStorage(Storage):
             db_path: Path to SQLite database
             storage_root: Root directory for DICOM file storage
         """
+        logger.info(f"Initializing PACS storage: db={db_path}, storage={storage_root}")
         super().__init__(db_path, f"{Path(__file__).parent}/init_pacs_db.sql", "stored_instances")
         self.storage_root = Path(storage_root)
         self.storage_root.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"PACS storage initialized: db={db_path}, storage={storage_root}")
 
-    def _compute_storage_path(self, sop_instance_uid: str) -> str:
+    def _compute_storage_path(self, sop_instance_uid: str, suffix: str = "dcm") -> str:
         """
         Compute hash-based storage path for a SOP Instance UID.
 
@@ -99,7 +101,7 @@ class PACSStorage(Storage):
         # Hash the UID to get consistent path
         hex = hashlib.sha256(sop_instance_uid.encode()).hexdigest()
 
-        return f"{hex[:2]}/{hex[2:4]}/{hex[:16]}.dcm"
+        return f"{hex[:2]}/{hex[2:4]}/{hex[:16]}.{suffix}"
 
     def store_instance(
         self, sop_instance_uid: str, file_data: bytes, metadata: Dict, source_aet: str = "UNKNOWN"
@@ -163,11 +165,11 @@ class PACSStorage(Storage):
             )
             return cursor.fetchone() is not None
 
-    def store_file(self, sop_instance_uid: str, file_data: bytes) -> tuple[str, Path, int, str]:
+    def store_file(self, sop_instance_uid: str, file_data: bytes, suffix: str = "dcm") -> tuple[str, Path, int, str]:
         """
         Store file data on disk in hash-based directory structure.
         """
-        rel_path = self._compute_storage_path(sop_instance_uid)
+        rel_path = self._compute_storage_path(sop_instance_uid, suffix=suffix)
         abs_path = self.storage_root / rel_path
 
         abs_path.parent.mkdir(parents=True, exist_ok=True)
@@ -199,8 +201,8 @@ class PACSStorage(Storage):
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def get_instance_by_accession(self, accession_number: str) -> Optional[Dict]:
-        """Get a stored instance by accession number."""
+    def get_instances_by_accession(self, accession_number: str) -> List[Dict]:
+        """Get a stored instances by accession number."""
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
@@ -212,8 +214,17 @@ class PACSStorage(Storage):
                 """,
                 (accession_number,),
             )
-            row = cursor.fetchone()
-            return dict(row) if row else None
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_image_paths_by_accession_number(self, accession_number: str) -> List[str]:
+        """Get paths to stored images by accession number."""
+        image_paths = []
+        for instance in self.get_instances_by_accession(accession_number):
+            matches = glob.glob(f"{self.storage_root}/{instance['storage_path'][:-4]}*.jpg")
+            for match in matches:
+                image_paths.append(os.path.relpath(match, self.storage_root))
+
+        return image_paths
 
     def get_pending_uploads(self, limit: int = 10, max_retries: int = 3) -> List[Dict]:
         """Get stored instances pending upload"""
@@ -322,10 +333,10 @@ class MWLStorage(Storage):
             with self._get_connection() as conn:
                 conn.execute(
                     (
-                        "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
+                        "INSERT INTO worklist_items (accession_number, clinic_id, modality, patient_birth_date, "
                         "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
                         "scheduled_time, source_message_id, study_description, study_instance_uid) "
-                        "VALUES (:accession_number, :modality, :patient_birth_date, "
+                        "VALUES (:accession_number, :clinic_id, :modality, :patient_birth_date, "
                         ":patient_id, :patient_name, :patient_sex, :procedure_code, "
                         ":scheduled_date, :scheduled_time, :source_message_id, "
                         ":study_description, :study_instance_uid)"
@@ -333,14 +344,19 @@ class MWLStorage(Storage):
                     worklist_item.__dict__,
                 )
                 conn.commit()
-        except sqlite3.IntegrityError:
-            raise WorklistItemExistsError(f"Worklist item already exists: {worklist_item.accession_number}")
+        except sqlite3.IntegrityError as e:
+            if e.args[0].startswith("UNIQUE constraint failed: worklist_items.accession_number"):
+                raise WorklistItemExistsError(f"Worklist item already exists: {worklist_item.accession_number}")
+            else:
+                logger.exception(f"Failed to store worklist item: {worklist_item.accession_number}")
+                raise
 
         return worklist_item.accession_number
 
     def find_worklist_items(
         self,
         accession_number: Optional[str] = None,
+        clinic_id: Optional[str] = None,
         modality: Optional[str] = None,
         scheduled_date: Optional[str] = None,
         scheduled_time: Optional[str] = None,
@@ -352,6 +368,7 @@ class MWLStorage(Storage):
 
         Args:
             accession_number: Filter by accession number
+            clinic_id: Filter by clinic ID
             modality: Filter by modality (e.g., "MG")
             scheduled_date: Filter by scheduled date (YYYYMMDD, or range like "20240101-20240131")
             scheduled_time: Filter by scheduled time (HHMMSS, or range like "080000-170000")
@@ -362,7 +379,7 @@ class MWLStorage(Storage):
             List of WorklistItem instances matching the criteria
         """
         query = (
-            "SELECT accession_number, modality, patient_birth_date, patient_id, "
+            "SELECT accession_number, clinic_id, modality, patient_birth_date, patient_id, "
             "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
             "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
             "FROM worklist_items"
@@ -373,6 +390,10 @@ class MWLStorage(Storage):
         if accession_number:
             where_clauses.append("accession_number = ?")
             params.append(accession_number)
+
+        if clinic_id:
+            where_clauses.append("clinic_id = ?")
+            params.append(clinic_id)
 
         if modality:
             where_clauses.append("modality = ?")
@@ -393,7 +414,7 @@ class MWLStorage(Storage):
             params.append(patient_id)
 
         if patient_name:
-            # Convert DICOM wildcards (* → %, ? → _) to SQL LIKE syntax.
+            # Convert DICOM wildcare80c03014ab4dc307520fd69fe14567da2f3f090ds (* → %, ? → _) to SQL LIKE syntax.
             sql_pattern = patient_name.replace("*", "%").replace("?", "_")
             if sql_pattern == patient_name:  # no wildcards were present
                 where_clauses.append("UPPER(patient_name) = UPPER(?)")
@@ -445,7 +466,7 @@ class MWLStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute(
                 (
-                    "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                    "SELECT accession_number, clinic_id, modality, patient_birth_date, patient_id, "
                     "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                     "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
                     "FROM worklist_items WHERE accession_number = ?"
@@ -494,6 +515,34 @@ class MWLStorage(Storage):
                 (accession_number,),
             ).fetchone()
             return result["source_message_id"] if result is not None else None
+
+    def update_status_without_transition_check(self, accession_number: str, status: str) -> bool:
+        """
+        Update the status of a worklist item without enforcing state transitions.
+
+        Args:
+            accession_number: The accession number of the worklist item to update
+            status: Target status
+
+        Returns:
+            True if item was updated, False if not found
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                """
+                UPDATE worklist_items
+                SET status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE accession_number = ?
+            """,
+                (status, accession_number),
+            )
+            conn.commit()
+
+            if cursor.rowcount == 0:
+                raise WorklistItemNotFoundError(f"Worklist item not found: {accession_number}")
+
+            return True
 
     def update_study_instance_uid(self, accession_number: str, study_instance_uid: str) -> bool:
         """
@@ -568,7 +617,7 @@ class MWLStorage(Storage):
         with self._get_connection() as conn:
             cursor = conn.execute(
                 (
-                    "SELECT accession_number, modality, patient_birth_date, patient_id, "
+                    "SELECT accession_number, clinic_id, modality, patient_birth_date, patient_id, "
                     "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
                     "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
                     "FROM worklist_items WHERE mpps_instance_uid = ?"

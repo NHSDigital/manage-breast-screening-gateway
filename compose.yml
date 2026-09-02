@@ -116,6 +116,27 @@ services:
     restart: unless-stopped
     network_mode: host
 
+  gateway-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gateway-ui
+    command: ["uv", "run", "flask", "--app", "src/ui", "run" ]
+    volumes:
+      - pacs-storage:/var/lib/pacs/storage
+      - pacs-db:/var/lib/pacs
+    environment:
+      - IMPORT_DIRECTORY=/var/lib/pacs/storage/import
+      - PACS_DB_PATH=/var/lib/pacs/pacs.db
+      - PACS_STORAGE_PATH=/var/lib/pacs/storage
+      - MWL_DB_PATH=/var/lib/pacs/worklist.db
+      - LOG_LEVEL=INFO
+    depends_on:
+      mwl:
+        condition: service_healthy
+    restart: unless-stopped
+    network_mode: host
+
 volumes:
   pacs-storage:
     driver: local

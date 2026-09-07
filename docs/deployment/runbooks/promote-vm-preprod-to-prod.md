@@ -24,6 +24,7 @@ So you cannot promote by editing `.env`. The machine must be **disconnected from
 - [ ] **DHCP reservation confirmed** for the VM, so the IP the modality targets cannot change between decommission and go-live.
 - [ ] **Modality engineer briefed** that the gateway **AE titles change** (see [Step 5](#step-5--reconfigure-the-modality-on-site)) and the modality must be reconfigured and re-tested on the day.
 - [ ] **Fresh prod Arc onboarding SPN secret** created per [Onboarding — Step 0](./onboard-hospital-vm.md#step-0--create-a-temporary-onboarding-secret) — on the day (24h expiry), shared only during the call.
+- [ ] **Pre-prod cleanup script available on VM** — the `cleanup.ps1` script is in the repo at `scripts\powershell\cleanup.ps1`. Check that `C:\ArcSetup\scripts\powershell\cleanup.ps1` is present beforehand.
 
 ---
 
@@ -39,7 +40,7 @@ Get-Service Gateway-* | Format-Table Name, Status
 Then run the cleanup script, which stops and removes the services and **removes the installation directory including all pre-prod data** (`worklist.db`, `pacs.db`, `data\storage`):
 
 ```powershell
-.\scripts\powershell\cleanup.ps1
+C:\ArcSetup\scripts\powershell\cleanup.ps1
 ```
 
 **Verify**: no `Gateway-*` services remain and `C:\Program Files\NHS\ManageBreastScreeningGateway` is gone (see [Cleanup runbook — Verify](./cleanup.md)):
@@ -54,10 +55,10 @@ Test-Path 'C:\Program Files\NHS\ManageBreastScreeningGateway'   # must be False
 Still on the VM, elevated:
 
 ```powershell
-azcmagent disconnect
+azcmagent disconnect --force-local-only
 ```
 
-This removes the machine's registration from the pre-prod resource group. The Arc **agent stays installed** — only the registration is removed, so re-onboarding in Step 3 skips the agent install.
+This removes the machine's registration from the local Arc agent. The Arc **agent stays installed** — you will need to remove the pre-prod Arc resource from Azure portal or Terraform, but the VM can be re-onboarded into prod without reinstalling the agent.
 
 **Verify**: `azcmagent show` reports the agent as **Disconnected**.
 
@@ -101,11 +102,7 @@ From here, follow the onboarding runbook against **prod**:
 
    While in the admin, confirm the `Relay` record's **Setting** matches the site's clinics' Setting — a mismatch silently routes every appointment to the manual-images flow.
 
-**Verify**: the [onboarding acceptance criteria](./onboard-hospital-vm.md#step-6--verify-acceptance-criteria) — all four services Running, ports listening, **and the relay log ends with `Connected - waiting for worklist actions...`**. A Running service that never logs `Connected` is not healthy. Do not rely on the Log Analytics heartbeat (VM telemetry export is a known issue at the time of writing). Also confirm the databases start empty:
-
-```powershell
-& 'C:\Program Files\NHS\ManageBreastScreeningGateway\current\.venv\Scripts\python.exe' -c "import sqlite3; print('worklist rows:', sqlite3.connect(r'C:\Program Files\NHS\ManageBreastScreeningGateway\data\worklist.db').execute('SELECT count(*) FROM worklist_items').fetchone()[0])"
-```
+**Verify**: the [onboarding acceptance criteria](./onboard-hospital-vm.md#step-6--verify-acceptance-criteria) — all four services Running, ports listening, **and the relay log ends with `Connected - waiting for worklist actions...`**. A Running service that never logs `Connected` is not healthy.
 
 ## Step 5 — Reconfigure the modality
 

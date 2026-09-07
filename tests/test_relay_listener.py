@@ -187,6 +187,35 @@ class TestRelayListener:
             )
         )
 
+    def test_process_create_test_item_action_without_emulation(self, storage_instance, listener_payload):
+        """Process create test item action with emulate_modality:false payload parameter."""
+        subject = RelayListener(storage_instance)
+        payload = dict(listener_payload)
+        payload["parameters"]["emulate_modality"] = False
+        payload["action_type"] = "worklist.create_test_item"
+
+        with patch.object(subject, "process_with_modality_emulator") as mock_emulator:
+            response = subject.process_action(payload)
+
+        assert response == {"action_id": "action-12345", "status": "created"}
+
+        storage_instance.store_worklist_item.assert_called_once_with(
+            WorklistItem(
+                accession_number="ACC999999",
+                patient_id="999123456",
+                patient_name="SMITH^JANE",
+                patient_birth_date="19900202",
+                patient_sex="F",
+                scheduled_date="20240615",
+                scheduled_time="101500",
+                modality="MG",
+                study_description="MAMMOGRAPHY",
+                source_message_id="action-12345",
+            )
+        )
+
+        mock_emulator.assert_not_called()
+
     def test_process_create_test_item_action_without_patient_name_returns_error(
         self, storage_instance, listener_payload
     ):

@@ -157,7 +157,8 @@ class RelayListener:
                     "message": ("No patient name provided for ModalityEmulator test item processing"),
                 }
 
-            self.process_with_modality_emulator(patient_name=patient_name)
+            if payload.get("parameters", {}).get("emulate_modality", True):
+                self.process_with_modality_emulator(patient_name=patient_name)
 
             return result
         if action_name == "worklist.update_status":

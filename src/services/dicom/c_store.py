@@ -18,15 +18,15 @@ class CStore:
     def __init__(
         self,
         storage: PACSStorage,
+        mwl_storage: MWLStorage,
         compressor: ImageCompressor | None = None,
         validator: DicomValidator | None = None,
-        mwl_storage: MWLStorage | None = None,
         notifier: ValidationFailureNotifier | None = None,
     ):
         self.storage = storage
+        self.mwl_storage = mwl_storage
         self.compressor = compressor or ImageCompressor()
         self.validator = validator or DicomValidator()
-        self.mwl_storage = mwl_storage
         self.notifier = notifier or ValidationFailureNotifier()
 
     def call(self, event: Event) -> int:
@@ -39,14 +39,25 @@ class CStore:
             patient_id = ds.get("PatientID")
             patient_name = str(ds.get("PatientName", ""))
 
+            source_message_id = self.mwl_storage.get_source_message_id(accession_number)
+
+            if not source_message_id:
+                logger.error(f"No worklist item found for accession number {accession_number!r}")
+                return FAILURE
+
+            if not accession_number:
+                logger.error("Missing AccessionNumber")
+                self._notify_failure(source_message_id, "Missing AccessionNumber")
+                return FAILURE
+
             if not sop_instance_uid:
                 logger.error("Missing SOPInstanceUID")
-                self._notify_failure(accession_number, "Missing SOPInstanceUID")
+                self._notify_failure(source_message_id, "Missing SOPInstanceUID")
                 return FAILURE
 
             if not patient_id:
                 logger.error("Missing PatientID")
-                self._notify_failure(accession_number, "Missing PatientID")
+                self._notify_failure(source_message_id, "Missing PatientID")
                 return FAILURE
 
             # Validate dataset before compression
@@ -55,7 +66,7 @@ class CStore:
                 self.validator.validate_pixel_data(ds)
             except DicomValidationError as e:
                 logger.error(f"DICOM validation failed: {e}")
-                self._notify_failure(accession_number, f"DICOM validation failed: {e}")
+                self._notify_failure(source_message_id, f"DICOM validation failed: {e}")
                 return FAILURE
 
             # Compress dataset before storing
@@ -67,7 +78,7 @@ class CStore:
                 self.validator.validate_bytes(dicom_bytes)
             except DicomValidationError as e:
                 logger.error(f"Serialized DICOM invalid: {e}")
-                self._notify_failure(accession_number, f"Serialized DICOM invalid: {e}")
+                self._notify_failure(source_message_id, f"Serialized DICOM invalid: {e}")
                 return FAILURE
 
             self.storage.store_instance(
@@ -107,15 +118,6 @@ class CStore:
         except Exception as e:
             logger.error(f"Failed to mark worklist item in progress: {e}", exc_info=True)
 
-    def _notify_failure(self, accession_number: str, error: str) -> None:
-        if not self.mwl_storage or not self.notifier:
-            return
-
-        source_message_id = self.mwl_storage.get_source_message_id(accession_number)
-        if not source_message_id:
-            logger.warning(
-                f"Cannot report validation failure: no worklist item found for accession {accession_number!r}"
-            )
-            return
-
-        self.notifier.notify(source_message_id, error)
+    def _notify_failure(self, source_message_id: str, error: str) -> None:
+        if self.notifier:
+            self.notifier.notify(source_message_id, error)

@@ -165,7 +165,7 @@ class TestEndToEndRelayToUpload:
         pacs_server.start()
         try:
             # Generate a DICOM file with matching accession number
-            dicom_file = generate_random_dicom_file(modality_type="MG")
+            dicom_file = generate_random_dicom_file(TEST_ACCESSION_NUMBER)
 
             # Modify the file to use our test accession number
             import pydicom

@@ -22,11 +22,11 @@ from pynetdicom.sop_class import (
 )
 
 
-def generate_random_dicom_file(modality_type="MG"):
+def generate_random_dicom_file(accession_number):
     """
     Handler function to generate a random DICOM mammography file with basic image data
 
-    :param modality_type: Type of modality (defaults to MG for mammography)
+    :param accession_number: Accession number to assign to the DICOM file
     :return: Path to the generated DICOM file
     """
     # Create a temporary file
@@ -59,12 +59,12 @@ def generate_random_dicom_file(modality_type="MG"):
     ds.StudyTime = datetime.datetime.now().strftime("%H%M%S")
     ds.StudyInstanceUID = generate_uid()
     ds.StudyID = f"STUDY{random.randint(1000, 9999)}"
-    ds.AccessionNumber = f"ACC{random.randint(100000, 999999)}"
+    ds.AccessionNumber = accession_number
 
     # Series information
     ds.SeriesInstanceUID = generate_uid()
     ds.SeriesNumber = random.randint(1, 100)
-    ds.Modality = modality_type
+    ds.Modality = "MG"
 
     # Image information
     ds.InstanceNumber = random.randint(1, 1000)
@@ -109,7 +109,6 @@ def generate_random_dicom_file(modality_type="MG"):
     ds.file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
     dcmwrite(file_path, ds, enforce_file_format=False)
 
-    logging.getLogger(__name__).info(f"Generated DICOM file: {file_path} with modality {modality_type}")
     return file_path
 
 
@@ -176,7 +175,7 @@ def send_dicom_file_to_server(
 
 
 def send_random_dicom_series(
-    num_files,
+    accession_numbers,
     server_address,
     server_port,
     server_ae_title,
@@ -186,7 +185,7 @@ def send_random_dicom_series(
     """
     Handler function to generate and send multiple random DICOM files as a series
 
-    :param num_files: Number of DICOM files to generate and send
+    :param accession_numbers: List of accession numbers for the DICOM files
     :param server_address: IP address of the DICOM server
     :param server_port: Port of the DICOM server
     :param server_ae_title: AE title of the DICOM server
@@ -197,26 +196,25 @@ def send_random_dicom_series(
     success_count = 0
     logger = logging.getLogger(__name__)
 
-    for i in range(num_files):
+    num_files = len(accession_numbers)
+
+    for accession_number in accession_numbers:
         try:
             # Generate random DICOM file
-            dicom_file = generate_random_dicom_file(modality_type)
+            dicom_file = generate_random_dicom_file(accession_number)
 
             # Send to server
             success = send_dicom_file_to_server(dicom_file, server_address, server_port, server_ae_title, ae_title)
 
             if success:
                 success_count += 1
-                logger.info(f"Successfully sent file {i + 1}/{num_files}")
-            else:
-                logger.error(f"Failed to send file {i + 1}/{num_files}")
 
             # Remove temporary file after sending
             if os.path.exists(dicom_file):
                 os.remove(dicom_file)
 
         except Exception as e:
-            logger.error(f"Error processing file {i + 1}: {e}")
+            logger.error(f"Error processing {accession_number}: {e}")
 
     logger.info(f"Sent {success_count}/{num_files} files successfully")
     return success_count

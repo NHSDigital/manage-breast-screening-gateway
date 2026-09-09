@@ -25,7 +25,7 @@
 | `*.arc.azure.com`, `*.his.arc.azure.com` | Azure Arc management |
 | `management.azure.com`, `login.microsoftonline.com` | Azure control plane / identity |
 | `relay-manbrs-<env>.servicebus.windows.net` | Worklist delivery (outbound-initiated listener) |
-| `<env hostname, e.g. manage-breast-screening.nhs.uk>` | Image upload to the national service |
+| `<env hostname, e.g. run-breast-screening.nhs.uk>` | Image upload to the national service |
 | `*.in.applicationinsights.azure.com`, `*.livediagnostics.monitor.azure.com` | Service telemetry |
 | `community.chocolatey.org`, `www.python.org`, `astral.sh`, `github.com`, `objects.githubusercontent.com`, `download.microsoft.com` | Deployment-time software downloads |
 

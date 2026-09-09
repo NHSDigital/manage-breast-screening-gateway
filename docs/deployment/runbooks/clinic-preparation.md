@@ -11,9 +11,11 @@
       (check the deploy pipeline history, or `current` junction target on the VM),
       and any Manage changes the clinic depends on are in prod.
 - [ ] **Feature flag**: `gateway_images` is **on** for prod — it lives in
-      **`flags.production.yml` in the Manage repo**.
+      **`flags.production.yml` in the Manage repo**. This is the subsystem-wide
+      kill switch; the per-site control is on the `Relay` record (next item).
 - [ ] **Prod Manage records**: `Gateway` record with the machine's managed-identity
-      OID; `Relay` record whose **Setting matches the clinic's Setting**.
+      OID; `Relay` record whose **Setting matches the clinic's Setting** and whose
+      **Enabled** box is ticked.
 - [ ] **Test data prepared with fresh accession numbers** — never reuse a previous
       clinic's CSV: Manage's per-gateway accession uniqueness rejects reused values,
       and gateway-side reuse serves stale participant data.
@@ -36,7 +38,11 @@
   - the **hospital contact** who can operate the modality and physically reach the VM
   - RDP to the VM if the hospital can provide it (live tails beat run-commands)
 - [ ] **Fallback agreed**: if the gateway flow breaks mid-clinic, the manual-images
-      flow carries the clinic and debugging happens without time pressure.
+      flow carries the clinic and debugging happens without time pressure. To put
+      the **whole site** on manual immediately, untick **Enabled** on the
+      site's `Relay` record in Django admin and record why in **Status reason** —
+      effective for new appointments straight away, no deploy, other sites
+      unaffected.
 - [ ] **No stale Arc run-commands queued** on the machine
       (`az connectedmachine run-command list -o table`; delete non-terminal stragglers —
       they block deploys and diagnostics).

@@ -10,7 +10,6 @@ from services.dicom.c_store import CStore
 from services.dicom.image_compressor import ImageCompressor
 from services.dicom.validation_failure_notifier import ValidationFailureNotifier
 from services.dicom.validator import DicomValidationError, DicomValidator
-from services.storage import MWLStorage
 
 
 class TestCStore:
@@ -37,32 +36,53 @@ class TestCStore:
     def mock_storage(self, mock_pacs_storage):
         return mock_pacs_storage.return_value
 
-    def test_no_sop_instance_uid_fails(self, mock_storage, mock_event):
+    @pytest.fixture
+    @patch(f"{CStore.__module__}.MWLStorage")
+    def mock_mwl(self, mock_mwl):
+        mwl_storage = mock_mwl.return_value
+        mwl_storage.get_source_message_id.return_value = "action-uuid-123"
+        return mwl_storage
+
+    def test_no_worklist_item_fails(self, mock_storage, mock_mwl, mock_event):
+        """No worklist item fails."""
+        mock_mwl.get_source_message_id.return_value = None
+        subject = CStore(mock_storage, mock_mwl)
+
+        assert subject.call(mock_event) == FAILURE
+
+    def test_no_sop_instance_uid_fails(self, mock_storage, mock_mwl, mock_event):
         """No SOP instance UID fails."""
-        subject = CStore(mock_storage)
+        subject = CStore(mock_storage, mock_mwl)
         mock_event.dataset.SOPInstanceUID = None
 
         assert subject.call(mock_event) == FAILURE
 
-    def test_no_patient_id_fails(self, mock_storage, mock_event):
+    def test_no_accession_number_fails(self, mock_storage, mock_mwl, mock_event):
+        """No accession number fails."""
+        subject = CStore(mock_storage, mock_mwl)
+        mock_event.dataset.AccessionNumber = None
+
+        assert subject.call(mock_event) == FAILURE
+
+    def test_no_patient_id_fails(self, mock_storage, mock_mwl, mock_event):
         """No patient id fails."""
-        subject = CStore(mock_storage)
+        subject = CStore(mock_storage, mock_mwl)
         mock_event.dataset.PatientID = None
 
         assert subject.call(mock_event) == FAILURE
 
-    def test_existing_sop_instance_uid(self, mock_storage, mock_event):
+    def test_existing_sop_instance_uid(self, mock_storage, mock_mwl, mock_event):
         """Existing SOP instance UID."""
         mock_storage.store_instance.side_effect = pydicom.uid.generate_uid()
-        subject = CStore(mock_storage)
+        subject = CStore(mock_storage, mock_mwl)
 
         assert subject.call(mock_event) == SUCCESS
         mock_storage.store_instance.assert_called_once()
 
-    def test_valid_event_is_stored(self, mock_storage, mock_event):
+    def test_valid_event_is_stored(self, mock_storage, mock_mwl, mock_event):
         """Valid event is stored."""
         mock_storage.instance_exists.return_value = False
-        subject = CStore(mock_storage)
+        subject = CStore(mock_storage, mock_mwl)
 
         assert subject.call(mock_event) == SUCCESS
 
@@ -77,10 +97,10 @@ class TestCStore:
         }
         assert call_args[0][3] == "ae-title"  # AE Title
 
-    def test_storage_error_fails(self, mock_storage, mock_event):
+    def test_storage_error_fails(self, mock_storage, mock_mwl, mock_event):
         """Storage error fails."""
         mock_storage.store_instance.side_effect = Exception("Nooooo!")
-        subject = CStore(mock_storage)
+        subject = CStore(mock_storage, mock_mwl)
 
         assert subject.call(mock_event) == FAILURE
 
@@ -92,22 +112,22 @@ class TestCStore:
         """C-STORE: Success hexcode."""
         assert SUCCESS == 0x0000
 
-    def test_compressor_is_called(self, mock_storage, mock_event):
+    def test_compressor_is_called(self, mock_storage, mock_mwl, mock_event):
         """Compressor is called."""
         mock_storage.instance_exists.return_value = False
         mock_compressor = Mock(spec=ImageCompressor)
         mock_compressor.compress.return_value = mock_event.dataset
 
-        subject = CStore(mock_storage, compressor=mock_compressor)
+        subject = CStore(mock_storage, mock_mwl, compressor=mock_compressor)
         assert subject.call(mock_event) == SUCCESS
 
         mock_compressor.compress.assert_called_once()
 
-    def test_compression_applied_on_storage(self, mock_storage, mock_event):
+    def test_compression_applied_on_storage(self, mock_storage, mock_mwl, mock_event):
         """Verify images are compressed before storage (integration test with real compressor)."""
         mock_storage.instance_exists.return_value = False
         # Use real ImageCompressor to verify end-to-end compression
-        subject = CStore(mock_storage, compressor=ImageCompressor())
+        subject = CStore(mock_storage, mock_mwl, compressor=ImageCompressor())
 
         assert subject.call(mock_event) == SUCCESS
 
@@ -116,55 +136,49 @@ class TestCStore:
         stored_ds = pydicom.dcmread(BytesIO(stored_bytes), force=True)
         assert stored_ds.file_meta.TransferSyntaxUID == JPEG2000
 
-    def test_validation_failure_notifies_manage(self, mock_storage, mock_event):
+    def test_validation_failure_notifies_manage(self, mock_storage, mock_mwl, mock_event):
         """When validation fails and accession is in MWL, notify manage."""
         mock_validator = Mock(spec=DicomValidator)
         mock_validator.validate_dataset.side_effect = DicomValidationError("Missing required tag")
 
-        mock_mwl = Mock(spec=MWLStorage)
         mock_mwl.get_source_message_id.return_value = "action-uuid-123"
 
         mock_notifier = Mock(spec=ValidationFailureNotifier)
 
-        subject = CStore(mock_storage, validator=mock_validator, mwl_storage=mock_mwl, notifier=mock_notifier)
+        subject = CStore(mock_storage, mock_mwl, validator=mock_validator, notifier=mock_notifier)
         assert subject.call(mock_event) == FAILURE
 
         mock_notifier.notify.assert_called_once_with("action-uuid-123", "DICOM validation failed: Missing required tag")
-        mock_mwl.get_source_message_id.assert_called_once_with("ABC123")
 
-    def test_worklist_marked_in_progress_on_success(self, mock_storage, mock_event):
+    def test_worklist_marked_in_progress_on_success(self, mock_storage, mock_mwl, mock_event):
         """Worklist marked in progress on success."""
-        mock_mwl = Mock(spec=MWLStorage)
-        subject = CStore(mock_storage, mwl_storage=mock_mwl)
+        subject = CStore(mock_storage, mock_mwl)
 
         assert subject.call(mock_event) == SUCCESS
 
         mock_mwl.update_status.assert_called_once_with("ABC123", "IN PROGRESS")
 
-    def test_worklist_not_updated_on_store_failure(self, mock_storage, mock_event):
+    def test_worklist_not_updated_on_store_failure(self, mock_storage, mock_mwl, mock_event):
         """Worklist not updated on store failure."""
         mock_storage.store_instance.side_effect = Exception("store failed")
-        mock_mwl = Mock(spec=MWLStorage)
-        subject = CStore(mock_storage, mwl_storage=mock_mwl)
+        subject = CStore(mock_storage, mock_mwl)
 
         assert subject.call(mock_event) == FAILURE
 
         mock_mwl.update_status.assert_not_called()
 
-    def test_worklist_update_error_does_not_fail_store(self, mock_storage, mock_event):
+    def test_worklist_update_error_does_not_fail_store(self, mock_storage, mock_mwl, mock_event):
         """Worklist update error does not fail store."""
-        mock_mwl = Mock(spec=MWLStorage)
         mock_mwl.update_status.side_effect = Exception("db error")
-        subject = CStore(mock_storage, mwl_storage=mock_mwl)
+        subject = CStore(mock_storage, mock_mwl)
 
         assert subject.call(mock_event) == SUCCESS
 
-    def test_validation_failure_accession_not_in_mwl(self, mock_storage, mock_event):
+    def test_validation_failure_accession_not_in_mwl(self, mock_storage, mock_mwl, mock_event):
         """When accession is not in MWL, validation failure returns FAILURE without calling notify."""
         mock_validator = Mock(spec=DicomValidator)
         mock_validator.validate_dataset.side_effect = DicomValidationError("Missing required tag")
 
-        mock_mwl = Mock(spec=MWLStorage)
         mock_mwl.get_source_message_id.return_value = None
 
         mock_notifier = Mock(spec=ValidationFailureNotifier)

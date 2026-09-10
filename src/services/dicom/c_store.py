@@ -39,15 +39,14 @@ class CStore:
             patient_id = ds.get("PatientID")
             patient_name = str(ds.get("PatientName", ""))
 
+            if not accession_number:
+                logger.error("Missing AccessionNumber")
+                return FAILURE
+
             source_message_id = self.mwl_storage.get_source_message_id(accession_number)
 
             if not source_message_id:
                 logger.error(f"No worklist item found for accession number {accession_number!r}")
-                return FAILURE
-
-            if not accession_number:
-                logger.error("Missing AccessionNumber")
-                self._notify_failure(source_message_id, "Missing AccessionNumber")
                 return FAILURE
 
             if not sop_instance_uid:

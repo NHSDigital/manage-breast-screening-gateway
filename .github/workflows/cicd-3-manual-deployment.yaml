@@ -61,5 +61,5 @@ jobs:
       environment: ${{ inputs.environment }}
       release_tag: ${{ needs.get-release-tag.outputs.release_tag }}
       commit_sha: ${{ github.sha }}
-      branch_name: main
+      branch_name: ${{ github.ref_name }}
     secrets: inherit

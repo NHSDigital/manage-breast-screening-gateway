@@ -1,0 +1,65 @@
+name: "CI/CD: Manual deployment"
+
+# Prod requires a manual approval — configure required reviewers in GitHub
+# Settings → Environments → prod before provisioning the prod environment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment for infra + app deployment"
+        required: true
+        type: choice
+        default: dev
+        options:
+          - dev
+          - preprod
+          - review
+          - prod
+
+      release_tag:
+        description: "GitHub release tag to deploy (defaults to the last release if not specified)"
+        required: false
+        type: string
+
+
+concurrency: release-${{ github.ref }}
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+  security-events: write
+
+jobs:
+  get-release-tag:
+    name: Get release tag
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.get_release_tag.outputs.release_tag }}
+    steps:
+      - name: Get release tag
+        id: get_release_tag
+        env:
+          RELEASE_TAG: ${{ github.inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "${RELEASE_TAG}" ]; then
+            RELEASE_TAG=$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName --jq '.tagName')
+            echo "No release tag supplied. Using latest release (default): ${RELEASE_TAG}"
+          else
+            echo "Using supplied release tag: ${RELEASE_TAG}"
+          fi
+
+          echo "release_tag=${RELEASE_TAG}" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    uses: ./.github/workflows/stage-4-deploy-env.yaml
+    needs: get-release-tag
+    with:
+      environment: ${{ inputs.environment }}
+      release_tag: ${{ needs.get-release-tag.outputs.release_tag }}
+      commit_sha: ${{ github.sha }}
+      branch_name: ${{ github.ref_name }}
+    secrets: inherit

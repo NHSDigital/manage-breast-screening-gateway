@@ -42,6 +42,7 @@ jobs:
         id: get_release_tag
         env:
           RELEASE_TAG: ${{ github.inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "${RELEASE_TAG}" ]; then
             RELEASE_TAG=$(gh release view --repo "${GITHUB_REPOSITORY}" --json tagName --jq '.tagName')
@@ -61,3 +62,4 @@ jobs:
       release_tag: ${{ needs.get-release-tag.outputs.release_tag }}
       commit_sha: ${{ github.sha }}
       branch_name: main
+    secrets: inherit

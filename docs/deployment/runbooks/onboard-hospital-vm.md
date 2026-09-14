@@ -349,3 +349,52 @@ Get-ChildItem "C:\Program Files\NHS\ManageBreastScreeningGateway\logs\deployment
     Sort-Object LastWriteTime -Descending | Select-Object -First 1 |
     ForEach-Object { Get-Content $_.FullName }
 ```
+
+## Manual Deployment
+
+The `CICD: Manual deployment` GitHub Actions workflow can be used to manually deploy the application stack to a selected environment.
+
+The workflow is located at:
+
+`.github/workflows/cicd-3-manual-deployment.yaml`
+
+It is triggered using GitHub Actions `workflow_dispatch`.
+
+### When should I use this?
+
+Use the manual deployment workflow when you need to explicitly deploy a release to an environment without relying on the normal CI/CD pipeline.
+
+For example, it can be used to:
+
+- Deploy a specific release to `dev`
+- Deploy to `preprod` for testing
+- Deploy to `review`
+- Deploy to `prod` when a manual deployment is required
+- Re-deploy a previously released version
+
+> **Important:** Make sure you understand which environment you are deploying to before starting the workflow, particularly when selecting `prod`.
+
+## Running a manual deployment
+
+### 1. Open GitHub Actions
+
+Navigate to the repository on GitHub and select:
+
+**Actions → CICD: Manual deployment**
+
+### 2. Select "Run workflow"
+
+Click the **Run workflow** button.
+
+GitHub will display the workflow inputs.
+
+### 3. Select the branch
+
+Select the branch containing the version of the code you want to deploy.
+
+For example:
+
+```text
+main
+release/1.2.3
+feature/my-feature

@@ -41,7 +41,7 @@ jobs:
       - name: Get release tag
         id: get_release_tag
         env:
-          RELEASE_TAG: ${{ github.inputs.release_tag }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "${RELEASE_TAG}" ]; then

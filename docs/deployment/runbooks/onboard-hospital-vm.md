@@ -395,6 +395,6 @@ Select the branch containing the version of the code you want to deploy.
 For example:
 
 ```text
-main
-release/1.2.3
-feature/my-feature
+git checkout DTOSS-XXXX
+git push -u origin DTOSS-XXXX
+```

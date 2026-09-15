@@ -16,6 +16,8 @@ on:
           - preprod
           - review
 
+concurrency: cicd-${{ github.ref }}
+
 permissions:
   contents: read
   id-token: write

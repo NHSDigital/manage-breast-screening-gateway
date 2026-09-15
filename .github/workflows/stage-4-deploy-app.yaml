@@ -31,7 +31,7 @@ jobs:
       max-parallel: 1
     environment: ${{ matrix.environment }}
     # Prevent concurrent app deployments to the same environment
-    concurrency: deploy-${{ matrix.environment }}
+    concurrency: deploy-app-${{ matrix.environment }}
     permissions:
       id-token: write
 

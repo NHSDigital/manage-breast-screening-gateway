@@ -21,6 +21,9 @@ on:
         default: "main"
         type: string
 
+# Prevent concurrent deployments to the same environment
+concurrency: deploy-${{ inputs.environment }}
+
 jobs:
   deploy-infra:
     name: Deploy infra

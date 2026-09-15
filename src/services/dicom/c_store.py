@@ -4,7 +4,7 @@ from io import BytesIO
 from pydicom import Dataset, dcmwrite
 from pynetdicom.events import Event
 
-from services.dicom import FAILURE, SUCCESS
+from services.dicom import FAILURE, MISSING_ATTRIBUTE, REFUSED_NOT_AUTHORISED, SUCCESS
 from services.dicom.image_compressor import ImageCompressor
 from services.dicom.validation_failure_notifier import ValidationFailureNotifier
 from services.dicom.validator import DicomValidationError, DicomValidator
@@ -41,23 +41,23 @@ class CStore:
 
             if not accession_number:
                 logger.error("Missing AccessionNumber")
-                return FAILURE
+                return MISSING_ATTRIBUTE
 
             source_message_id = self.mwl_storage.get_source_message_id(accession_number)
 
             if not source_message_id:
                 logger.error(f"No worklist item found for accession number {accession_number!r}")
-                return FAILURE
+                return REFUSED_NOT_AUTHORISED
 
             if not sop_instance_uid:
                 logger.error("Missing SOPInstanceUID")
                 self._notify_failure(source_message_id, "Missing SOPInstanceUID")
-                return FAILURE
+                return MISSING_ATTRIBUTE
 
             if not patient_id:
                 logger.error("Missing PatientID")
                 self._notify_failure(source_message_id, "Missing PatientID")
-                return FAILURE
+                return MISSING_ATTRIBUTE
 
             # Validate dataset before compression
             try:

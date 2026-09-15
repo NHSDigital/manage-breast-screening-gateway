@@ -5,7 +5,7 @@ import pydicom
 import pytest
 from pydicom.uid import JPEG2000
 
-from services.dicom import FAILURE, SUCCESS
+from services.dicom import FAILURE, MISSING_ATTRIBUTE, REFUSED_NOT_AUTHORISED, SUCCESS
 from services.dicom.c_store import CStore
 from services.dicom.image_compressor import ImageCompressor
 from services.dicom.validation_failure_notifier import ValidationFailureNotifier
@@ -48,28 +48,28 @@ class TestCStore:
         mock_mwl.get_source_message_id.return_value = None
         subject = CStore(mock_storage, mock_mwl)
 
-        assert subject.call(mock_event) == FAILURE
+        assert subject.call(mock_event) == REFUSED_NOT_AUTHORISED
 
     def test_no_sop_instance_uid_fails(self, mock_storage, mock_mwl, mock_event):
         """No SOP instance UID fails."""
         subject = CStore(mock_storage, mock_mwl)
         mock_event.dataset.SOPInstanceUID = None
 
-        assert subject.call(mock_event) == FAILURE
+        assert subject.call(mock_event) == MISSING_ATTRIBUTE
 
     def test_no_accession_number_fails(self, mock_storage, mock_mwl, mock_event):
         """No accession number fails."""
         subject = CStore(mock_storage, mock_mwl)
         mock_event.dataset.AccessionNumber = None
 
-        assert subject.call(mock_event) == FAILURE
+        assert subject.call(mock_event) == MISSING_ATTRIBUTE
 
     def test_no_patient_id_fails(self, mock_storage, mock_mwl, mock_event):
         """No patient id fails."""
         subject = CStore(mock_storage, mock_mwl)
         mock_event.dataset.PatientID = None
 
-        assert subject.call(mock_event) == FAILURE
+        assert subject.call(mock_event) == MISSING_ATTRIBUTE
 
     def test_existing_sop_instance_uid(self, mock_storage, mock_mwl, mock_event):
         """Existing SOP instance UID."""
@@ -184,6 +184,6 @@ class TestCStore:
         mock_notifier = Mock(spec=ValidationFailureNotifier)
 
         subject = CStore(mock_storage, validator=mock_validator, mwl_storage=mock_mwl, notifier=mock_notifier)
-        assert subject.call(mock_event) == FAILURE
+        assert subject.call(mock_event) == REFUSED_NOT_AUTHORISED
 
         mock_notifier.notify.assert_not_called()

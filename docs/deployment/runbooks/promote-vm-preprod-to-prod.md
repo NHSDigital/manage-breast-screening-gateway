@@ -100,7 +100,7 @@ From here, follow the onboarding runbook against **prod**:
      --query identity.principalId -o tsv
    ```
 
-   While in the admin, confirm the `Relay` record's **Setting** matches the site's clinics' Setting — a mismatch silently routes every appointment to the manual-images flow.
+   While in the admin, confirm the `Relay` record's **Setting** matches the site's clinics' Setting — a mismatch silently routes every appointment to the manual-images flow. Also confirm **Enabled** is ticked on the Relay: it's the per-site switch for the gateway flow, and may have been unticked (with the reason in **Status reason**) during an earlier investigation.
 
 **Verify**: the [onboarding acceptance criteria](./onboard-hospital-vm.md#step-6--verify-acceptance-criteria) — all four services Running, ports listening, **and the relay log ends with `Connected - waiting for worklist actions...`**. A Running service that never logs `Connected` is not healthy.
 
@@ -153,7 +153,7 @@ Before the site's first real clinic on the promoted gateway, work through [Clini
 | Hybrid Connection not created by Terraform | Arc machine not yet **Connected** in the prod RG | Confirm Step 3 verify, then re-run the infra pipeline |
 | Pre-prod relay still shows connection attempts | Orphaned pre-prod HC / registration | Complete Step 6 |
 | Rubie check-ins time out with `phase: connecting` while the listener is healthy | Rubie-side network — most likely a **broken relay private endpoint**. Note the PE can blackhole all traffic **while showing Approved** | Delete the PE and let Terraform recreate it, then prove the path with the echo probe from the Rubie container — see [live clinic debugging](./live-clinic-debugging.md) |
-| The whole UI runs in manual-images mode | `gateway_images` flag off in the Manage repo's **`flags.production.yml`**, or Relay↔Setting mismatch, or the appointment already has a manual study | Flag change requires a Manage deploy (one-line PR, leave the other flags alone); Setting fix is one field in admin; otherwise use a fresh appointment |
+| The whole UI runs in manual-images mode | `gateway_images` flag off in the Manage repo's **`flags.production.yml`**, or **Enabled** unticked on the site's `Relay`, or Relay↔Setting mismatch, or the appointment already has a manual study | Flag change requires a Manage deploy (one-line PR, leave the other flags alone); the Relay toggle and Setting are single fields in admin, effective immediately; otherwise use a fresh appointment |
 | Image uploads rejected with 403 after promotion | `Gateway.oid` still holds the old pre-prod identity | Step 4.4 — update to the new principal ID |
-| Rubie shows the manual-images flow instead of awaiting images | `Relay` record's Setting doesn't match the clinic's Setting, or the appointment already has a manual study | Fix the Setting FK in the admin; retest with a fresh appointment |
+| Rubie shows the manual-images flow instead of awaiting images | **Enabled** unticked on the `Relay`, the `Relay` record's Setting doesn't match the clinic's Setting, or the appointment already has a manual study | Tick **Enabled** / fix the Setting FK in the admin; retest with a fresh appointment |
 | Sends fail after the gateway has been idle overnight | Relay listener connection died silently (known issue) | `Restart-Service Gateway-Relay`; restart before every clinic until the listener liveness fix ships |

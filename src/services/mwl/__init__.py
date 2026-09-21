@@ -1,6 +1,9 @@
 """Modality Worklist (MWL) services for DICOM worklist management."""
 
+import logging
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class InvalidStatusTransitionError(Exception):
@@ -34,6 +37,8 @@ class MWLStatusManager:
         try:
             current_status = MWLStatus(status)
             previous_status = MWLStatusManager._TRANSITIONS[current_status]
+            logger.info(f"Transitioning from {previous_status.value} to {current_status.value}")
             return previous_status, current_status
         except KeyError, ValueError:
+            logger.error(f"Invalid status transition attempted for '{status}'")
             raise InvalidStatusTransitionError(f"Cannot transition to '{status}'")

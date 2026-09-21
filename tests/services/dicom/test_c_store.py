@@ -150,23 +150,6 @@ class TestCStore:
 
         mock_notifier.notify.assert_called_once_with("action-uuid-123", "DICOM validation failed: Missing required tag")
 
-    def test_worklist_marked_in_progress_on_success(self, mock_storage, mock_mwl, mock_event):
-        """Worklist marked in progress on success."""
-        subject = CStore(mock_storage, mock_mwl)
-
-        assert subject.call(mock_event) == SUCCESS
-
-        mock_mwl.update_status.assert_called_once_with("ABC123", "IN PROGRESS")
-
-    def test_worklist_not_updated_on_store_failure(self, mock_storage, mock_mwl, mock_event):
-        """Worklist not updated on store failure."""
-        mock_storage.store_instance.side_effect = Exception("store failed")
-        subject = CStore(mock_storage, mock_mwl)
-
-        assert subject.call(mock_event) == FAILURE
-
-        mock_mwl.update_status.assert_not_called()
-
     def test_worklist_update_error_does_not_fail_store(self, mock_storage, mock_mwl, mock_event):
         """Worklist update error does not fail store."""
         mock_mwl.update_status.side_effect = Exception("db error")

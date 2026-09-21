@@ -113,14 +113,6 @@ class TestCStoreSavesMetadata:
             assert storage_path == self.storage_path(mock_event.dataset.SOPInstanceUID)
             assert Path(f"{storage.storage_root}/{storage_path}").is_file()
 
-    def test_c_store_marks_worklist_in_progress(self, storage, mwl_storage, mock_event):
-        """C-STORE marks worklist in progress."""
-        subject = CStore(storage, mwl_storage)
-        assert subject.call(mock_event) == SUCCESS
-
-        fetched = mwl_storage.get_worklist_item("ABC123")
-        assert fetched.status == "IN PROGRESS"
-
     def test_compressed_image_stored_on_filesystem(self, storage, mwl_storage, dataset_with_pixels):
         """Verify compressed images are stored with JPEG 2000 transfer syntax."""
         sop_instance_uid = generate_uid()

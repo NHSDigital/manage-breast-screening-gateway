@@ -59,3 +59,31 @@ class TestCreateWorklistItem:
         response = subject.call(listener_payload)
         assert response["status"] == "error"
         assert "DB error" in response["message"]
+
+    def test_worklist_marked_in_progress_on_success(self, mwl_storage, listener_payload):
+        """Worklisti item is marked in progress after creation."""
+        subject = CreateWorklistItem(mwl_storage)
+
+        response = subject.call(listener_payload)
+        assert response == {"action_id": "action-12345", "status": "created"}
+
+        item = mwl_storage.get_worklist_item("ACC999999")
+        assert item is not None
+        assert item.status == "IN PROGRESS"
+
+    def test_worklist_marked_in_progress_on_existing_item(self, mwl_storage, listener_payload):
+        """Worklist item is marked in progress even if it already exists."""
+        subject = CreateWorklistItem(mwl_storage)
+
+        # First call to create the item
+        response1 = subject.call(listener_payload)
+        assert response1 == {"action_id": "action-12345", "status": "created"}
+
+        # Second call to simulate existing item
+        response2 = subject.call(listener_payload)
+        assert response2 == {"status": "exists", "action_id": "action-12345"}
+
+        # Check that the status is still IN PROGRESS
+        item = mwl_storage.get_worklist_item("ACC999999")
+        assert item is not None
+        assert item.status == "IN PROGRESS"

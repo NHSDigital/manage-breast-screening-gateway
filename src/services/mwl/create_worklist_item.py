@@ -1,6 +1,7 @@
 import logging
 
 from models import WorklistItem
+from services.mwl import MWLStatus
 from services.storage import MWLStorage, WorklistItemExistsError
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class CreateWorklistItem:
                 )
             )
             logger.info(f"Created worklist item: {accession_number}")
+            self.storage.update_status(accession_number, MWLStatus.IN_PROGRESS.value)
             return {"status": "created", "action_id": action_id}
         except WorklistItemExistsError:
             logger.info(f"Worklist item exists: accession_number={accession_number}, action_id={action_id!r}")

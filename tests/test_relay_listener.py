@@ -150,13 +150,13 @@ class TestRelayListener:
         update_payload = {
             "action_id": "action-12345",
             "action_type": "worklist.update_status",
-            "parameters": {"worklist_item": {"accession_number": "ACC999999", "status": "IN PROGRESS"}},
+            "parameters": {"worklist_item": {"accession_number": "ACC999999", "status": "DISCONTINUED"}},
         }
 
         response = subject.process_action(update_payload)
         assert response == {"accession_number": "ACC999999", "status": "updated"}
 
-        storage_instance.update_status.assert_called_once_with("ACC999999", "IN PROGRESS")
+        storage_instance.update_status.assert_called_with("ACC999999", "DISCONTINUED")
 
     def test_process_create_test_item_action_triggers_modality_emulator(self, storage_instance, listener_payload):
         """Process create test item action and trigger modality emulator."""

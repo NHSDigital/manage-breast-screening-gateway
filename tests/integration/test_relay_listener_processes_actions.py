@@ -32,6 +32,7 @@ class TestRelayListenerProcessesActions:
         item = stored_items[0]
         assert item.accession_number == "ACC999999"
         assert item.patient_id == "999123456"
+        assert item.status == "IN PROGRESS"
 
     @pytest.mark.asyncio
     async def test_relay_listener_updates_worklist_item_status(self, update_payload, tmp_dir, fake_relay):

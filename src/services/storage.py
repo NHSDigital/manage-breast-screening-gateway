@@ -480,7 +480,7 @@ class MWLStorage(Storage):
                     mpps_instance_uid = COALESCE(?, mpps_instance_uid),
                     updated_at = CURRENT_TIMESTAMP
                 WHERE accession_number = ?
-                  AND status = ?
+                AND status = ?
                 """,
                 (to_status.value, mpps_instance_uid, accession_number, from_status.value),
             )

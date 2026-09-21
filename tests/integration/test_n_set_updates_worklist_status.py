@@ -37,6 +37,7 @@ class TestNSetUpdatesWorklistStatus:
             scheduled_time="090000",
             modality="MG",
             procedure_code="12345-6",
+            status="SCHEDULED",
             study_description="MAMMOGRAPHY SCREENING",
             study_instance_uid=generate_uid(),
             source_message_id="MSGID123456",

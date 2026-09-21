@@ -61,7 +61,7 @@ class TestCreateWorklistItem:
         assert "DB error" in response["message"]
 
     def test_worklist_marked_in_progress_on_success(self, mwl_storage, listener_payload):
-        """Worklisti item is marked in progress after creation."""
+        """Worklist item is marked in progress after creation."""
         subject = CreateWorklistItem(mwl_storage)
 
         response = subject.call(listener_payload)

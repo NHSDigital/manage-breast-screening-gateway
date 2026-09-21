@@ -13,7 +13,7 @@ class TestRelayListenerProcessesActions:
         return {
             "action_id": "action-12345",
             "action_type": "worklist.update_status",
-            "parameters": {"worklist_item": {"accession_number": "ACC999999", "status": "in progress"}},
+            "parameters": {"worklist_item": {"accession_number": "ACC999999", "status": "COMPLETED"}},
         }
 
     @pytest.mark.asyncio
@@ -60,8 +60,7 @@ class TestRelayListenerProcessesActions:
             await listener.listen()
 
         ws_client.send.assert_called_once_with(json.dumps({"accession_number": "ACC999999", "status": "updated"}))
-        stored_items = storage.find_worklist_items()
-        assert len(stored_items) == 1
-        item = stored_items[0]
+        item = storage.get_worklist_item("ACC999999")
         assert item.accession_number == "ACC999999"
         assert item.patient_id == "999123456"
+        assert item.status == "COMPLETED"

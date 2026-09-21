@@ -324,11 +324,11 @@ class MWLStorage(Storage):
                     (
                         "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
                         "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
-                        "scheduled_time, source_message_id, study_description, study_instance_uid) "
+                        "scheduled_time, source_message_id, status, study_description, study_instance_uid) "
                         "VALUES (:accession_number, :modality, :patient_birth_date, "
                         ":patient_id, :patient_name, :patient_sex, :procedure_code, "
                         ":scheduled_date, :scheduled_time, :source_message_id, "
-                        ":study_description, :study_instance_uid)"
+                        ":status, :study_description, :study_instance_uid)"
                     ),
                     worklist_item.__dict__,
                 )

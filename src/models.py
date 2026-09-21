@@ -15,7 +15,7 @@ class WorklistItem:
     patient_name: str = field(doc="Name of the patient. Lastname^Firstname.")
     scheduled_date: str = field(doc="Date the procedure is scheduled for.")
     scheduled_time: str = field(doc="Time the procedure is scheduled for.")
-    status: str = field(doc="Status of the worklist item", default=MWLStatus.SCHEDULED.value)
+    status: str = field(doc="Status of the worklist item", default=MWLStatus.IN_PROGRESS.value)
 
     source_message_id: Optional[str] = field(
         default=None, doc="Message ID from system which created this worklist item", hash=True

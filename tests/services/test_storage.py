@@ -58,6 +58,7 @@ class TestPACSStorage:
 
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='stored_instances'").fetchone()
+        conn.close()
 
         assert table is not None
 
@@ -131,6 +132,7 @@ class TestMWLStorage:
         """MWL storage: Init."""
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='worklist_items'").fetchone()
+        conn.close()
 
         assert table is not None
 

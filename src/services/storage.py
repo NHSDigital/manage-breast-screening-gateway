@@ -470,19 +470,20 @@ class MWLStorage(Storage):
         Returns:
             source_message_id if item was updated, None if not found
         """
-        from_status, to_status = MWLStatusManager.transition_for(status)
+        from_statuses, to_status = MWLStatusManager.transition_for(status)
+        placeholders = ", ".join("?" for _ in from_statuses)
 
         with self._get_connection() as conn:
             cursor = conn.execute(
-                """
+                f"""
                 UPDATE worklist_items
                 SET status = ?,
                     mpps_instance_uid = COALESCE(?, mpps_instance_uid),
                     updated_at = CURRENT_TIMESTAMP
                 WHERE accession_number = ?
-                  AND status = ?
+                AND status IN ({placeholders})
                 """,
-                (to_status.value, mpps_instance_uid, accession_number, from_status.value),
+                (to_status, mpps_instance_uid, accession_number, *from_statuses),
             )
             conn.commit()
 

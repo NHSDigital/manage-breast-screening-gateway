@@ -404,6 +404,24 @@ class TestMWLStorage:
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "IN PROGRESS"
 
+    def test_update_status_scheduled_to_discontinued(self, mwl_storage, result):
+        """MWL storage: Update status scheduled to discontinued."""
+        item = self._insert_item(mwl_storage, result)
+        assert item.status == "SCHEDULED"
+
+        mwl_storage.update_status(item.accession_number, "DISCONTINUED")
+
+        assert mwl_storage.get_worklist_item(item.accession_number).status == "DISCONTINUED"
+
+    def test_update_status_in_progress_to_completed(self, mwl_storage, result):
+        """MWL storage: Update status in progress to completed."""
+        item = self._insert_item(mwl_storage, result)
+        mwl_storage.update_status(item.accession_number, "IN PROGRESS")
+
+        mwl_storage.update_status(item.accession_number, "COMPLETED")
+
+        assert mwl_storage.get_worklist_item(item.accession_number).status == "COMPLETED"
+
     def test_update_status_in_progress_to_discontinued(self, mwl_storage, result):
         """MWL storage: Update status in progress to discontinued."""
         item = self._insert_item(mwl_storage, result)

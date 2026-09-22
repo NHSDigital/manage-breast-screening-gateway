@@ -17,23 +17,26 @@ class MWLStatus(Enum):
 
 
 class MWLStatusManager:
-    _TRANSITIONS = {
-        MWLStatus.IN_PROGRESS: MWLStatus.SCHEDULED,
-        MWLStatus.COMPLETED: MWLStatus.IN_PROGRESS,
-        MWLStatus.DISCONTINUED: MWLStatus.IN_PROGRESS,
+    REVERSED_TRANSITIONS = {
+        MWLStatus.IN_PROGRESS: [MWLStatus.SCHEDULED],
+        MWLStatus.COMPLETED: [MWLStatus.IN_PROGRESS],
+        MWLStatus.DISCONTINUED: [MWLStatus.SCHEDULED, MWLStatus.IN_PROGRESS],
     }
 
     @staticmethod
-    def transition_for(status: str) -> tuple[MWLStatus, MWLStatus]:
+    def transition_for(status: str) -> tuple[list[str], str]:
         """
-        Get the previous and next status for a given MWL status.
+        Get the current and next status for a given MWL status.
 
         Raises:
             InvalidStatusTransitionError: If the transition is not permitted
         """
         try:
-            current_status = MWLStatus(status)
-            previous_status = MWLStatusManager._TRANSITIONS[current_status]
-            return previous_status, current_status
-        except KeyError, ValueError:
+            next_status = MWLStatus(status)
+            current_statuses = MWLStatusManager.REVERSED_TRANSITIONS[next_status]
+            current_status_values = [s.value for s in current_statuses]
+            return current_status_values, next_status.value
+        except KeyError:
             raise InvalidStatusTransitionError(f"Cannot transition to '{status}'")
+        except ValueError:
+            raise InvalidStatusTransitionError(f"Invalid MWL status '{status}'")

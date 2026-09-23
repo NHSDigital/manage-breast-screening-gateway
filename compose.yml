@@ -35,7 +35,15 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-    network_mode: host
+    # Linux networking requires the host-gateway to be set up in Docker. This is not required for Windows or MacOS.
+    # CLOUD_API_ENDPOINT is set to http://host.docker.internal:8000/api/v1/dicom by default.
+    # This allows the gateway to communicate with the cloud API running on the host machine.
+    # Ensure that Rubie's ALLOWED_HOSTS env contain host.docker.internal for the gateway to function correctly.
+    # On Linux ensure that Rubie is running on the host machine at http://0.0.0.0:8000/api/v1/dicom.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # Alternatively, you can use host networking mode on Linux, but this is not supported on Windows or MacOS.
+    # network_mode: host
 
   modality_emulator:
     build:

@@ -1,4 +1,6 @@
 services:
+  # Gateway service that handles Relay communication,
+  # Modality worklist queries, DICOM communication with the PACS server, and uploads to the cloud API.
   gateway:
     build:
       context: .
@@ -45,6 +47,9 @@ services:
     # Alternatively, you can use host networking mode on Linux, but this is not supported on Windows or MacOS.
     # network_mode: host
 
+  # Modality Emulator service for testing purposes. This service emulates a DICOM modality that sends images to the gateway.
+  # To use the modality emulator, you need to enable the "modality_emulator" profile when running docker-compose.
+  # eg: docker compose --profile modality_emulator up
   modality_emulator:
     build:
       context: .

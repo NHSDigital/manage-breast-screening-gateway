@@ -23,6 +23,8 @@ RUN uv sync --frozen --no-dev
 
 # Copy source code
 COPY src/ ./src/
+COPY tests/smoke_test.py ./tests/smoke_test.py
+COPY tests/integration/dicom_helpers.py ./tests/integration/dicom_helpers.py
 COPY scripts/ ./scripts/
 COPY sample_images/ ./sample_images/
 

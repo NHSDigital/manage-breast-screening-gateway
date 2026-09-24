@@ -63,6 +63,7 @@ echo ""
 
 REQUIRED_FILES=("src/" "sample_images/" "scripts/python/database.py" \
     "scripts/powershell/maintenance.ps1" "scripts/powershell/debug_toolkit.ps1" \
+    "tests/smoke_test.py" "tests/integration/dicom_helpers.py" \
     "pyproject.toml" "uv.lock" "README.md" "LICENCE.md")
 
 for item in "${REQUIRED_FILES[@]}"; do

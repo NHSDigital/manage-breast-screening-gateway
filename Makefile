@@ -74,6 +74,9 @@ backup-dbs: # Backup sqlite databases @Operations
 reset-worklist: # Reset worklist database @Operations
 	PYTHONPATH=src uv run python -c'import scripts.python.database; scripts.python.database.reset_worklist_database()'
 
+cleanup-test-data: # Delete test worklist items/images (refuses while uploads pending) @Operations
+	PYTHONPATH=src uv run python scripts/python/cleanup_test_data.py
+
 # ---------------------------------------------------------------------------
 # Testing
 # ---------------------------------------------------------------------------

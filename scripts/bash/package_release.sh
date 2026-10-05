@@ -62,6 +62,7 @@ echo ""
 # ── Validate required files ───────────────────────────────────────────────────
 
 REQUIRED_FILES=("src/" "sample_images/" "scripts/python/database.py" \
+    "scripts/python/cleanup_test_data.py" \
     "scripts/powershell/maintenance.ps1" "scripts/powershell/debug_toolkit.ps1" \
     "pyproject.toml" "uv.lock" "README.md" "LICENCE.md")
 

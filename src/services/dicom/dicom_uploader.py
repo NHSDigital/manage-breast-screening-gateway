@@ -6,14 +6,12 @@ Uploads DICOM files to the Manage Breast Screening HTTP API endpoint.
 
 import io
 import logging
-import os
 from typing import Optional
 
 import requests
-from azure.identity import ManagedIdentityCredential
 
 import config
-from environment import Environment
+from services.dicom.cloud_api_auth import auth_headers
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +39,7 @@ class DICOMUploader:
                 files=files,
                 timeout=self.timeout,
                 verify=self.verify_ssl,
-                headers=self.headers,
+                headers=auth_headers(),
             )
 
             if response.status_code == 201:
@@ -59,17 +57,3 @@ class DICOMUploader:
         except requests.exceptions.RequestException as e:
             logger.error(f"Upload error for {sop_instance_uid}: {e}", exc_info=True)
             return False
-
-    @property
-    def headers(self) -> dict:
-        return {
-            "Authorization": f"Bearer {self.access_token}",
-        }
-
-    @property
-    def access_token(self) -> str | None:
-        resource = os.getenv("CLOUD_API_RESOURCE", "")
-        if resource or Environment().production:
-            return ManagedIdentityCredential().get_token(resource).token
-        else:
-            return os.getenv("CLOUD_API_TOKEN", "")

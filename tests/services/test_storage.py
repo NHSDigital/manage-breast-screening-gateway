@@ -48,6 +48,7 @@ def result():
         "status": "SCHEDULED",
         "study_instance_uid": generate_uid(),
         "source_message_id": "MSGID123456",
+        "source_system_url": "https://example.com",
     }
 
 

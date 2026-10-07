@@ -20,6 +20,7 @@ class WorklistItem:
     source_message_id: Optional[str] = field(
         default=None, doc="Message ID from system which created this worklist item", hash=True
     )
+    source_system_url: Optional[str] = field(default=None, doc="URL of the system which created this worklist item")
     study_instance_uid: Optional[str] = field(default=None, doc="Instance UID for the study", hash=True)
     procedure_code: Optional[str] = field(default=None, doc="Code that identifies the requested procedure.")
     patient_sex: Optional[str] = field(default=None, doc="Sex of the patient.")

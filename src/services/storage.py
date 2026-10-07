@@ -364,10 +364,10 @@ class MWLStorage(Storage):
                     (
                         "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
                         "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
-                        "scheduled_time, source_message_id, study_description, study_instance_uid) "
-                        "VALUES (:accession_number, :modality, :patient_birth_date, "
+                        "scheduled_time, source_message_id, source_system_url, study_description, study_instance_uid"
+                        ") VALUES (:accession_number, :modality, :patient_birth_date, "
                         ":patient_id, :patient_name, :patient_sex, :procedure_code, "
-                        ":scheduled_date, :scheduled_time, :source_message_id, "
+                        ":scheduled_date, :scheduled_time, :source_message_id, :source_system_url, "
                         ":study_description, :study_instance_uid)"
                     ),
                     worklist_item.__dict__,
@@ -404,7 +404,8 @@ class MWLStorage(Storage):
         query = (
             "SELECT accession_number, modality, patient_birth_date, patient_id, "
             "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
-            "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+            "source_message_id, source_system_url, study_description, "
+            "study_instance_uid, status, mpps_instance_uid "
             "FROM worklist_items"
         )
         where_clauses = ["status NOT IN ('COMPLETED', 'DISCONTINUED')"]
@@ -487,7 +488,8 @@ class MWLStorage(Storage):
                 (
                     "SELECT accession_number, modality, patient_birth_date, patient_id, "
                     "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
-                    "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                    "source_message_id, source_system_url, study_description, "
+                    "study_instance_uid, status, mpps_instance_uid "
                     "FROM worklist_items WHERE accession_number = ?"
                 ),
                 (accession_number,),

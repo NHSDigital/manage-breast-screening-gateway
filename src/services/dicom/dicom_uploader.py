@@ -22,10 +22,17 @@ class DICOMUploader:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
 
-    def upload_dicom(self, sop_instance_uid: str, dicom_stream: io.BufferedReader, action_id: Optional[str]) -> bool:
+    def upload_dicom(
+        self, sop_instance_uid: str, dicom_stream: io.BufferedReader, source_attributes: Optional[tuple]
+    ) -> bool:
+        action_id, base_url = source_attributes if source_attributes else (None, None)
+
         if not action_id:
             logger.error(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
             return False
+
+        if base_url:
+            self.api_endpoint = config.cloud_api_endpoint(base_url)
 
         files = {
             "file": (f"{sop_instance_uid}.dcm", dicom_stream),

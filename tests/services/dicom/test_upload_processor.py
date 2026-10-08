@@ -80,7 +80,7 @@ class TestUploadProcessor:
             "accession_number": "ACC123",
             "upload_attempt_count": 0,
         }
-        mock_mwl_storage.get_source_message_id.return_value = "ACTION123"
+        mock_mwl_storage.get_source_attributes.return_value = ("ACTION123", "https://example.com")
         mock_uploader.upload_dicom.return_value = True
 
         mo = mock_open(read_data=b"dicom data")
@@ -90,7 +90,9 @@ class TestUploadProcessor:
         assert result is True
         mock_pacs_storage.mark_upload_started.assert_called_once_with("1.2.3.4")  # gitleaks:allow
         mock_pacs_storage.mark_upload_complete.assert_called_once_with("1.2.3.4")  # gitleaks:allow
-        mock_uploader.upload_dicom.assert_called_once_with("1.2.3.4", mo(), "ACTION123")  # gitleaks:allow
+        mock_uploader.upload_dicom.assert_called_once_with(
+            "1.2.3.4", mo(), ("ACTION123", "https://example.com")
+        )  # gitleaks:allow
 
     def test_upload_instance_file_not_found(self, processor, mock_pacs_storage):
         """Upload processor: Upload instance file not found."""

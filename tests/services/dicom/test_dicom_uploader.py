@@ -70,12 +70,12 @@ class TestDICOMUploader:
         result = uploader.upload_dicom(
             sop_instance_uid="1.2.3",
             dicom_stream=open(dicom_file, "rb"),
-            source_attributes=("ACTION123", "https://custom.com"),
+            source_attributes=("ACTION123", "https://custom.run-breast-screening.nhs.uk"),
         )
 
         assert result is True
         mock_put.assert_called_once_with(
-            "https://custom.com/api/v1/dicom/ACTION123",
+            "https://custom.run-breast-screening.nhs.uk/api/v1/dicom/ACTION123",
             files=mock_put.call_args[1]["files"],
             timeout=30,
             verify=True,

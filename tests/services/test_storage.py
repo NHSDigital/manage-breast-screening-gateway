@@ -51,7 +51,7 @@ def result():
         "status": "SCHEDULED",
         "study_instance_uid": generate_uid(),
         "source_message_id": "MSGID123456",
-        "source_system_url": "https://example.com",
+        "source_system_url": "https://example.run-breast-screening.nhs.uk",
     }
 
 
@@ -513,8 +513,8 @@ class TestMWLStorage:
     @pytest.mark.parametrize(
         "source_message_id, source_system_url",
         [
-            ("MSGID123456", "https://example.com"),
-            (None, "https://example.com"),
+            ("MSGID123456", "https://example.run-breast-screening.nhs.uk"),
+            (None, "https://example.run-breast-screening.nhs.uk"),
             ("MSGID123456", None),
             (None, None),
         ],
@@ -545,7 +545,6 @@ class TestMWLStorage:
     def test_get_source_message_id_returns_none_when_not_found(self, mwl_storage):
         """Get source message id returns none when not found."""
         assert mwl_storage.get_source_message_id("DOES_NOT_EXIST") is None
-
 
 
 class TestStorageMigrationLock:

@@ -31,8 +31,7 @@ class DICOMUploader:
             logger.error(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
             return False
 
-        if base_url:
-            self.api_endpoint = config.cloud_api_endpoint(base_url)
+        api_endpoint_url = config.cloud_api_endpoint(base_url) if base_url else self.api_endpoint
 
         files = {
             "file": (f"{sop_instance_uid}.dcm", dicom_stream),
@@ -42,7 +41,7 @@ class DICOMUploader:
             logger.info(f"Uploading {sop_instance_uid} to {self.api_endpoint}/{action_id}")
 
             response = requests.put(
-                f"{self.api_endpoint}/{action_id}",
+                f"{api_endpoint_url}/{action_id}",
                 files=files,
                 timeout=self.timeout,
                 verify=self.verify_ssl,

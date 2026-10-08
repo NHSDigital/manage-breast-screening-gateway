@@ -48,6 +48,7 @@ def result():
         "status": "SCHEDULED",
         "study_instance_uid": generate_uid(),
         "source_message_id": "MSGID123456",
+        "source_system_url": "https://example.run-breast-screening.nhs.uk",
     }
 
 
@@ -430,3 +431,39 @@ class TestMWLStorage:
         mwl_storage.update_status(item.accession_number, "DISCONTINUED")
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "DISCONTINUED"
+
+    @pytest.mark.parametrize(
+        "source_message_id, source_system_url",
+        [
+            ("MSGID123456", "https://example.run-breast-screening.nhs.uk"),
+            (None, "https://example.run-breast-screening.nhs.uk"),
+            ("MSGID123456", None),
+            (None, None),
+        ],
+    )
+    def test_get_source_attributes(self, mwl_storage, result, source_message_id, source_system_url):
+        """Get source attributes."""
+        result["source_message_id"] = source_message_id
+        result["source_system_url"] = source_system_url
+
+        item = self._insert_item(mwl_storage, result)
+
+        source_attrs = mwl_storage.get_source_attributes(item.accession_number)
+
+        assert source_attrs == (item.source_message_id, item.source_system_url)
+
+    def test_get_source_attributes_returns_none_when_not_found(self, mwl_storage):
+        """Get source attributes returns none when not found."""
+        assert mwl_storage.get_source_attributes("DOES_NOT_EXIST") == (None, None)
+
+    def test_get_source_message_id(self, mwl_storage, result):
+        """Get source message id."""
+        item = self._insert_item(mwl_storage, result)
+
+        source_message_id = mwl_storage.get_source_message_id(item.accession_number)
+
+        assert source_message_id == item.source_message_id
+
+    def test_get_source_message_id_returns_none_when_not_found(self, mwl_storage):
+        """Get source message id returns none when not found."""
+        assert mwl_storage.get_source_message_id("DOES_NOT_EXIST") is None

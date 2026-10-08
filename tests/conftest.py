@@ -188,7 +188,7 @@ def listener_payload():
     return {
         "action_id": "action-12345",
         "action_type": "worklist.create_item",
-        "source_system_url": "https://example.com",
+        "source_system_url": "https://example.run-breast-screening.nhs.uk",
         "parameters": {
             "worklist_item": {
                 "participant": {

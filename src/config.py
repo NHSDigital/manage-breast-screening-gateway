@@ -12,6 +12,7 @@ import os
 from urllib import parse
 
 API_PATH = "/api/v1/dicom"
+RUBIE_DOMAIN = "run-breast-screening.nhs.uk"
 
 
 def mwl_db_path() -> str:
@@ -48,8 +49,8 @@ def cloud_api_endpoint(base_url: str | None = None) -> str:
     """
     api_endpoint = os.getenv("CLOUD_API_ENDPOINT", f"http://localhost:8000{API_PATH}")
     if base_url:
-        split_endpoint = parse.urlsplit(api_endpoint)
         split_base_url = parse.urlsplit(base_url)
+        split_endpoint = parse.urlsplit(api_endpoint)
         split_endpoint = split_endpoint._replace(scheme=split_base_url.scheme, netloc=split_base_url.netloc)
         return parse.urlunsplit(split_endpoint)
     return api_endpoint

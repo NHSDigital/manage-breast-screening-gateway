@@ -53,6 +53,7 @@ infrastructure/modules/arc-infra/policies/deploy-wac-extension-arc-windows.json:
 9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:131
 9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:150
 9a6a5bebbfc2df48a02c6940cd3c1ea4df95f1a5:tests/services/dicom/test_upload_processor.py:ipv4:174
+454a6b73c1aaad1df8a6447cc0240e4f357f2f61:tests/services/dicom/test_upload_processor.py:ipv4:94
 
 # Commit b7f3d0e — src/services/storage.py (DICOM UID in code comment)
 b7f3d0e812393af74600b5c0e8374d89066384d7:src/services/storage.py:ipv4:72

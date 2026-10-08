@@ -9,6 +9,9 @@ at call time - after the entry point's load_dotenv() has run.
 """
 
 import os
+from urllib import parse
+
+API_PATH = "/api/v1/dicom"
 
 
 def mwl_db_path() -> str:
@@ -39,8 +42,17 @@ def pacs_port() -> int:
     return int(os.getenv("PACS_PORT", "4244"))
 
 
-def cloud_api_endpoint() -> str:
-    return os.getenv("CLOUD_API_ENDPOINT", "http://localhost:8000/api/v1/dicom")
+def cloud_api_endpoint(base_url: str | None = None) -> str:
+    """
+    Return the cloud API endpoint, optionally overriding the scheme and netloc
+    """
+    api_endpoint = os.getenv("CLOUD_API_ENDPOINT", f"http://localhost:8000{API_PATH}")
+    if base_url:
+        split_endpoint = parse.urlsplit(api_endpoint)
+        split_base_url = parse.urlsplit(base_url)
+        split_endpoint = split_endpoint._replace(scheme=split_base_url.scheme, netloc=split_base_url.netloc)
+        return parse.urlunsplit(split_endpoint)
+    return api_endpoint
 
 
 def log_level() -> str:

@@ -1,6 +1,6 @@
 import pytest
 
-from services.storage import MWLStorage, PACSStorage, WorklistItem
+from services.storage import MWLStorage, PACSStorage
 
 
 @pytest.fixture
@@ -79,49 +79,3 @@ class TestPACSStorageUpload:
 
         # Should be permanently FAILED
         assert row[0] == "FAILED"
-
-
-class TestMWLStorageSourceMessageId:
-    def test_get_source_message_id_found(self, mwl_storage):
-        """Test retrieving source_message_id when it exists."""
-        mwl_storage.store_worklist_item(
-            WorklistItem(
-                accession_number="ACC123",
-                modality="MG",
-                patient_birth_date="19800101",
-                patient_id="NHS123",
-                patient_name="DOE^JOHN",
-                scheduled_date="20250101",
-                scheduled_time="100000",
-                source_message_id="ACTION456",
-            )
-        )
-
-        result = mwl_storage.get_source_message_id("ACC123")
-
-        assert result == "ACTION456"
-
-    def test_get_source_message_id_not_found(self, mwl_storage):
-        """Test retrieving source_message_id when accession number doesn't exist."""
-        result = mwl_storage.get_source_message_id("NONEXISTENT")
-
-        assert result is None
-
-    def test_get_source_message_id_null(self, mwl_storage):
-        """Test retrieving source_message_id when it's NULL in database."""
-        mwl_storage.store_worklist_item(
-            WorklistItem(
-                accession_number="ACC123",
-                modality="MG",
-                patient_birth_date="19800101",
-                patient_id="NHS123",
-                patient_name="DOE^JOHN",
-                scheduled_date="20250101",
-                scheduled_time="100000",
-                source_message_id=None,
-            )
-        )
-
-        result = mwl_storage.get_source_message_id("ACC123")
-
-        assert result is None

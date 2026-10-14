@@ -16,6 +16,10 @@ infrastructure/modules/arc-infra/policies/deploy-wac-extension-arc-windows.json:
 3f3067bbd4f38ad6ce996ef50e57f624a591b3e0:tests/services/dicom/test_c_store.py:ipv4:15
 3f3067bbd4f38ad6ce996ef50e57f624a591b3e0:tests/services/dicom/test_c_store.py:ipv4:48
 
+# Commit 454a6b7 — tests/services/dicom/test_upload_processor.py
+# (reformatting moved the literal off the line carrying its `# gitleaks:allow`)
+454a6b73c1aaad1df8a6447cc0240e4f357f2f61:tests/services/dicom/test_upload_processor.py:ipv4:94
+
 # Commit 6e612df — test_c_store_saves_metadata.py, test_c_store.py
 6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/integration/test_c_store_saves_metadata.py:ipv4:91
 6e612df4d168fa8388ba7d6a5c6cd2428bb25767:tests/integration/test_c_store_saves_metadata.py:ipv4:108

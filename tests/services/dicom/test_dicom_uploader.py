@@ -31,7 +31,7 @@ class TestDICOMUploader:
         result = uploader.upload_dicom(
             sop_instance_uid=sop_instance_uid,
             dicom_stream=open(dicom_file, "rb"),
-            action_id="ACTION123",
+            source_attributes=("ACTION123", None),
         )
 
         assert result is True
@@ -53,9 +53,34 @@ class TestDICOMUploader:
     def test_upload_without_action_id(self, _, dicom_file):
         """Upload without action_id does not make request."""
         uploader = DICOMUploader()
-        result = uploader.upload_dicom(sop_instance_uid="1.2.3", dicom_stream=open(dicom_file, "rb"), action_id=None)
+        result = uploader.upload_dicom(
+            sop_instance_uid="1.2.3", dicom_stream=open(dicom_file, "rb"), source_attributes=(None, None)
+        )
 
         assert result is False
+
+    def test_upload_with_base_url(self, mock_put, dicom_file):
+        """DICOM uploader: Upload with base_url."""
+        mock_response = Mock()
+        mock_response.status_code = 201
+        mock_put.return_value = mock_response
+
+        uploader = DICOMUploader(api_endpoint="http://default.com/api/upload")
+
+        result = uploader.upload_dicom(
+            sop_instance_uid="1.2.3",
+            dicom_stream=open(dicom_file, "rb"),
+            source_attributes=("ACTION123", "https://custom.run-breast-screening.nhs.uk"),
+        )
+
+        assert result is True
+        mock_put.assert_called_once_with(
+            "https://custom.run-breast-screening.nhs.uk/api/v1/dicom/ACTION123",
+            files=mock_put.call_args[1]["files"],
+            timeout=30,
+            verify=True,
+            headers=mock_put.call_args[1]["headers"],
+        )
 
     def test_upload_failure_status_code(self, mock_put, dicom_file):
         """DICOM uploader: Upload failure status code."""

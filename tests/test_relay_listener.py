@@ -116,6 +116,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 
@@ -138,6 +139,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 
@@ -184,6 +186,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 
@@ -211,6 +214,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 

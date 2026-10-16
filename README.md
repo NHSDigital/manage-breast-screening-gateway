@@ -126,30 +126,7 @@ The gateway is designed to run as a set of Windows Services on-premises.
 
 ## Architecture
 
-This gateway implements a lightweight DICOM service architecture:
-
-1. **DICOM Worklist Server** - Provides scheduled procedure information to modalities
-2. **DICOM PACS Server** - Receives and stores medical images ([docs](docs/pacs/README.md))
-3. **Event Processing** - Processes MPPS status updates and image metadata
-4. **Azure Relay Communication** - Bidirectional communication with cloud service
-
-### PACS Server
-
-The PACS server provides C-STORE functionality for receiving medical images:
-- Hash-based storage for scalability
-- SQLite metadata indexing
-- Thread-safe concurrent access
-- Docker containerized deployment
-
-See [PACS documentation](docs/pacs/README.md) for detailed information.
-
-### Relay Listener
-
-The Relay Listener handles incoming messages from the cloud service via Azure Relay:
-- Listens on configured Hybrid Connection
-- Processes worklist actions (e.g., create worklist item)
-
-See [Relay Listener documentation](docs/relay-listener/README.md) for details.
+See [docs/architecture.md](docs/architecture.md)
 
 ## Testing
 

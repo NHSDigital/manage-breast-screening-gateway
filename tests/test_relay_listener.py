@@ -280,9 +280,8 @@ class TestRelayListener:
                     ("wss://second-url", 2),
                 ],
             ) as mock_details,
-            patch.object(
-                subject,
-                "_connect",
+            patch(
+                "relay_listener.connect",
                 return_value=connection_cm,
             ) as mock_connect,
             patch.object(
@@ -295,8 +294,8 @@ class TestRelayListener:
                 await subject.listen()
 
         assert mock_details.call_count == 2
-        mock_connect.assert_any_call("wss://first-url")
-        mock_connect.assert_any_call("wss://second-url")
+        mock_connect.assert_any_call("wss://first-url", compression=None, ping_interval=30, ping_timeout=10)
+        mock_connect.assert_any_call("wss://second-url", compression=None, ping_interval=30, ping_timeout=10)
 
 
 class TestRelayURIWithDefaultAzureCredential:

@@ -89,7 +89,7 @@ class RelayListener:
             refresh_at = max(expires_on - RELAY_REFRESH_MARGIN_SECONDS, int(time.time()))
 
             try:
-                async with self._connect(connection_url) as websocket:
+                async with connect(connection_url, compression=None, ping_interval=30, ping_timeout=10) as websocket:
                     logger.info("Connected - waiting for worklist actions...")
                     await self._listen_on_connection(websocket, refresh_at)
             except RelayTokenExpiredError:
@@ -166,13 +166,6 @@ class RelayListener:
 
         logger.error("Unsupported action: %s", action_name)
         return {"status": "error", "message": f"Unsupported action: {action_name}"}
-
-    def _connect(self, connection_url: str):
-        """Connect to Azure Relay."""
-        return connect(
-            connection_url,
-            compression=None,
-        )
 
     def process_with_modality_emulator(self, patient_name: str | None = None):
         """Process worklist items with ModalityEmulator."""

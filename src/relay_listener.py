@@ -314,15 +314,13 @@ async def main():
         except KeyboardInterrupt:
             logger.warning("\nShutting down...")
             break
-        except ConnectionClosedError as e:
-            code = e.rcvd.code if e.rcvd else "N/A"
-            reason = e.rcvd.reason if e.rcvd else "N/A"
-            logger.warning("Connection closed with code %s: %s", code, reason)
-            logger.warning("Retrying in 5 seconds...")
+        except ConnectionClosedError:
+            logger.exception("Connection closed")
+            logger.info("Retrying in 5 seconds...")
             await asyncio.sleep(5)
-        except Exception as e:
-            logger.warning("Connection error: %s", e)
-            logger.warning("Retrying in 5 seconds...")
+        except Exception:
+            logger.exception("Connection error")
+            logger.info("Retrying in 5 seconds...")
             await asyncio.sleep(5)
 
 

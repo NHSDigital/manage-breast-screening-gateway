@@ -443,11 +443,8 @@ async def test_main_handles_connection_closed_and_keyboard_interrupt(
 
     assert relay_listener_instance.listen.call_count == 3
     mock_logger.info.assert_any_call("Socket Listener Starting...")
-    mock_logger.warning.assert_any_call(
-        "Connection closed with code %s: %s", CloseCode.INTERNAL_ERROR, "Something went wrong"
-    )
-    mock_logger.warning.assert_any_call("Retrying in 5 seconds...")
-    mock_logger.warning.assert_any_call("Connection closed with code %s: %s", CloseCode.BAD_GATEWAY, "Bad gateway")
+    mock_logger.exception.assert_any_call("Connection closed")
+    mock_logger.info.assert_any_call("Retrying in 5 seconds...")
     mock_logger.warning.assert_any_call("\nShutting down...")
 
 

@@ -58,9 +58,47 @@ class TestPACSStorage:
 
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='stored_instances'").fetchone()
+        user_version = conn.execute("PRAGMA user_version").fetchone()[0]
         conn.close()
 
         assert table is not None
+        assert user_version == 1
+
+    def test_migrations_path(self, pacs_storage):
+        """PACS storage: Migrations path."""
+        assert "database/migrations/pacs" in pacs_storage.migrations_path
+
+    def test_migrate_db(self, db_file, tmp_dir, monkeypatch):
+        """PACS storage migrate db."""
+        monkeypatch.setattr(PACSStorage, "migrations_path", tmp_dir)
+
+        for i in range(2, 5):
+            with open(tmp_dir / f"{i}_add_new_column_{i}.sql", "w") as f:
+                f.write(
+                    f"""
+                    ALTER TABLE stored_instances ADD COLUMN new_column_{i} TEXT;
+                    """
+                )
+
+        storage = PACSStorage(str(db_file), str(tmp_dir))
+
+        with storage._get_connection() as conn:
+            user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+            table_info = conn.execute("PRAGMA table_info(stored_instances)").fetchall()
+
+        assert user_version == 4
+        assert any(column[1] == "new_column_4" for column in table_info)
+
+    def test_migrate_db_no_migrations(self, db_file, tmp_dir, monkeypatch):
+        """PACS storage migrate db no migrations."""
+        monkeypatch.setattr(PACSStorage, "migrations_path", tmp_dir)
+
+        storage = PACSStorage(str(db_file), str(tmp_dir))
+
+        with storage._get_connection() as conn:
+            user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+
+        assert user_version == 1
 
     def test_instance_exists_returns_true(self, pacs_storage):
         """Instance exists returns true."""
@@ -132,9 +170,36 @@ class TestMWLStorage:
         """MWL storage: Init."""
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='worklist_items'").fetchone()
+        user_version = conn.execute("PRAGMA user_version").fetchone()[0]
         conn.close()
 
         assert table is not None
+        assert user_version == 1
+
+    def test_migrations_path(self, mwl_storage):
+        """MWL storage: Migrations path."""
+        assert "database/migrations/worklist" in mwl_storage.migrations_path
+
+    def test_migrate_db(self, db_file, tmp_dir, monkeypatch):
+        """MWL storage migrate db."""
+        monkeypatch.setattr(MWLStorage, "migrations_path", tmp_dir)
+
+        for i in range(2, 4):
+            with open(tmp_dir / f"{i}_add_new_column_{i}.sql", "w") as f:
+                f.write(
+                    f"""
+                    ALTER TABLE worklist_items ADD COLUMN new_column_{i} TEXT;
+                    """
+                )
+
+        storage = MWLStorage(str(db_file))
+
+        with storage._get_connection() as conn:
+            user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+            table_info = conn.execute("PRAGMA table_info(worklist_items)").fetchall()
+
+        assert user_version == 3
+        assert any(column[1] == "new_column_3" for column in table_info)
 
     def test_store_worklist_item(self, mwl_storage, result):
         """Store worklist item."""

@@ -1,3 +1,4 @@
+import glob
 import hashlib
 import logging
 import os
@@ -29,6 +30,7 @@ class Storage:
         self.schema_path = schema_path
         self.table_name = table_name
         self._ensure_db()
+        self._migrate_db()
 
         # Enable WAL mode for better concurrent access
         with self._get_connection() as conn:
@@ -62,6 +64,31 @@ class Storage:
                 conn.execute("PRAGMA user_version=1")
                 conn.commit()
 
+    def _migrate_db(self):
+        """Migrate the database schema if needed."""
+        migration_files = glob.glob(f"{self.migrations_path}/*.sql")
+        if not migration_files:
+            logger.info("No migration files found.")
+            return
+
+        sorted_migration_files = sorted(Path(f) for f in migration_files)
+
+        with self._get_connection() as conn:
+            cursor = conn.execute("PRAGMA user_version")
+            current_version = cursor.fetchone()[0]
+            for migration_file in sorted_migration_files:
+                version = int(migration_file.stem.split("_")[0])
+                if version > current_version:
+                    logger.info(f"Applying migration {migration_file.name}")
+                    conn.executescript(migration_file.read_text())
+                    conn.execute(f"PRAGMA user_version={version}")
+                    conn.commit()
+
+    @property
+    def migrations_path(self) -> str:
+        """Return the path to the migrations directory. Overridden by subclasses."""
+        return os.path.join(Path(__file__).parent.parent, "database", "migrations")
+
 
 class PACSStorage(Storage):
     """
@@ -85,6 +112,11 @@ class PACSStorage(Storage):
         self.storage_root.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"PACS storage initialized: db={db_path}, storage={storage_root}")
+
+    @property
+    def migrations_path(self) -> str:
+        """Return the path to the migrations directory for the PACS database."""
+        return os.path.join(super().migrations_path, "pacs")
 
     def _compute_storage_path(self, sop_instance_uid: str) -> str:
         """
@@ -306,6 +338,11 @@ class MWLStorage(Storage):
         """
         super().__init__(db_path, self.__class__.INIT_WORKLIST_DB_SQL, "worklist_items")
         logger.info(f"Worklist storage initialized: db={db_path}")
+
+    @property
+    def migrations_path(self) -> str:
+        """Return the path to the migrations directory for worklist db."""
+        return os.path.join(super().migrations_path, "worklist")
 
     def store_worklist_item(
         self,

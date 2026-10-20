@@ -189,6 +189,12 @@ New-Item -ItemType Junction -Path $currentJunction -Target $targetDir -Force | O
 
 Write-Log "Junction updated." "SUCCESS"
 
+# Keep VERSION in step with the junction. Otherwise, VERSION still points at
+# the release we're rolling back from, and deploy.ps1 skips the roll-forward
+$versionFile = Join-Path $BaseInstallPath "VERSION"
+[System.IO.File]::WriteAllText($versionFile, $targetVersionName, (New-Object System.Text.UTF8Encoding $false))
+Write-Log "Written VERSION: $targetVersionName" "INFO"
+
 # -- Re-register and start services ------------------------------------------
 
 Write-Log "Re-registering and starting services..." "INFO"

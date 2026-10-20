@@ -52,6 +52,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+$resolvedReleaseTag = if ($ReleaseTag -ne "latest") { $ReleaseTag } else { $null }
+
 # -- Logging ------------------------------------------------------------------
 
 $deploymentLogsDir = Join-Path $BaseInstallPath "logs\deployments"
@@ -263,6 +265,9 @@ if (-not $ZipPath) {
     }
 
     Write-Log "Release found: $($release.tag_name) - $($release.name)" "INFO"
+
+    # The concrete tag behind a "latest" request, recorded in VERSION on success.
+    $resolvedReleaseTag = $release.tag_name
 
     $zipAsset = $release.assets | Where-Object { $_.name -like "gateway-*.zip" -and $_.name -notlike "*.sha256" } | Select-Object -First 1
     if (-not $zipAsset) {
@@ -685,5 +690,6 @@ Write-Log "Deployment of version $version completed in $([math]::Round($cutoverD
 
 # Record the deployed release tag so subsequent runs can skip reinstallation.
 $versionFile = Join-Path $BaseInstallPath "VERSION"
-[System.IO.File]::WriteAllText($versionFile, $ReleaseTag, (New-Object System.Text.UTF8Encoding $false))
-Write-Log "Written VERSION: $ReleaseTag" "INFO"
+$recordedVersion = if ($resolvedReleaseTag) { $resolvedReleaseTag } else { $version }
+[System.IO.File]::WriteAllText($versionFile, $recordedVersion, (New-Object System.Text.UTF8Encoding $false))
+Write-Log "Written VERSION: $recordedVersion" "INFO"

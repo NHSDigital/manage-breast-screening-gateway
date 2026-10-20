@@ -1,4 +1,5 @@
 import hashlib
+import shutil
 import sqlite3
 from pathlib import Path
 
@@ -66,14 +67,19 @@ class TestPACSStorage:
 
     def test_migrations_path(self, pacs_storage):
         """PACS storage: Migrations path."""
-        assert "database/migrations/pacs" in pacs_storage.migrations_path
+        assert "database/pacs" in pacs_storage.migrations_path
 
     def test_migrate_db(self, db_file, tmp_dir, monkeypatch):
         """PACS storage migrate db."""
         monkeypatch.setattr(PACSStorage, "migrations_path", tmp_dir)
 
+        shutil.copy(
+            f"{Path(__file__).parent.parent.parent}/src/database/pacs/001_initial_schema.sql",
+            tmp_dir / "001_initial_schema.sql",
+        )
+
         for i in range(2, 5):
-            with open(tmp_dir / f"{i}_add_new_column_{i}.sql", "w") as f:
+            with open(tmp_dir / f"00{i}_add_new_column_{i}.sql", "w") as f:
                 f.write(
                     f"""
                     ALTER TABLE stored_instances ADD COLUMN new_column_{i} TEXT;
@@ -98,7 +104,7 @@ class TestPACSStorage:
         with storage._get_connection() as conn:
             user_version = conn.execute("PRAGMA user_version").fetchone()[0]
 
-        assert user_version == 1
+        assert user_version == 0
 
     def test_instance_exists_returns_true(self, pacs_storage):
         """Instance exists returns true."""
@@ -178,14 +184,19 @@ class TestMWLStorage:
 
     def test_migrations_path(self, mwl_storage):
         """MWL storage: Migrations path."""
-        assert "database/migrations/worklist" in mwl_storage.migrations_path
+        assert "database/worklist" in mwl_storage.migrations_path
 
     def test_migrate_db(self, db_file, tmp_dir, monkeypatch):
         """MWL storage migrate db."""
         monkeypatch.setattr(MWLStorage, "migrations_path", tmp_dir)
 
+        shutil.copy(
+            f"{Path(__file__).parent.parent.parent}/src/database/worklist/001_initial_schema.sql",
+            tmp_dir / "001_initial_schema.sql",
+        )
+
         for i in range(2, 4):
-            with open(tmp_dir / f"{i}_add_new_column_{i}.sql", "w") as f:
+            with open(tmp_dir / f"00{i}_add_new_column_{i}.sql", "w") as f:
                 f.write(
                     f"""
                     ALTER TABLE worklist_items ADD COLUMN new_column_{i} TEXT;

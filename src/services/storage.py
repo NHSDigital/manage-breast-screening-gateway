@@ -18,18 +18,13 @@ class InstanceExistsError(Exception):
 
 
 class Storage:
-    def __init__(self, db_path: str, schema_path: str, table_name: str):
+    def __init__(self, db_path: str):
         """
         Initialize storage with database.
         Args:
             db_path: Path to SQLite database
-            schema_path: Path to SQL schema file
-            table_name: Name of the main table to check for existence
         """
         self.db_path = db_path
-        self.schema_path = schema_path
-        self.table_name = table_name
-        self._ensure_db()
         self._migrate_db()
 
         # Enable WAL mode for better concurrent access
@@ -50,22 +45,12 @@ class Storage:
             if conn:
                 conn.close()
 
-    def _ensure_db(self):
-        """Ensure database exists and has correct schema."""
+    def _migrate_db(self):
+        """Migrate the database schema if needed."""
         db_dir = os.path.dirname(self.db_path)
         if db_dir:
             os.makedirs(db_dir, exist_ok=True)
 
-        with self._get_connection() as conn:
-            cursor = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{self.table_name}'")
-            if cursor.fetchone() is None:
-                logger.info(f"Initializing database schema from {self.schema_path}")
-                conn.executescript(Path(self.schema_path).read_text())
-                conn.execute("PRAGMA user_version=1")
-                conn.commit()
-
-    def _migrate_db(self):
-        """Migrate the database schema if needed."""
         migration_files = glob.glob(f"{self.migrations_path}/*.sql")
         if not migration_files:
             logger.info("No migration files found.")
@@ -87,7 +72,7 @@ class Storage:
     @property
     def migrations_path(self) -> str:
         """Return the path to the migrations directory. Overridden by subclasses."""
-        return os.path.join(Path(__file__).parent.parent, "database", "migrations")
+        return os.path.join(Path(__file__).parent.parent, "database")
 
 
 class PACSStorage(Storage):
@@ -97,8 +82,6 @@ class PACSStorage(Storage):
     Manages DICOM image storage using hash-based directory structure and SQLite database.
     """
 
-    INIT_PACS_DB_SQL = f"{Path(__file__).parent.parent}/database/init_pacs_db.sql"
-
     def __init__(self, db_path: str = "/var/lib/pacs/pacs.db", storage_root: str = "/var/lib/pacs/storage"):
         """
         Initialize PACS storage.
@@ -107,7 +90,7 @@ class PACSStorage(Storage):
             db_path: Path to SQLite database
             storage_root: Root directory for DICOM file storage
         """
-        super().__init__(db_path, self.__class__.INIT_PACS_DB_SQL, "stored_instances")
+        super().__init__(db_path)
         self.storage_root = Path(storage_root)
         self.storage_root.mkdir(parents=True, exist_ok=True)
 
@@ -327,8 +310,6 @@ class WorklistItemExistsError(Exception):
 
 
 class MWLStorage(Storage):
-    INIT_WORKLIST_DB_SQL = f"{Path(__file__).parent.parent}/database/init_worklist_db.sql"
-
     def __init__(self, db_path: str = "/var/lib/pacs/worklist.db"):
         """
         Initialize Worklist storage.
@@ -336,7 +317,7 @@ class MWLStorage(Storage):
         Args:
             db_path: Path to SQLite database
         """
-        super().__init__(db_path, self.__class__.INIT_WORKLIST_DB_SQL, "worklist_items")
+        super().__init__(db_path)
         logger.info(f"Worklist storage initialized: db={db_path}")
 
     @property

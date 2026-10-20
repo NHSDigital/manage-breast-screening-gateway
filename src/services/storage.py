@@ -59,6 +59,7 @@ class Storage:
             if cursor.fetchone() is None:
                 logger.info(f"Initializing database schema from {self.schema_path}")
                 conn.executescript(Path(self.schema_path).read_text())
+                conn.execute("PRAGMA user_version=1")
                 conn.commit()
 
 
@@ -69,6 +70,8 @@ class PACSStorage(Storage):
     Manages DICOM image storage using hash-based directory structure and SQLite database.
     """
 
+    INIT_PACS_DB_SQL = f"{Path(__file__).parent.parent}/database/init_pacs_db.sql"
+
     def __init__(self, db_path: str = "/var/lib/pacs/pacs.db", storage_root: str = "/var/lib/pacs/storage"):
         """
         Initialize PACS storage.
@@ -77,7 +80,7 @@ class PACSStorage(Storage):
             db_path: Path to SQLite database
             storage_root: Root directory for DICOM file storage
         """
-        super().__init__(db_path, f"{Path(__file__).parent}/init_pacs_db.sql", "stored_instances")
+        super().__init__(db_path, self.__class__.INIT_PACS_DB_SQL, "stored_instances")
         self.storage_root = Path(storage_root)
         self.storage_root.mkdir(parents=True, exist_ok=True)
 
@@ -292,6 +295,8 @@ class WorklistItemExistsError(Exception):
 
 
 class MWLStorage(Storage):
+    INIT_WORKLIST_DB_SQL = f"{Path(__file__).parent.parent}/database/init_worklist_db.sql"
+
     def __init__(self, db_path: str = "/var/lib/pacs/worklist.db"):
         """
         Initialize Worklist storage.
@@ -299,7 +304,7 @@ class MWLStorage(Storage):
         Args:
             db_path: Path to SQLite database
         """
-        super().__init__(db_path, f"{Path(__file__).parent}/init_worklist_db.sql", "worklist_items")
+        super().__init__(db_path, self.__class__.INIT_WORKLIST_DB_SQL, "worklist_items")
         logger.info(f"Worklist storage initialized: db={db_path}")
 
     def store_worklist_item(

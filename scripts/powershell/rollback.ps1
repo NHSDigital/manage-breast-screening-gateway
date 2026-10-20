@@ -184,16 +184,17 @@ foreach ($svc in $services) {
 
 Write-Log "Switching junction to $targetVersionName..." "INFO"
 
+# Invalidate VERSION before touching the junction
+$versionFile = Join-Path $BaseInstallPath "VERSION"
+if (Test-Path $versionFile) {
+    Remove-Item $versionFile -Force
+    Write-Log "Invalidated VERSION pending rollback outcome." "INFO"
+}
+
 (Get-Item $currentJunction).Delete()
 New-Item -ItemType Junction -Path $currentJunction -Target $targetDir -Force | Out-Null
 
 Write-Log "Junction updated." "SUCCESS"
-
-# Keep VERSION in step with the junction. Otherwise, VERSION still points at
-# the release we're rolling back from, and deploy.ps1 skips the roll-forward
-$versionFile = Join-Path $BaseInstallPath "VERSION"
-[System.IO.File]::WriteAllText($versionFile, $targetVersionName, (New-Object System.Text.UTF8Encoding $false))
-Write-Log "Written VERSION: $targetVersionName" "INFO"
 
 # -- Re-register and start services ------------------------------------------
 
@@ -272,6 +273,16 @@ $rollbackDuration = ((Get-Date) - $rollbackStart).TotalSeconds
 if ($rollbackFailed) {
     Write-Log "Rollback to $targetVersionName completed with errors. Manual intervention required." "ERROR"
     throw "Rollback encountered failures. Check logs: $logFile"
+}
+
+# Restore VERSION now the rollback has succeeded.
+$releaseTagFile = Join-Path $targetDir "RELEASE_TAG"
+if (Test-Path $releaseTagFile) {
+    $targetTag = (Get-Content $releaseTagFile -Raw).Trim()
+    [System.IO.File]::WriteAllText($versionFile, $targetTag, (New-Object System.Text.UTF8Encoding $false))
+    Write-Log "Written VERSION: $targetTag" "INFO"
+} else {
+    Write-Log "No RELEASE_TAG file in $targetVersionName; VERSION left unset." "WARNING"
 }
 
 Write-Log "Rollback complete: $currentVersionName --> $targetVersionName" "SUCCESS"

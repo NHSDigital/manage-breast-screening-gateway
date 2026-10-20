@@ -689,7 +689,9 @@ $cutoverDuration = ((Get-Date) - $cutoverStart).TotalSeconds
 Write-Log "Deployment of version $version completed in $([math]::Round($cutoverDuration, 2))s." "SUCCESS"
 
 # Record the deployed release tag so subsequent runs can skip reinstallation.
+# Also persist the tag inside the release directory
 $versionFile = Join-Path $BaseInstallPath "VERSION"
 $recordedVersion = if ($resolvedReleaseTag) { $resolvedReleaseTag } else { $version }
 [System.IO.File]::WriteAllText($versionFile, $recordedVersion, (New-Object System.Text.UTF8Encoding $false))
+[System.IO.File]::WriteAllText((Join-Path $versionDir "RELEASE_TAG"), $recordedVersion, (New-Object System.Text.UTF8Encoding $false))
 Write-Log "Written VERSION: $recordedVersion" "INFO"

@@ -264,6 +264,9 @@ if (-not $ZipPath) {
 
     Write-Log "Release found: $($release.tag_name) - $($release.name)" "INFO"
 
+    # Resolve to the concrete tag
+    $ReleaseTag = $release.tag_name
+
     $zipAsset = $release.assets | Where-Object { $_.name -like "gateway-*.zip" -and $_.name -notlike "*.sha256" } | Select-Object -First 1
     if (-not $zipAsset) {
         throw "No gateway-*.zip asset in release $($release.tag_name). Available: $(($release.assets | ForEach-Object { $_.name }) -join ', ')"
@@ -684,6 +687,11 @@ $cutoverDuration = ((Get-Date) - $cutoverStart).TotalSeconds
 Write-Log "Deployment of version $version completed in $([math]::Round($cutoverDuration, 2))s." "SUCCESS"
 
 # Record the deployed release tag so subsequent runs can skip reinstallation.
+# Also persist the tag inside the release directory
 $versionFile = Join-Path $BaseInstallPath "VERSION"
-[System.IO.File]::WriteAllText($versionFile, $ReleaseTag, (New-Object System.Text.UTF8Encoding $false))
-Write-Log "Written VERSION: $ReleaseTag" "INFO"
+# $ReleaseTag can still be "latest" only on a manual -ZipPath deploy; fall back
+# to the version derived from the zip name.
+$recordedVersion = if ($ReleaseTag -ne "latest") { $ReleaseTag } else { $version }
+[System.IO.File]::WriteAllText($versionFile, $recordedVersion, (New-Object System.Text.UTF8Encoding $false))
+[System.IO.File]::WriteAllText((Join-Path $versionDir "RELEASE_TAG"), $recordedVersion, (New-Object System.Text.UTF8Encoding $false))
+Write-Log "Written VERSION: $recordedVersion" "INFO"

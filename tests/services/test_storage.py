@@ -1,4 +1,5 @@
 import hashlib
+import multiprocessing
 import shutil
 import sqlite3
 from pathlib import Path
@@ -11,12 +12,10 @@ from services.mwl import InvalidStatusTransitionError
 from services.storage import (
     MWLStorage,
     PACSStorage,
+    Storage,
     WorklistItemExistsError,
     WorklistItemNotFoundError,
 )
-
-import multiprocessing
-from services.storage import Storage
 
 
 @pytest.fixture
@@ -615,3 +614,54 @@ class TestStoragePartialMigration:
 
         assert version == 1
         assert rows == 1
+
+    def test_partial_migration_with_existing_data(self, tmp_dir):
+        """Storage: Partial migration with existing data."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+        (migrations_dir / "002_add_name.sql").write_text("ALTER TABLE items ADD COLUMN name TEXT;")
+        (migrations_dir / "003_add_flag.sql").write_text("ALTER TABLE items ADD COLUMN flag INTEGER DEFAULT 0;")
+        # First run: apply all migrations
+        self._make_storage(db_path, migrations_dir)
+        # Insert some data
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO items (name, flag) VALUES (?, ?)", ("test", 1))
+        conn.commit()
+        conn.close()
+        # Add a new migration
+        (migrations_dir / "004_add_description.sql").write_text("ALTER TABLE items ADD COLUMN description TEXT;")
+        # Second run: should apply only the new migration
+        self._make_storage(db_path, migrations_dir)
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        columns = [c[1] for c in conn.execute("PRAGMA table_info(items)")]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        conn.close()
+        assert version == 4
+        assert "description" in columns
+        assert rows == 2  # existing data preserved
+
+    def test_migration_rollback_on_error(self, tmp_dir):
+        """Storage: Migration rollback on error."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+        # First run: apply migration 001
+        self._make_storage(db_path, migrations_dir)
+        # Second run: migration 002 should fail and rollback
+        (migrations_dir / "002_invalid.sql").write_text("ALTER TABLE non_existing_table ADD COLUMN name TEXT;")
+        with pytest.raises(sqlite3.OperationalError):
+            self._make_storage(db_path, migrations_dir)
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        conn.close()
+        assert version == 1  # version should not have changed
+        assert rows == 1  # data from migration 001 should still exist

@@ -43,7 +43,7 @@ APPLICATIONINSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
 # ── Discover machines ──────────────────────────────────────────────────────────
 MACHINES_JSON=$(az connectedmachine list \
   --resource-group "$ARC_RG" \
-  --query "[?tags.DeploymentRing=='${RING}'].{name:name,location:location}" \
+  --query "[?tags.DeploymentRing=='${RING}'].{name:name,location:location,allowedCallingAets:tags.AllowedCallingAets}" \
   --output json)
 
 MACHINE_COUNT=$(echo "$MACHINES_JSON" | jq 'length')
@@ -71,6 +71,7 @@ fi
 while IFS= read -r MACHINE_JSON; do
   MACHINE=$(echo "$MACHINE_JSON" | jq -r '.name')
   LOCATION=$(echo "$MACHINE_JSON" | jq -r '.location')
+  ALLOWED_CALLING_AETS=$(echo "$MACHINE_JSON" | jq -r '.allowedCallingAets // empty')
   echo "Preparing deploy for $MACHINE ($LOCATION)..."
 
   # Build .env, then base64-encode to pass newlines as a run command parameter.
@@ -91,6 +92,16 @@ PACS_STORAGE_PATH=${BASE_PATH}/data/storage
 PACS_DB_PATH=${BASE_PATH}/data/pacs.db
 LOG_LEVEL=INFO
 SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
+
+  # Per-machine DICOM access control from the machine's AllowedCallingAets Arc
+  # tag (comma-separated). No tag means the lines are omitted and the DICOM
+  # servers accept any calling AE title — see ADR-008.
+  if [[ -n "$ALLOWED_CALLING_AETS" ]]; then
+    ENV_CONTENT="${ENV_CONTENT}
+PACS_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS}
+MWL_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS}"
+    echo "Restricting DICOM calling AE titles for $MACHINE to: $ALLOWED_CALLING_AETS"
+  fi
 
   # Cross-platform base64 encoding (works on macOS and Linux)
   ENV_CONTENT_B64=$(printf '%s' "$ENV_CONTENT" | base64 | tr -d '\n')

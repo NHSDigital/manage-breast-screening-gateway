@@ -82,6 +82,7 @@ class TestEndToEndRelayToUpload:
         server.storage = mwl_storage
         server.ae = None
         server.block = False
+        server.allowed_calling_aets = []
         return server
 
     @pytest.fixture
@@ -94,6 +95,7 @@ class TestEndToEndRelayToUpload:
         server.mwl_storage = mwl_storage
         server.ae = None
         server.block = False
+        server.allowed_calling_aets = []
         return server
 
     @pytest.mark.asyncio

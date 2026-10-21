@@ -73,6 +73,7 @@ docker compose logs -f mwl
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
 | `MWL_AET` | `MWL_SCP` | Application Entity Title |
+| `MWL_ALLOWED_CALLING_AETS` | *(empty)* | Comma-separated calling AE titles to accept associations from; empty accepts any |
 | `MWL_PORT` | `4243` | DICOM service port |
 | `MWL_DB_PATH` | `/var/lib/pacs/worklist.db` | SQLite database path |
 | `LOG_LEVEL` | `INFO` | Logging level |
@@ -107,20 +108,20 @@ ae.requested_contexts = QueryRetrievePresentationContexts
 
 # Create query dataset
 ds = Dataset()
-ds.PatientID = '9876543210'
-ds.PatientName = ''
-ds.AccessionNumber = ''
+ds.PatientID = "9876543210"
+ds.PatientName = ""
+ds.AccessionNumber = ""
 
 # Scheduled procedure step query
 sps = Dataset()
-sps.Modality = 'MG'
-sps.ScheduledProcedureStepStartDate = '20260108'
+sps.Modality = "MG"
+sps.ScheduledProcedureStepStartDate = "20260108"
 ds.ScheduledProcedureStepSequence = [sps]
 
 # Send C-FIND with Worklist Information Model ('W')
-assoc = ae.associate('localhost', 4243, ae_title='MWL_SCP')
-responses = assoc.send_c_find(ds, query_model='W')
-for (status, identifier) in responses:
+assoc = ae.associate("localhost", 4243, ae_title="MWL_SCP")
+responses = assoc.send_c_find(ds, query_model="W")
+for status, identifier in responses:
     if status.Status in (0xFF00, 0xFF01):
         print(f"Found: {identifier.PatientName}")
 assoc.release()

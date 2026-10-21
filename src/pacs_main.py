@@ -17,6 +17,8 @@ def main():
 
     Environment variables:
     PACS_AET: AE Title for the PACS server (default: SCREENING_PACS)
+    PACS_ALLOWED_CALLING_AETS: Comma-separated calling AE titles to accept associations from
+        (default: empty, accepting any calling AE title)
     PACS_PORT: Port to listen on (default: 4244)
     PACS_STORAGE_PATH: Path to store incoming DICOM files (default: /var/lib/pacs/storage)
     PACS_DB_PATH: Path to the SQLite database file (default: /var/lib/pacs/pacs.db)
@@ -32,7 +34,15 @@ def main():
     pacs_db_path = config.pacs_db_path()
     mwl_db_path = config.mwl_db_path()
 
-    pacs_server = PACSServer(pacs_aet, pacs_port, pacs_storage_path, pacs_db_path, block=True, mwl_db_path=mwl_db_path)
+    pacs_server = PACSServer(
+        pacs_aet,
+        pacs_port,
+        pacs_storage_path,
+        pacs_db_path,
+        block=True,
+        mwl_db_path=mwl_db_path,
+        allowed_calling_aets=config.pacs_allowed_calling_aets(),
+    )
 
     configure_telemetry(service_name="pacs-server")
 

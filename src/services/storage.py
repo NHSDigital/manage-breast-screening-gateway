@@ -3,7 +3,9 @@ import hashlib
 import logging
 import os
 import sqlite3
+import threading
 from contextlib import contextmanager
+from filelock import FileLock
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -18,6 +20,8 @@ class InstanceExistsError(Exception):
 
 
 class Storage:
+    _thread_lock = threading.Lock()
+
     def __init__(self, db_path: str):
         """
         Initialize storage with database.
@@ -25,6 +29,7 @@ class Storage:
             db_path: Path to SQLite database
         """
         self.db_path = db_path
+        self._lock_path = Path(db_path).with_suffix(".lock")
         self._migrate_db()
 
         # Enable WAL mode for better concurrent access
@@ -45,29 +50,38 @@ class Storage:
             if conn:
                 conn.close()
 
+    @contextmanager
+    def _migration_lock(self):
+        """Acquire a file lock for database migrations."""
+        lock = FileLock(str(self._lock_path))
+        with lock:
+            with self.__class__._thread_lock:
+                yield
+
     def _migrate_db(self):
         """Migrate the database schema if needed."""
-        db_dir = os.path.dirname(self.db_path)
-        if db_dir:
-            os.makedirs(db_dir, exist_ok=True)
+        with self._migration_lock():
+            db_dir = os.path.dirname(self.db_path)
+            if db_dir:
+                os.makedirs(db_dir, exist_ok=True)
 
-        migration_files = glob.glob(f"{self.migrations_path}/*.sql")
-        if not migration_files:
-            logger.info("No migration files found.")
-            return
+            migration_files = glob.glob(f"{self.migrations_path}/*.sql")
+            if not migration_files:
+                logger.info("No migration files found.")
+                return
 
-        sorted_migration_files = sorted(Path(f) for f in migration_files)
+            sorted_migration_files = sorted(Path(f) for f in migration_files)
 
-        with self._get_connection() as conn:
-            cursor = conn.execute("PRAGMA user_version")
-            current_version = cursor.fetchone()[0]
-            for migration_file in sorted_migration_files:
-                version = int(migration_file.stem.split("_")[0])
-                if version > current_version:
-                    logger.info(f"Applying migration {migration_file.name}")
-                    conn.executescript(migration_file.read_text())
-                    conn.execute(f"PRAGMA user_version={version}")
-                    conn.commit()
+            with self._get_connection() as conn:
+                cursor = conn.execute("PRAGMA user_version")
+                current_version = cursor.fetchone()[0]
+                for migration_file in sorted_migration_files:
+                    version = int(migration_file.stem.split("_")[0])
+                    if version > current_version:
+                        logger.info(f"Applying migration {migration_file.name}")
+                        conn.executescript("BEGIN IMMEDIATE;\n" + migration_file.read_text())
+                        conn.execute(f"PRAGMA user_version={version}")
+                        conn.commit()
 
     @property
     def migrations_path(self) -> str:

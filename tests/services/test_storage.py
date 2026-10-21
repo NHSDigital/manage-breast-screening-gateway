@@ -15,6 +15,9 @@ from services.storage import (
     WorklistItemNotFoundError,
 )
 
+import multiprocessing
+from services.storage import Storage
+
 
 @pytest.fixture
 def db_file(tmp_dir):
@@ -506,3 +509,109 @@ class TestMWLStorage:
         mwl_storage.update_status(item.accession_number, "DISCONTINUED")
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "DISCONTINUED"
+
+
+class TestStorageMigrationLock:
+    def _worker(self, db_path, migrations_dir, barrier):
+        class TestStorage(Storage):
+            @property
+            def migrations_path(self):
+                return str(migrations_dir)
+
+        barrier.wait(timeout=10)
+        TestStorage(db_path=str(db_path))
+
+    def test_migration_lock_prevents_concurrent_processes(self, tmp_dir):
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+
+        (migrations_dir / "001_init.sql").write_text(
+            """
+            CREATE TABLE items (id INTEGER PRIMARY KEY);
+            INSERT INTO items DEFAULT VALUES;
+            """
+        )
+
+        ctx = multiprocessing.get_context("spawn")
+        barrier = ctx.Barrier(2)
+        procs = [ctx.Process(target=self._worker, args=(db_path, migrations_dir, barrier)) for _ in range(2)]
+
+        for p in procs:
+            p.start()
+
+        for p in procs:
+            p.join()
+
+        assert all(p.exitcode == 0 for p in procs)
+
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        conn.close()
+
+        assert rows == 1
+        assert version == 1
+
+
+class TestStoragePartialMigration:
+    def _make_storage(self, db_path, migrations_dir):
+        class TestStorage(Storage):
+            @property
+            def migrations_path(self):
+                return str(migrations_dir)
+
+        return TestStorage(db_path=str(db_path))
+
+    def test_applies_only_pending_migrations(self, tmp_dir):
+        """Storage: Only migrations newer than user_version are applied."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+
+        # First run: only migration 001 exists
+        self._make_storage(db_path, migrations_dir)
+
+        # New migrations are added later. 001 is not idempotent, so
+        # re-running it would fail with "table items already exists".
+        (migrations_dir / "002_add_name.sql").write_text("ALTER TABLE items ADD COLUMN name TEXT;")
+        (migrations_dir / "003_add_flag.sql").write_text("ALTER TABLE items ADD COLUMN flag INTEGER DEFAULT 0;")
+
+        # Second run: database is at version 1, should apply 002 and 003 only
+        self._make_storage(db_path, migrations_dir)
+
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        columns = [c[1] for c in conn.execute("PRAGMA table_info(items)")]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        conn.close()
+
+        assert version == 3
+        assert "name" in columns
+        assert "flag" in columns
+        assert rows == 1  # data from migration 001 not duplicated
+
+    def test_no_op_when_fully_migrated(self, tmp_dir):
+        """Storage: Re-initialising a fully migrated database changes nothing."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+
+        self._make_storage(db_path, migrations_dir)
+        self._make_storage(db_path, migrations_dir)
+
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        conn.close()
+
+        assert version == 1
+        assert rows == 1

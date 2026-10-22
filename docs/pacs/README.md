@@ -124,6 +124,7 @@ Environment variables:
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
 | `PACS_AET` | `SCREENING_PACS` | Application Entity Title |
+| `PACS_ALLOWED_CALLING_AETS` | *(empty)* | Comma-separated calling AE titles to accept associations from; empty accepts any |
 | `PACS_PORT` | `4244` | DICOM service port |
 | `PACS_STORAGE_PATH` | `/var/lib/pacs/storage` | Directory for DICOM files |
 | `PACS_DB_PATH` | `/var/lib/pacs/pacs.db` | SQLite database path |

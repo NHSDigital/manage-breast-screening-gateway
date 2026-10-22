@@ -23,8 +23,17 @@ def pacs_storage_path() -> str:
     return os.getenv("PACS_STORAGE_PATH", "/var/lib/pacs/storage")
 
 
+def _calling_aet_list(value: str) -> list[str]:
+    return [aet.strip() for aet in value.split(",") if aet.strip()]
+
+
 def mwl_aet() -> str:
     return os.getenv("MWL_AET", "SCREENING_MWL")
+
+
+def mwl_allowed_calling_aets() -> list[str]:
+    """Calling AE titles the MWL server accepts associations from."""
+    return _calling_aet_list(os.getenv("MWL_ALLOWED_CALLING_AETS", ""))
 
 
 def mwl_port() -> int:
@@ -33,6 +42,11 @@ def mwl_port() -> int:
 
 def pacs_aet() -> str:
     return os.getenv("PACS_AET", "SCREENING_PACS")
+
+
+def pacs_allowed_calling_aets() -> list[str]:
+    """Calling AE titles the PACS server accepts associations from."""
+    return _calling_aet_list(os.getenv("PACS_ALLOWED_CALLING_AETS", ""))
 
 
 def pacs_port() -> int:

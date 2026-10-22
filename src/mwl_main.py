@@ -17,6 +17,8 @@ def main():
 
     Environment variables:
     MWL_AET: AE Title for the MWL server (default: MWL_SCP)
+    MWL_ALLOWED_CALLING_AETS: Comma-separated calling AE titles to accept associations from
+        (default: empty, accepting any calling AE title)
     MWL_PORT: Port to listen on (default: 4243)
     MWL_DB_PATH: Path to the SQLite database file (default: /var/lib/pacs/worklist.db)
     """
@@ -29,7 +31,13 @@ def main():
     mwl_port = config.mwl_port()
     mwl_db_path = config.mwl_db_path()
 
-    mwl_server = MWLServer(mwl_aet, mwl_port, mwl_db_path, block=True)
+    mwl_server = MWLServer(
+        mwl_aet,
+        mwl_port,
+        mwl_db_path,
+        block=True,
+        allowed_calling_aets=config.mwl_allowed_calling_aets(),
+    )
 
     configure_telemetry(service_name="mwl-server")
 

@@ -15,7 +15,7 @@ We have considered using Alembic for database migrations, but it would require a
 
 We've decided to implement a custom database migration system that will allow us to manage schema changes for both SQLite databases without the overhead of a dual setup.
 
-Migrations are handled in applicaton code when the relevant database storage class is initialized. The migration system will check the current schema version of the database via the user_version pragma and apply any necessary migrations to bring it up to date with the latest schema defined in the application code.
+Migrations are handled in application code when the relevant database storage class is initialized. The migration system will check the current schema version of the database via the user_version pragma and apply any necessary migrations to bring it up to date with the latest schema defined in the application code.
 
 This offers us a relatively simple and lightweight solution for managing database schema changes, while still allowing us to release code and schema changes together.
 

@@ -656,12 +656,18 @@ class TestStoragePartialMigration:
         # First run: apply migration 001
         self._make_storage(db_path, migrations_dir)
         # Second run: migration 002 should fail and rollback
-        (migrations_dir / "002_invalid.sql").write_text("ALTER TABLE non_existing_table ADD COLUMN name TEXT;")
+        (migrations_dir / "002_invalid.sql").write_text(
+            "ALTER TABLE items ADD COLUMN name TEXT;"
+            "INSERT INTO items DEFAULT VALUES;"
+            "ALTER TABLE non_existing_table ADD COLUMN name TEXT;"
+        )
         with pytest.raises(sqlite3.OperationalError):
             self._make_storage(db_path, migrations_dir)
         conn = sqlite3.connect(db_path)
         version = conn.execute("PRAGMA user_version").fetchone()[0]
         rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        columns = [column[1] for column in conn.execute("PRAGMA table_info(items)")]
         conn.close()
         assert version == 1  # version should not have changed
         assert rows == 1  # data from migration 001 should still exist
+        assert "name" not in columns  # schema changes should also be rolled back

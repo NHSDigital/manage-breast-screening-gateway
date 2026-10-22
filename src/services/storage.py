@@ -5,9 +5,10 @@ import os
 import sqlite3
 import threading
 from contextlib import contextmanager
-from filelock import FileLock
 from pathlib import Path
 from typing import Dict, List, Optional
+
+from filelock import FileLock
 
 from models import WorklistItem
 from services.mwl import MWLStatusManager

@@ -18,7 +18,7 @@ Constraints:
 
 Control access with two independent layers:
 
-1. **Calling AE title allowlist in the application.** `PACS_ALLOWED_CALLING_AETS` and `MWL_ALLOWED_CALLING_AETS` set pynetdicom's `require_calling_aet` on the respective server. Associations from unlisted calling AE titles are rejected at the association level. An empty value (the default) accepts any caller, so existing sites are unaffected until configured. Per-site values come from an `AllowedCallingAets` tag (comma-separated) on each Arc machine, which the deployment pipeline reads into the machine's `.env`.
+1. **Calling AE title allowlist in the application.** `PACS_ALLOWED_CALLING_AETS` and `MWL_ALLOWED_CALLING_AETS` set pynetdicom's `require_calling_aet` on the respective server. Associations from unlisted calling AE titles are rejected at the association level. An empty value (the default) accepts any caller, so existing sites are unaffected until configured. Per-site values come from an `AllowedCallingAets` tag (comma-separated) on each Arc machine, which the deployment pipeline reads into the machine's `.env`, always appending `SMOKE_TEST_AET` so the post-deployment smoke test keeps passing on restricted machines.
 
 2. **IP scoping at the Windows Firewall.** The inbound rules for the PACS and MWL ports are restricted to the known modality addresses per site (`Set-NetFirewallRule ... -RemoteAddress`). This is an operational task per VM, not application code.
 

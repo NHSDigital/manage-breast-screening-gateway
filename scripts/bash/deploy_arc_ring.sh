@@ -95,12 +95,14 @@ SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
 
   # Per-machine DICOM access control from the machine's AllowedCallingAets Arc
   # tag (comma-separated). No tag means the lines are omitted and the DICOM
-  # servers accept any calling AE title — see ADR-008.
+  # servers accept any calling AE title — see ADR-008. SMOKE_TEST_AET (the
+  # calling title used by scripts/python/smoke_test.py) is always appended so
+  # the post-deployment smoke test passes on restricted machines.
   if [[ -n "$ALLOWED_CALLING_AETS" ]]; then
     ENV_CONTENT="${ENV_CONTENT}
-PACS_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS}
-MWL_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS}"
-    echo "Restricting DICOM calling AE titles for $MACHINE to: $ALLOWED_CALLING_AETS"
+PACS_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS},SMOKE_TEST_AET
+MWL_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS},SMOKE_TEST_AET"
+    echo "Restricting DICOM calling AE titles for $MACHINE to: $ALLOWED_CALLING_AETS (+ SMOKE_TEST_AET)"
   fi
 
   # Cross-platform base64 encoding (works on macOS and Linux)

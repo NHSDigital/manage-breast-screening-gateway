@@ -22,9 +22,11 @@ services:
       - CLOUD_API_TOKEN=${CLOUD_API_TOKEN:-testtoken}
       - LOG_LEVEL=INFO
       - MWL_AET=MWL_SCP
+      - MWL_ALLOWED_CALLING_AETS=${MWL_ALLOWED_CALLING_AETS:-}
       - MWL_PORT=${MWL_PORT:-4243}
       - MWL_DB_PATH=${MWL_DB_PATH:-/var/lib/pacs/worklist.db}
       - PACS_AET=SCREENING_PACS
+      - PACS_ALLOWED_CALLING_AETS=${PACS_ALLOWED_CALLING_AETS:-}
       - PACS_PORT=${PACS_PORT:-4244}
       - PACS_STORAGE_PATH=${PACS_STORAGE_PATH:-/var/lib/pacs/storage}
       - PACS_DB_PATH=${PACS_DB_PATH:-/var/lib/pacs/pacs.db}

@@ -89,7 +89,7 @@ class RelayListener:
             refresh_at = max(expires_on - RELAY_REFRESH_MARGIN_SECONDS, int(time.time()))
 
             try:
-                async with self._connect(connection_url) as websocket:
+                async with connect(connection_url, compression=None, ping_interval=30, ping_timeout=10) as websocket:
                     logger.info("Connected - waiting for worklist actions...")
                     await self._listen_on_connection(websocket, refresh_at)
             except RelayTokenExpiredError:
@@ -166,13 +166,6 @@ class RelayListener:
 
         logger.error("Unsupported action: %s", action_name)
         return {"status": "error", "message": f"Unsupported action: {action_name}"}
-
-    def _connect(self, connection_url: str):
-        """Connect to Azure Relay."""
-        return connect(
-            connection_url,
-            compression=None,
-        )
 
     def process_with_modality_emulator(self, patient_name: str | None = None):
         """Process worklist items with ModalityEmulator."""
@@ -314,15 +307,13 @@ async def main():
         except KeyboardInterrupt:
             logger.warning("\nShutting down...")
             break
-        except ConnectionClosedError as e:
-            code = e.rcvd.code if e.rcvd else "N/A"
-            reason = e.rcvd.reason if e.rcvd else "N/A"
-            logger.warning("Connection closed with code %s: %s", code, reason)
-            logger.warning("Retrying in 5 seconds...")
+        except ConnectionClosedError:
+            logger.exception("Connection closed")
+            logger.info("Retrying in 5 seconds...")
             await asyncio.sleep(5)
-        except Exception as e:
-            logger.warning("Connection error: %s", e)
-            logger.warning("Retrying in 5 seconds...")
+        except Exception:
+            logger.exception("Connection error")
+            logger.info("Retrying in 5 seconds...")
             await asyncio.sleep(5)
 
 

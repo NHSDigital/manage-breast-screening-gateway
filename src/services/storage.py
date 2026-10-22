@@ -61,11 +61,11 @@ class Storage:
 
     def _migrate_db(self):
         """Migrate the database schema if needed."""
-        with self._migration_lock():
-            db_dir = os.path.dirname(self.db_path)
-            if db_dir:
-                os.makedirs(db_dir, exist_ok=True)
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir:
+            os.makedirs(db_dir, exist_ok=True)
 
+        with self._migration_lock():
             migration_files = glob.glob(f"{self.migrations_path}/*.sql")
             if not migration_files:
                 logger.info("No migration files found.")

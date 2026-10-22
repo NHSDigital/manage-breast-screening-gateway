@@ -71,7 +71,9 @@ class Storage:
                 logger.info("No migration files found.")
                 return
 
-            sorted_migration_files = sorted(Path(f) for f in migration_files)
+            sorted_migration_files = sorted(
+                (Path(f) for f in migration_files), key=lambda path: int(path.stem.split("_")[0])
+            )
 
             with self._get_connection() as conn:
                 cursor = conn.execute("PRAGMA user_version")

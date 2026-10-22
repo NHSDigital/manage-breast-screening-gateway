@@ -1,4 +1,6 @@
 import hashlib
+import multiprocessing
+import shutil
 import sqlite3
 from pathlib import Path
 
@@ -10,6 +12,7 @@ from services.mwl import InvalidStatusTransitionError
 from services.storage import (
     MWLStorage,
     PACSStorage,
+    Storage,
     WorklistItemExistsError,
     WorklistItemNotFoundError,
 )
@@ -58,9 +61,52 @@ class TestPACSStorage:
 
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='stored_instances'").fetchone()
+        user_version = conn.execute("PRAGMA user_version").fetchone()[0]
         conn.close()
 
         assert table is not None
+        assert user_version == 1
+
+    def test_migrations_path(self, pacs_storage):
+        """PACS storage: Migrations path."""
+        assert "database/pacs" in pacs_storage.migrations_path
+
+    def test_migrate_db(self, db_file, tmp_dir, monkeypatch):
+        """PACS storage migrate db."""
+        monkeypatch.setattr(PACSStorage, "migrations_path", tmp_dir)
+
+        shutil.copy(
+            f"{Path(__file__).parent.parent.parent}/src/database/pacs/001_initial_schema.sql",
+            tmp_dir / "001_initial_schema.sql",
+        )
+
+        for i in range(2, 5):
+            with open(tmp_dir / f"00{i}_add_new_column_{i}.sql", "w") as f:
+                f.write(
+                    f"""
+                    ALTER TABLE stored_instances ADD COLUMN new_column_{i} TEXT;
+                    """
+                )
+
+        storage = PACSStorage(str(db_file), str(tmp_dir))
+
+        with storage._get_connection() as conn:
+            user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+            table_info = conn.execute("PRAGMA table_info(stored_instances)").fetchall()
+
+        assert user_version == 4
+        assert any(column[1] == "new_column_4" for column in table_info)
+
+    def test_migrate_db_no_migrations(self, db_file, tmp_dir, monkeypatch):
+        """PACS storage migrate db no migrations."""
+        monkeypatch.setattr(PACSStorage, "migrations_path", tmp_dir)
+
+        storage = PACSStorage(str(db_file), str(tmp_dir))
+
+        with storage._get_connection() as conn:
+            user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+
+        assert user_version == 0
 
     def test_instance_exists_returns_true(self, pacs_storage):
         """Instance exists returns true."""
@@ -132,9 +178,41 @@ class TestMWLStorage:
         """MWL storage: Init."""
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='worklist_items'").fetchone()
+        user_version = conn.execute("PRAGMA user_version").fetchone()[0]
         conn.close()
 
         assert table is not None
+        assert user_version == 1
+
+    def test_migrations_path(self, mwl_storage):
+        """MWL storage: Migrations path."""
+        assert "database/worklist" in mwl_storage.migrations_path
+
+    def test_migrate_db(self, db_file, tmp_dir, monkeypatch):
+        """MWL storage migrate db."""
+        monkeypatch.setattr(MWLStorage, "migrations_path", tmp_dir)
+
+        shutil.copy(
+            f"{Path(__file__).parent.parent.parent}/src/database/worklist/001_initial_schema.sql",
+            tmp_dir / "001_initial_schema.sql",
+        )
+
+        for i in range(2, 4):
+            with open(tmp_dir / f"00{i}_add_new_column_{i}.sql", "w") as f:
+                f.write(
+                    f"""
+                    ALTER TABLE worklist_items ADD COLUMN new_column_{i} TEXT;
+                    """
+                )
+
+        storage = MWLStorage(str(db_file))
+
+        with storage._get_connection() as conn:
+            user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+            table_info = conn.execute("PRAGMA table_info(worklist_items)").fetchall()
+
+        assert user_version == 3
+        assert any(column[1] == "new_column_3" for column in table_info)
 
     def test_store_worklist_item(self, mwl_storage, result):
         """Store worklist item."""
@@ -430,3 +508,166 @@ class TestMWLStorage:
         mwl_storage.update_status(item.accession_number, "DISCONTINUED")
 
         assert mwl_storage.get_worklist_item(item.accession_number).status == "DISCONTINUED"
+
+
+class TestStorageMigrationLock:
+    def _worker(self, db_path, migrations_dir, barrier):
+        class TestStorage(Storage):
+            @property
+            def migrations_path(self):
+                return str(migrations_dir)
+
+        barrier.wait(timeout=10)
+        TestStorage(db_path=str(db_path))
+
+    def test_migration_lock_prevents_concurrent_processes(self, tmp_dir):
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+
+        (migrations_dir / "001_init.sql").write_text(
+            """
+            CREATE TABLE items (id INTEGER PRIMARY KEY);
+            INSERT INTO items DEFAULT VALUES;
+            """
+        )
+
+        ctx = multiprocessing.get_context("spawn")
+        barrier = ctx.Barrier(2)
+        procs = [ctx.Process(target=self._worker, args=(db_path, migrations_dir, barrier)) for _ in range(2)]
+
+        for p in procs:
+            p.start()
+
+        for p in procs:
+            p.join()
+
+        assert all(p.exitcode == 0 for p in procs)
+
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        conn.close()
+
+        assert rows == 1
+        assert version == 1
+
+
+class TestStoragePartialMigration:
+    def _make_storage(self, db_path, migrations_dir):
+        class TestStorage(Storage):
+            @property
+            def migrations_path(self):
+                return str(migrations_dir)
+
+        return TestStorage(db_path=str(db_path))
+
+    def test_applies_only_pending_migrations(self, tmp_dir):
+        """Storage: Only migrations newer than user_version are applied."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+
+        # First run: only migration 001 exists
+        self._make_storage(db_path, migrations_dir)
+
+        # New migrations are added later. 001 is not idempotent, so
+        # re-running it would fail with "table items already exists".
+        (migrations_dir / "002_add_name.sql").write_text("ALTER TABLE items ADD COLUMN name TEXT;")
+        (migrations_dir / "003_add_flag.sql").write_text("ALTER TABLE items ADD COLUMN flag INTEGER DEFAULT 0;")
+
+        # Second run: database is at version 1, should apply 002 and 003 only
+        self._make_storage(db_path, migrations_dir)
+
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        columns = [c[1] for c in conn.execute("PRAGMA table_info(items)")]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        conn.close()
+
+        assert version == 3
+        assert "name" in columns
+        assert "flag" in columns
+        assert rows == 1  # data from migration 001 not duplicated
+
+    def test_no_op_when_fully_migrated(self, tmp_dir):
+        """Storage: Re-initialising a fully migrated database changes nothing."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+
+        self._make_storage(db_path, migrations_dir)
+        self._make_storage(db_path, migrations_dir)
+
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        conn.close()
+
+        assert version == 1
+        assert rows == 1
+
+    def test_partial_migration_with_existing_data(self, tmp_dir):
+        """Storage: Partial migration with existing data."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+        (migrations_dir / "002_add_name.sql").write_text("ALTER TABLE items ADD COLUMN name TEXT;")
+        (migrations_dir / "003_add_flag.sql").write_text("ALTER TABLE items ADD COLUMN flag INTEGER DEFAULT 0;")
+        # First run: apply all migrations
+        self._make_storage(db_path, migrations_dir)
+        # Insert some data
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO items (name, flag) VALUES (?, ?)", ("test", 1))
+        conn.commit()
+        conn.close()
+        # Add a new migration
+        (migrations_dir / "004_add_description.sql").write_text("ALTER TABLE items ADD COLUMN description TEXT;")
+        # Second run: should apply only the new migration
+        self._make_storage(db_path, migrations_dir)
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        columns = [c[1] for c in conn.execute("PRAGMA table_info(items)")]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        conn.close()
+        assert version == 4
+        assert "description" in columns
+        assert rows == 2  # existing data preserved
+
+    def test_migration_rollback_on_error(self, tmp_dir):
+        """Storage: Migration rollback on error."""
+        db_path = tmp_dir / "test.db"
+        migrations_dir = tmp_dir / "migrations"
+        migrations_dir.mkdir()
+        (migrations_dir / "001_init.sql").write_text(
+            "CREATE TABLE items (id INTEGER PRIMARY KEY);INSERT INTO items DEFAULT VALUES;"
+        )
+        # First run: apply migration 001
+        self._make_storage(db_path, migrations_dir)
+        # Second run: migration 002 should fail and rollback
+        (migrations_dir / "002_invalid.sql").write_text(
+            "ALTER TABLE items ADD COLUMN name TEXT;"
+            "INSERT INTO items DEFAULT VALUES;"
+            "ALTER TABLE non_existing_table ADD COLUMN name TEXT;"
+        )
+        with pytest.raises(sqlite3.OperationalError):
+            self._make_storage(db_path, migrations_dir)
+        conn = sqlite3.connect(db_path)
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+        columns = [column[1] for column in conn.execute("PRAGMA table_info(items)")]
+        conn.close()
+        assert version == 1  # version should not have changed
+        assert rows == 1  # data from migration 001 should still exist
+        assert "name" not in columns  # schema changes should also be rolled back

@@ -1,10 +1,14 @@
+import glob
 import hashlib
 import logging
 import os
 import sqlite3
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
+
+from filelock import FileLock
 
 from models import WorklistItem
 from services.mwl import MWLStatusManager
@@ -17,18 +21,17 @@ class InstanceExistsError(Exception):
 
 
 class Storage:
-    def __init__(self, db_path: str, schema_path: str, table_name: str):
+    _thread_lock = threading.Lock()
+
+    def __init__(self, db_path: str):
         """
         Initialize storage with database.
         Args:
             db_path: Path to SQLite database
-            schema_path: Path to SQL schema file
-            table_name: Name of the main table to check for existence
         """
         self.db_path = db_path
-        self.schema_path = schema_path
-        self.table_name = table_name
-        self._ensure_db()
+        self._lock_path = Path(db_path).with_suffix(".lock")
+        self._migrate_db()
 
         # Enable WAL mode for better concurrent access
         with self._get_connection() as conn:
@@ -48,18 +51,45 @@ class Storage:
             if conn:
                 conn.close()
 
-    def _ensure_db(self):
-        """Ensure database exists and has correct schema."""
+    @contextmanager
+    def _migration_lock(self):
+        """Acquire a file lock for database migrations."""
+        lock = FileLock(str(self._lock_path))
+        with lock:
+            with self.__class__._thread_lock:
+                yield
+
+    def _migrate_db(self):
+        """Migrate the database schema if needed."""
         db_dir = os.path.dirname(self.db_path)
         if db_dir:
             os.makedirs(db_dir, exist_ok=True)
 
-        with self._get_connection() as conn:
-            cursor = conn.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{self.table_name}'")
-            if cursor.fetchone() is None:
-                logger.info(f"Initializing database schema from {self.schema_path}")
-                conn.executescript(Path(self.schema_path).read_text())
-                conn.commit()
+        with self._migration_lock():
+            migration_files = glob.glob(f"{self.migrations_path}/*.sql")
+            if not migration_files:
+                logger.info("No migration files found.")
+                return
+
+            sorted_migration_files = sorted(
+                (Path(f) for f in migration_files), key=lambda path: int(path.stem.split("_")[0])
+            )
+
+            with self._get_connection() as conn:
+                cursor = conn.execute("PRAGMA user_version")
+                current_version = cursor.fetchone()[0]
+                for migration_file in sorted_migration_files:
+                    version = int(migration_file.stem.split("_")[0])
+                    if version > current_version:
+                        logger.info(f"Applying migration {migration_file.name}")
+                        conn.executescript("BEGIN IMMEDIATE;\n" + migration_file.read_text())
+                        conn.execute(f"PRAGMA user_version={version}")
+                        conn.commit()
+
+    @property
+    def migrations_path(self) -> str:
+        """Return the path to the migrations directory. Overridden by subclasses."""
+        return os.path.join(Path(__file__).parent.parent, "database")
 
 
 class PACSStorage(Storage):
@@ -77,11 +107,16 @@ class PACSStorage(Storage):
             db_path: Path to SQLite database
             storage_root: Root directory for DICOM file storage
         """
-        super().__init__(db_path, f"{Path(__file__).parent}/init_pacs_db.sql", "stored_instances")
+        super().__init__(db_path)
         self.storage_root = Path(storage_root)
         self.storage_root.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"PACS storage initialized: db={db_path}, storage={storage_root}")
+
+    @property
+    def migrations_path(self) -> str:
+        """Return the path to the migrations directory for the PACS database."""
+        return os.path.join(super().migrations_path, "pacs")
 
     def _compute_storage_path(self, sop_instance_uid: str) -> str:
         """
@@ -299,8 +334,13 @@ class MWLStorage(Storage):
         Args:
             db_path: Path to SQLite database
         """
-        super().__init__(db_path, f"{Path(__file__).parent}/init_worklist_db.sql", "worklist_items")
+        super().__init__(db_path)
         logger.info(f"Worklist storage initialized: db={db_path}")
+
+    @property
+    def migrations_path(self) -> str:
+        """Return the path to the migrations directory for worklist db."""
+        return os.path.join(super().migrations_path, "worklist")
 
     def store_worklist_item(
         self,

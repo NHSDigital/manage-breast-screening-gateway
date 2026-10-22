@@ -6,7 +6,7 @@ Status: Accepted
 
 ## Context
 
-We are currently using two SQLite databases to store PACS and worklist data. As our application evolves, we need to make changes to the database schema, such as adding new tables, modifying existing ones, or removing obsolete structures. To manage these changes effectively and ensure that our database remains consistent with the application code. We need a database migration strategy which allows us to release schema changes alongside code changes.
+We are currently using two SQLite databases to store PACS and worklist data. As our application evolves, we need to make changes to the database schema, such as adding new tables, modifying existing ones, or removing obsolete structures. To manage these changes effectively and ensure that our database remains consistent with the application code, we need a database migration strategy which allows us to release schema changes alongside code changes.
 
 Currently we archive the database on a weekly basis, this means that a breaking schema change would need to be released a week before or after the code change.
 We have considered using Alembic for database migrations, but it would require a dual setup for the two SQLite databases, which would add complexity and bloat to the released application.

@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS worklist_items (
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
 
     -- Link to source message from relay listener
-    source_message_id TEXT
+    source_message_id TEXT,
+    source_system_url TEXT
 );
 
 -- Index for the most common query pattern (MWL C-FIND by modality and date)

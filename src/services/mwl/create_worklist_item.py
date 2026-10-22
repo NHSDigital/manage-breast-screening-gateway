@@ -32,6 +32,7 @@ class CreateWorklistItem:
                     modality=procedure.get("modality"),
                     study_description=procedure.get("study_description", ""),
                     source_message_id=action_id,
+                    source_system_url=payload.get("source_system_url"),
                 )
             )
             logger.info(f"Created worklist item: {accession_number}")

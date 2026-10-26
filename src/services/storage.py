@@ -66,25 +66,26 @@ class Storage:
             os.makedirs(db_dir, exist_ok=True)
 
         with self._migration_lock():
-            migration_files = glob.glob(f"{self.migrations_path}/*.sql")
-            if not migration_files:
+            if not self.sorted_migration_files:
                 logger.info("No migration files found.")
                 return
-
-            sorted_migration_files = sorted(
-                (Path(f) for f in migration_files), key=lambda path: int(path.stem.split("_")[0])
-            )
 
             with self._get_connection() as conn:
                 cursor = conn.execute("PRAGMA user_version")
                 current_version = cursor.fetchone()[0]
-                for migration_file in sorted_migration_files:
+                for migration_file in self.sorted_migration_files:
                     version = int(migration_file.stem.split("_")[0])
                     if version > current_version:
                         logger.info(f"Applying migration {migration_file.name}")
                         conn.executescript("BEGIN IMMEDIATE;\n" + migration_file.read_text())
                         conn.execute(f"PRAGMA user_version={version}")
                         conn.commit()
+
+    @property
+    def sorted_migration_files(self) -> List[Path]:
+        """Return a list of migration files sorted by version number."""
+        migration_files = glob.glob(f"{self.migrations_path}/*.sql")
+        return sorted((Path(f) for f in migration_files), key=lambda path: int(path.stem.split("_")[0]))
 
     @property
     def migrations_path(self) -> str:

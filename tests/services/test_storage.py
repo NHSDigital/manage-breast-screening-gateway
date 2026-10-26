@@ -56,8 +56,15 @@ def result():
 
 
 class TestPACSStorage:
-    def test_init(self, pacs_storage, db_file):
+    def test_init(self, db_file, tmp_dir, monkeypatch):
         """PACS storage: Init."""
+        monkeypatch.setattr(PACSStorage, "migrations_path", tmp_dir)
+        shutil.copy(
+            f"{Path(__file__).parent.parent.parent}/src/database/pacs/001_initial_schema.sql",
+            tmp_dir / "001_initial_schema.sql",
+        )
+
+        PACSStorage(str(db_file), str(tmp_dir))
         assert Path(db_file).exists()
 
         conn = sqlite3.connect(db_file)
@@ -175,8 +182,16 @@ class TestMWLStorage:
         storage.store_worklist_item(item)
         return item
 
-    def test_init(self, mwl_storage, db_file):
+    def test_init(self, db_file, monkeypatch, tmp_dir):
         """MWL storage: Init."""
+        monkeypatch.setattr(MWLStorage, "migrations_path", tmp_dir)
+        shutil.copy(
+            f"{Path(__file__).parent.parent.parent}/src/database/worklist/001_initial_schema.sql",
+            tmp_dir / "001_initial_schema.sql",
+        )
+
+        MWLStorage(str(db_file))
+
         conn = sqlite3.connect(db_file)
         table = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='worklist_items'").fetchone()
         user_version = conn.execute("PRAGMA user_version").fetchone()[0]

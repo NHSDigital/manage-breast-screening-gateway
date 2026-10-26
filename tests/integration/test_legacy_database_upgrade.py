@@ -8,7 +8,9 @@ current version without re-initialising the schema, so that the existing
 records are left untouched.
 """
 
+import shutil
 import sqlite3
+from pathlib import Path
 
 import pytest
 from pydicom.uid import generate_uid
@@ -20,104 +22,9 @@ from services.storage import MWLStorage, PACSStorage
 # scripts directly, and did not set the user_version pragma, so databases
 # created before the pragma was introduced hold the schema and their data,
 # but with user_version = 0.
-LEGACY_PACS_SCHEMA = """
--- PACS Database Schema
--- Stores metadata and file paths for DICOM images
-
--- Main table for stored DICOM instances
-CREATE TABLE IF NOT EXISTS stored_instances (
-    -- Primary key: SOP Instance UID
-    sop_instance_uid TEXT PRIMARY KEY,
-
-    storage_path TEXT NOT NULL,           -- Relative path from storage root
-    file_size INTEGER NOT NULL,           -- File size in bytes
-    storage_hash TEXT NOT NULL,           -- Hash for file integrity checks
-
-    patient_id TEXT,
-    patient_name TEXT,
-
-    accession_number TEXT,                -- Link to worklist
-
-    status TEXT DEFAULT 'STORED' CHECK(status IN ('STORED', 'ARCHIVED', 'DELETED')),
-
-    upload_status TEXT DEFAULT 'PENDING' CHECK(upload_status IN ('PENDING', 'UPLOADING', 'COMPLETE', 'FAILED')),
-    upload_error TEXT,
-    upload_attempt_count INTEGER DEFAULT 0,
-    last_upload_attempt TEXT,
-    uploaded_at TEXT,
-
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    source_aet TEXT,                      -- AE Title of sender
-
-    UNIQUE(storage_path)
-);
-
--- Indexes for common query patterns
-CREATE INDEX IF NOT EXISTS idx_patient_id ON stored_instances(patient_id);
-CREATE INDEX IF NOT EXISTS idx_accession_number ON stored_instances(accession_number);
-CREATE INDEX IF NOT EXISTS idx_created_at ON stored_instances(created_at);
-CREATE INDEX IF NOT EXISTS idx_storage_hash ON stored_instances(storage_hash);
-CREATE INDEX IF NOT EXISTS idx_upload_status ON stored_instances(upload_status);
-"""
-
-LEGACY_WORKLIST_SCHEMA = """
--- Modality Worklist SQLite Schema
-
--- Main worklist items table
-CREATE TABLE IF NOT EXISTS worklist_items (
-    -- Unique identifier for the scheduled procedure
-    accession_number TEXT PRIMARY KEY,
-
-    -- Patient demographics
-    patient_id TEXT NOT NULL,
-    patient_name TEXT NOT NULL,              -- DICOM format: FAMILY^GIVEN
-    patient_birth_date TEXT NOT NULL,        -- YYYYMMDD format
-    patient_sex TEXT,                        -- M/F/O
-
-    -- Scheduling information
-    scheduled_date TEXT NOT NULL,            -- YYYYMMDD format in UTC
-    scheduled_time TEXT NOT NULL,            -- HHMMSS format in UTC
-    modality TEXT NOT NULL,                  -- e.g., MG for mammography
-
-    -- Procedure details
-    study_description TEXT,
-    procedure_code TEXT,
-
-    -- Status tracking
-    status TEXT DEFAULT 'SCHEDULED' CHECK(status IN ('SCHEDULED', 'IN PROGRESS', 'COMPLETED', 'DISCONTINUED')),
-
-    -- DICOM identifiers
-    study_instance_uid TEXT,
-    mpps_instance_uid TEXT, -- Modality Performed Procedure Step (MPPS) UID
-
-    -- Audit trail
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-
-    -- Link to source message from relay listener
-    source_message_id TEXT
-);
-
--- Index for the most common query pattern (MWL C-FIND by modality and date)
-CREATE INDEX IF NOT EXISTS idx_worklist_date_modality
-ON worklist_items(scheduled_date, modality);
-
--- Index for status queries (finding in-progress procedures, etc.)
-CREATE INDEX IF NOT EXISTS idx_worklist_status
-ON worklist_items(status);
-
--- Index for MPPS lookups by study instance UID
-CREATE INDEX IF NOT EXISTS idx_worklist_study_uid
-ON worklist_items(study_instance_uid);
-
--- Index for patient lookups
-CREATE INDEX IF NOT EXISTS idx_worklist_patient_id
-ON worklist_items(patient_id);
-
--- Index for MPPS instance UID lookups
-CREATE INDEX IF NOT EXISTS idx_worklist_mpps_instance_uid
-ON worklist_items(mpps_instance_uid);
-"""
+ROOT_DIR = Path(__file__).parent.parent.parent
+LEGACY_PACS_SCHEMA = open(f"{ROOT_DIR}/src/database/pacs/001_initial_schema.sql").read()
+LEGACY_WORKLIST_SCHEMA = open(f"{ROOT_DIR}/src/database/worklist/001_initial_schema.sql").read()
 
 # Identifiers for the records held in a database created by the legacy
 # mechanism. They are generated rather than hardcoded, so that they are always
@@ -279,8 +186,13 @@ class TestLegacyDatabaseUpgrade:
         finally:
             conn.close()
 
-    def test_pacs_legacy_database_is_upgraded(self, legacy_pacs_db, tmp_dir):
+    def test_pacs_legacy_database_is_upgraded(self, legacy_pacs_db, tmp_dir, monkeypatch):
         """PACS storage: Populated legacy database is upgraded to version 1."""
+        monkeypatch.setattr(PACSStorage, "migrations_path", tmp_dir)
+        shutil.copy(
+            f"{pytest.root_dir}/src/database/pacs/001_initial_schema.sql",
+            f"{tmp_dir}/001_initial_schema.sql",
+        )
         assert self._user_version(legacy_pacs_db) == 0
 
         before = self._rows(legacy_pacs_db, "stored_instances", "sop_instance_uid")
@@ -319,8 +231,13 @@ class TestLegacyDatabaseUpgrade:
         assert storage.instance_exists(NEW_SOP_INSTANCE_UID) is True
         assert len(self._rows(legacy_pacs_db, "stored_instances", "sop_instance_uid")) == 3
 
-    def test_worklist_legacy_database_is_upgraded(self, legacy_worklist_db):
+    def test_worklist_legacy_database_is_upgraded(self, legacy_worklist_db, tmp_dir, monkeypatch):
         """MWL storage: Populated legacy database is upgraded to version 1."""
+        monkeypatch.setattr(MWLStorage, "migrations_path", tmp_dir)
+        shutil.copy(
+            f"{pytest.root_dir}/src/database/worklist/001_initial_schema.sql",
+            f"{tmp_dir}/001_initial_schema.sql",
+        )
         assert self._user_version(legacy_worklist_db) == 0
 
         before = self._rows(legacy_worklist_db, "worklist_items", "accession_number")

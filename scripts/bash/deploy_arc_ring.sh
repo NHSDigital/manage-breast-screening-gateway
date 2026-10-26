@@ -95,7 +95,7 @@ SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
 
   # Per-machine DICOM access control from the machine's AllowedCallingAets Arc
   # tag (comma-separated). No tag means the lines are omitted and the DICOM
-  # servers accept any calling AE title — see ADR-008. SMOKE_TEST_AET (the
+  # servers accept any calling AE title — see ADR-009. SMOKE_TEST_AET (the
   # calling title used by scripts/python/smoke_test.py) is always appended so
   # the post-deployment smoke test passes on restricted machines.
   if [[ -n "$ALLOWED_CALLING_AETS" ]]; then

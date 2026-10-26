@@ -32,16 +32,17 @@ class DICOMUploader:
             return False
 
         api_endpoint_url = config.cloud_api_endpoint(base_url) if base_url else self.api_endpoint
+        api_endpoint_url = api_endpoint_url + "/" + action_id
 
         files = {
             "file": (f"{sop_instance_uid}.dcm", dicom_stream),
         }
 
         try:
-            logger.info(f"Uploading {sop_instance_uid} to {self.api_endpoint}/{action_id}")
+            logger.info("Uploading %s to %s", sop_instance_uid, api_endpoint_url)
 
             response = requests.put(
-                f"{api_endpoint_url}/{action_id}",
+                api_endpoint_url,
                 files=files,
                 timeout=self.timeout,
                 verify=self.verify_ssl,
@@ -49,17 +50,17 @@ class DICOMUploader:
             )
 
             if response.status_code == 201:
-                logger.info(f"Successfully uploaded {sop_instance_uid} (status: {response.status_code})")
+                logger.info("Successfully uploaded %s (status: %s)", sop_instance_uid, response.status_code)
                 return True
             else:
                 logger.error(
-                    f"Upload failed for {sop_instance_uid}: status {response.status_code}, body: {response.text}"
+                    "Upload failed for %s: status %s, body: %s", sop_instance_uid, response.status_code, response.text
                 )
                 return False
 
         except requests.exceptions.Timeout:
-            logger.error(f"Upload timeout for {sop_instance_uid} after {self.timeout}s")
+            logger.error("Upload timeout for %s after %s", sop_instance_uid, self.timeout)
             return False
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Upload error for {sop_instance_uid}: {e}", exc_info=True)
+        except requests.exceptions.RequestException:
+            logger.exception("Upload error for %s", sop_instance_uid)
             return False

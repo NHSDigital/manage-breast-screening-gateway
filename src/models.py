@@ -68,6 +68,6 @@ class WorklistItem:
             if (
                 parsed_url.scheme != "https"
                 or not hostname
-                or (hostname != RUBIE_DOMAIN and not hostname.endswith(f".{RUBIE_DOMAIN}"))
+                or (hostname != RUBIE_DOMAIN and not hostname.endswith(f"{RUBIE_DOMAIN}"))
             ):
                 raise ValueError(f"Invalid source_system_url: must be a valid Rubie URL under {RUBIE_DOMAIN}.")

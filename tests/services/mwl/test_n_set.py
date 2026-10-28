@@ -110,3 +110,36 @@ class TestNSet:
 
         assert status == PROCESSING_FAILURE
         assert ds is None
+
+    def test_nset_uses_default_charset_when_not_specified(self, mock_storage, event, requested_sop_instance_uid):
+        """N-SET uses default character set when not specified."""
+        event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
+        event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
+
+        worklist_item = MagicMock()
+        worklist_item.accession_number = "ACC123"
+        mock_storage.get_worklist_item_by_mpps_instance_uid.return_value = worklist_item
+        mock_storage.update_status.return_value = 1001
+
+        status, ds = NSet(mock_storage).call(event)
+
+        assert status == SUCCESS
+        assert isinstance(ds, Dataset)
+        assert ds.SpecificCharacterSet == "ISO_IR 192"
+
+    def test_nset_honours_specific_character_set(self, mock_storage, event, requested_sop_instance_uid):
+        """N-SET honours SpecificCharacterSet ISO_IR 100."""
+        event.request.RequestedSOPInstanceUID = requested_sop_instance_uid
+        event.attribute_list.PerformedProcedureStepStatus = "COMPLETED"
+        event.attribute_list.SpecificCharacterSet = "ISO_IR 100"
+
+        worklist_item = MagicMock()
+        worklist_item.accession_number = "ACC123"
+        mock_storage.get_worklist_item_by_mpps_instance_uid.return_value = worklist_item
+        mock_storage.update_status.return_value = 1001
+
+        status, ds = NSet(mock_storage).call(event)
+
+        assert status == SUCCESS
+        assert isinstance(ds, Dataset)
+        assert ds.SpecificCharacterSet == "ISO_IR 100"

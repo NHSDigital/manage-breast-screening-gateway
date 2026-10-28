@@ -4,7 +4,14 @@ from pydicom import Dataset
 from pynetdicom.events import Event
 from pynetdicom.sop_class import ModalityPerformedProcedureStep  # pyright: ignore[reportAttributeAccessIssue]
 
-from services.dicom import INVALID_ATTRIBUTE, MISSING_ATTRIBUTE, PROCESSING_FAILURE, SUCCESS, UNKNOWN_SOP_INSTANCE
+from services.dicom import (
+    INVALID_ATTRIBUTE,
+    MISSING_ATTRIBUTE,
+    PROCESSING_FAILURE,
+    SUCCESS,
+    UNKNOWN_SOP_INSTANCE,
+)
+from services.dicom.character_set import CharacterSet
 from services.mwl import MWLStatus
 from services.storage import MWLStorage
 
@@ -22,12 +29,12 @@ class NSet:
             logger.info("MPPS N-SET: Received request for SOP Instance UID: %s", requested_sop_instance_uid)
 
             mod_list = event.attribute_list
-            status = mod_list.get("PerformedProcedureStepStatus")
+            status = mod_list.get("PerformedProcedureStepStatus") if mod_list is not None else None
             if not status:
                 logger.warning("MPPS N-SET: Missing PerformedProcedureStepStatus in request")
                 return MISSING_ATTRIBUTE, None
 
-            if status not in [MWLStatus.COMPLETED.value, MWLStatus.DISCONTINUED.value]:
+            if str(status) not in [MWLStatus.COMPLETED.value, MWLStatus.DISCONTINUED.value]:
                 logger.warning("MPPS N-SET: Invalid PerformedProcedureStepStatus: %s", status)
                 return INVALID_ATTRIBUTE, None
 
@@ -40,15 +47,18 @@ class NSet:
 
             accession_number = worklist_item.accession_number
 
-            source_message_id = self.storage.update_status(accession_number, status)
+            source_message_id = self.storage.update_status(accession_number, str(status))
             if source_message_id:
                 logger.info("Database updated: %s -> %s", accession_number, status)
 
                 ds = Dataset()
+
+                if mod_list is not None:
+                    ds.update(mod_list)
+
+                ds.SpecificCharacterSet = CharacterSet.resolve(mod_list)
                 ds.SOPClassUID = ModalityPerformedProcedureStep
                 ds.SOPInstanceUID = requested_sop_instance_uid
-                ds.update(mod_list)
-
                 logger.info("MPPS N-SET successful")
                 return SUCCESS, ds
             else:

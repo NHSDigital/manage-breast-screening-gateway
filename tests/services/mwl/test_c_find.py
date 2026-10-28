@@ -268,3 +268,28 @@ class TestCFind:
         assert ds.RequestedProcedureCodeSequence[0].CodeValue == "PROC001"
         assert ds.RequestedProcedureCodeSequence[0].CodingSchemeDesignator is None
         assert ds.RequestedProcedureCodeSequence[0].CodeMeaning is None
+
+    def test_call_uses_default_charset_when_not_specified(
+        self, handler, mock_storage, mock_event, sample_worklist_item
+    ):
+        """C-FIND: Uses default character set when not specified."""
+        worklist_item = WorklistItem(**sample_worklist_item)
+        mock_storage.find_worklist_items.return_value = [worklist_item]
+
+        results = list(handler.call(mock_event))
+
+        status, ds = results[0]
+        assert status == PENDING
+        assert ds.SpecificCharacterSet == CHARSET_UTF8
+
+    def test_call_honours_specific_character_set(self, handler, mock_storage, mock_event, sample_worklist_item):
+        """C-FIND: Honours SpecificCharacterSet ISO_IR 100."""
+        mock_event.identifier.SpecificCharacterSet = "ISO_IR 100"
+        worklist_item = WorklistItem(**sample_worklist_item)
+        mock_storage.find_worklist_items.return_value = [worklist_item]
+
+        results = list(handler.call(mock_event))
+
+        status, ds = results[0]
+        assert status == PENDING
+        assert ds.SpecificCharacterSet == "ISO_IR 100"

@@ -11,7 +11,8 @@ from pydicom import Dataset
 from pynetdicom import evt
 
 from models import WorklistItem
-from services.dicom import CHARSET_UTF8, FAILURE, PENDING, SUCCESS
+from services.dicom import FAILURE, PENDING, SUCCESS
+from services.dicom.character_set import CharacterSet
 from services.storage import MWLStorage
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,8 @@ class CFind:
         requestor_aet = event.assoc.requestor.ae_title
 
         logger.info(f"C-FIND request from {requestor_aet}")
+
+        character_set = CharacterSet.resolve(identifier)
 
         query_patient_id = identifier.get("PatientID")
         anonymised_patient_id = f"*******{query_patient_id[7:]}" if query_patient_id else "None"
@@ -71,6 +74,7 @@ class CFind:
 
             for item in items:
                 response_ds = self._build_worklist_response(item)
+                response_ds.SpecificCharacterSet = character_set
                 yield PENDING, response_ds
 
             yield SUCCESS, None
@@ -82,8 +86,6 @@ class CFind:
     def _build_worklist_response(self, item: WorklistItem) -> Dataset:
         ds = Dataset()
         sps_item = Dataset()
-
-        ds.SpecificCharacterSet = CHARSET_UTF8
 
         # Patient demographics
         ds.PatientID = item.patient_id

@@ -3,7 +3,7 @@
 from unittest.mock import Mock
 
 import pytest
-from pydicom import Dataset
+from pydicom import Dataset, charset, config
 
 from services.dicom import CHARSET_UTF8, FAILURE, PENDING, SUCCESS
 from services.mwl.c_find import CFind
@@ -293,3 +293,34 @@ class TestCFind:
         status, ds = results[0]
         assert status == PENDING
         assert ds.SpecificCharacterSet == "ISO_IR 100"
+
+    def test_call_with_special_characters_escaped_for_latin1(self, handler, mock_storage, mock_event):
+        """C-FIND: Special characters are escaped when charset does not fully support them."""
+        mock_event.identifier.SpecificCharacterSet = "ISO_IR 100"
+        worklist_item = WorklistItem(
+            accession_number="ACC001",
+            patient_id="9876543210",
+            patient_name="Dvořák^Anna",
+            patient_birth_date="19800101",
+            patient_sex="F",
+            scheduled_date="20260107",
+            scheduled_time="100000",
+            modality="MG",
+            study_description="Bilateral Screening Mammogram",
+            procedure_code="PROC001",
+        )
+        mock_storage.find_worklist_items.return_value = [worklist_item]
+
+        results = list(handler.call(mock_event))
+
+        # WARN means pydicom will warn and escape characters that cannot be decoded in the specified character set.
+        assert config.settings.reading_validation_mode == config.WARN
+        assert len(results) == 2
+        status, ds = results[0]
+        assert status == PENDING
+        assert ds.SpecificCharacterSet == "ISO_IR 100"
+        charset.decode_element(ds.data_element("PatientName"), "ISO_IO 100")
+        patient_name = ds.PatientName
+
+        assert patient_name is not None
+        assert patient_name == "Dvo?ák^Anna"

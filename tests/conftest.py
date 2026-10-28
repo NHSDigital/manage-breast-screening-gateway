@@ -14,7 +14,9 @@ from pynetdicom.sop_class import (
     DigitalMammographyXRayImageStorageForPresentation,
 )
 
-sys.path.append(f"{Path(__file__).parent.parent}/src")
+ROOT_DIR = Path(__file__).parent.parent
+pytest.root_dir = ROOT_DIR
+sys.path.append(f"{ROOT_DIR}/src")
 
 READABLE_TEST_OUTPUT = not any("neotest" in arg for arg in sys.argv)
 
@@ -188,6 +190,7 @@ def listener_payload():
     return {
         "action_id": "action-12345",
         "action_type": "worklist.create_item",
+        "source_system_url": "https://example.run-breast-screening.nhs.uk",
         "parameters": {
             "worklist_item": {
                 "participant": {

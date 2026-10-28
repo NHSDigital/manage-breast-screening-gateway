@@ -66,25 +66,26 @@ class Storage:
             os.makedirs(db_dir, exist_ok=True)
 
         with self._migration_lock():
-            migration_files = glob.glob(f"{self.migrations_path}/*.sql")
-            if not migration_files:
+            if not self.sorted_migration_files:
                 logger.info("No migration files found.")
                 return
-
-            sorted_migration_files = sorted(
-                (Path(f) for f in migration_files), key=lambda path: int(path.stem.split("_")[0])
-            )
 
             with self._get_connection() as conn:
                 cursor = conn.execute("PRAGMA user_version")
                 current_version = cursor.fetchone()[0]
-                for migration_file in sorted_migration_files:
+                for migration_file in self.sorted_migration_files:
                     version = int(migration_file.stem.split("_")[0])
                     if version > current_version:
                         logger.info(f"Applying migration {migration_file.name}")
                         conn.executescript("BEGIN IMMEDIATE;\n" + migration_file.read_text())
                         conn.execute(f"PRAGMA user_version={version}")
                         conn.commit()
+
+    @property
+    def sorted_migration_files(self) -> List[Path]:
+        """Return a list of migration files sorted by version number."""
+        migration_files = glob.glob(f"{self.migrations_path}/*.sql")
+        return sorted((Path(f) for f in migration_files), key=lambda path: int(path.stem.split("_")[0]))
 
     @property
     def migrations_path(self) -> str:
@@ -364,10 +365,10 @@ class MWLStorage(Storage):
                     (
                         "INSERT INTO worklist_items (accession_number, modality, patient_birth_date, "
                         "patient_id, patient_name, patient_sex, procedure_code, scheduled_date, "
-                        "scheduled_time, source_message_id, study_description, study_instance_uid) "
-                        "VALUES (:accession_number, :modality, :patient_birth_date, "
+                        "scheduled_time, source_message_id, source_system_url, study_description, study_instance_uid"
+                        ") VALUES (:accession_number, :modality, :patient_birth_date, "
                         ":patient_id, :patient_name, :patient_sex, :procedure_code, "
-                        ":scheduled_date, :scheduled_time, :source_message_id, "
+                        ":scheduled_date, :scheduled_time, :source_message_id, :source_system_url, "
                         ":study_description, :study_instance_uid)"
                     ),
                     worklist_item.__dict__,
@@ -404,7 +405,8 @@ class MWLStorage(Storage):
         query = (
             "SELECT accession_number, modality, patient_birth_date, patient_id, "
             "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
-            "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+            "source_message_id, source_system_url, study_description, "
+            "study_instance_uid, status, mpps_instance_uid "
             "FROM worklist_items"
         )
         where_clauses = ["status NOT IN ('COMPLETED', 'DISCONTINUED')"]
@@ -487,7 +489,8 @@ class MWLStorage(Storage):
                 (
                     "SELECT accession_number, modality, patient_birth_date, patient_id, "
                     "patient_name, patient_sex, procedure_code, scheduled_date, scheduled_time, "
-                    "source_message_id, study_description, study_instance_uid, status, mpps_instance_uid "
+                    "source_message_id, source_system_url, study_description, "
+                    "study_instance_uid, status, mpps_instance_uid "
                     "FROM worklist_items WHERE accession_number = ?"
                 ),
                 (accession_number,),
@@ -583,17 +586,27 @@ class MWLStorage(Storage):
 
             return True
 
+    def get_source_attributes(self, accession_number: str) -> tuple | None:
+        """
+        Get the source_message_id and source_system_url for a worklist item by accession number.
+        """
+        with self._get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT source_message_id, source_system_url FROM worklist_items WHERE accession_number = ?",
+                (accession_number,),
+            )
+            row = cursor.fetchone()
+            return (row["source_message_id"], row["source_system_url"]) if row else (None, None)
+
     def get_source_message_id(self, accession_number: str) -> Optional[str]:
         """
         Get the source_message_id for a worklist item by accession number.
         """
-        with self._get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT source_message_id FROM worklist_items WHERE accession_number = ?",
-                (accession_number,),
-            )
-            row = cursor.fetchone()
-            return row["source_message_id"] if row and row["source_message_id"] else None
+        source_attributes = self.get_source_attributes(accession_number)
+        if source_attributes and len(source_attributes):
+            return source_attributes[0]
+        else:
+            return None
 
     def mpps_instance_exists(self, mpps_instance_uid: str) -> bool:
         """Check if an MPPS instance UID already exists in any worklist item."""

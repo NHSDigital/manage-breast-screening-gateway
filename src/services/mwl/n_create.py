@@ -4,7 +4,14 @@ from pydicom.dataset import Dataset
 from pynetdicom.events import Event
 from pynetdicom.sop_class import ModalityPerformedProcedureStep  # pyright: ignore[reportAttributeAccessIssue]
 
-from services.dicom import DUPLICATE_SOP_INSTANCE, INVALID_ATTRIBUTE, MISSING_ATTRIBUTE, PROCESSING_FAILURE, SUCCESS
+from services.dicom import (
+    DUPLICATE_SOP_INSTANCE,
+    INVALID_ATTRIBUTE,
+    MISSING_ATTRIBUTE,
+    PROCESSING_FAILURE,
+    SUCCESS,
+)
+from services.dicom.character_set import CharacterSet
 from services.mwl import MWLStatus
 from services.storage import MWLStorage
 
@@ -20,6 +27,7 @@ class NCreate:
         ds = Dataset()
         try:
             req = event.request
+            attr_list = getattr(event, "attribute_list", None)
 
             affected_sop_instance_uid = getattr(req, "AffectedSOPInstanceUID", None)
 
@@ -29,27 +37,29 @@ class NCreate:
             if self.storage.mpps_instance_exists(affected_sop_instance_uid):
                 return DUPLICATE_SOP_INSTANCE, None
 
-            attr_list = event.attribute_list
-            status = getattr(attr_list, "PerformedProcedureStepStatus", None)
+            status = getattr(attr_list, "PerformedProcedureStepStatus", None) if attr_list is not None else None
 
             if not status:
                 logger.warning("MPPS N-CREATE: Missing PerformedProcedureStepStatus in request")
                 return MISSING_ATTRIBUTE, None
 
-            if status.upper() != MWLStatus.IN_PROGRESS.value:
+            if str(status).upper() != MWLStatus.IN_PROGRESS.value:
                 logger.warning("MPPS N-CREATE: Invalid PerformedProcedureStepStatus value: %s", status)
                 return INVALID_ATTRIBUTE, None
 
+            if attr_list is not None:
+                ds.update(attr_list)
+
+            ds.SpecificCharacterSet = CharacterSet.resolve(attr_list)
             ds.SOPClassUID = ModalityPerformedProcedureStep
             ds.SOPInstanceUID = affected_sop_instance_uid
-            ds.update(attr_list)
 
             scheduled_step_sequence = getattr(attr_list, "ScheduledStepAttributesSequence", [])
             if len(scheduled_step_sequence) == 0:
                 logger.warning("MPPS N-CREATE: Missing ScheduledStepAttributesSequence in request")
                 return MISSING_ATTRIBUTE, None
 
-            sps = attr_list.ScheduledStepAttributesSequence[0]
+            sps = scheduled_step_sequence[0]
             accession_number = sps.get("AccessionNumber")
 
             logger.info("MPPS N-CREATE: Started procedure for Accession Number: %s", accession_number)
@@ -66,8 +76,8 @@ class NCreate:
             else:
                 logger.warning("Could not find accession %s in database", accession_number)
 
-        except Exception as e:
-            logger.error("Error in handle_create: %s", str(e), exc_info=True)
+        except Exception:
+            logger.exception("Error in handle_create")
             return PROCESSING_FAILURE, None
 
         # Success - return the created dataset

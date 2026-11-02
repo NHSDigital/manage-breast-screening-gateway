@@ -213,7 +213,7 @@ def main():
     logger.info("Modality Emulator Starting...")
     mwl_storage = MWLStorage(db_path=MWL_DB_PATH)
     emulator = ModalityEmulator(mwl_storage)
-    ae = AE(ae_title="ModalityEmulator")
+    ae = AE(ae_title="SMOKE_TEST_AET")
     ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
     ae.add_requested_context(ModalityWorklistInformationFind)
 

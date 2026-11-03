@@ -7,6 +7,11 @@ from pydicom.uid import DigitalMammographyXRayImageStorageForPresentation, Expli
 from modality_emulator import (
     DICOM_LATERALITIES,
     DICOM_VIEWS,
+    MWL_HOST,
+    MWL_PORT,
+    PACS_HOST,
+    PACS_PORT,
+    SMOKE_TEST_AET,
     DicomExample,
     ModalityEmulator,
     main,
@@ -149,6 +154,9 @@ class TestModalityEmulator:
 
         assert mwl_assoc.send_c_find.call_count == 1
         assert pacs_assoc.send_c_store.call_count == expected_send_count
+
+        ae.associate.assert_any_call(MWL_HOST, MWL_PORT, ae_title=SMOKE_TEST_AET)
+        ae.associate.assert_any_call(PACS_HOST, PACS_PORT, ae_title=SMOKE_TEST_AET)
 
         mwl_storage.update_status.assert_called_once_with(
             "ACC123",

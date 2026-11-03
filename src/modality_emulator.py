@@ -43,6 +43,7 @@ PACS_DB_PATH = config.pacs_db_path()
 PACS_HOST = os.getenv("PACS_HOST", "localhost")
 PACS_PORT = config.pacs_port()
 SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "sample_images")
+SMOKE_TEST_AET = "SMOKE_TEST_AET"
 
 
 class DicomExample:
@@ -133,12 +134,12 @@ class ModalityEmulator:
         """
         Queries the MWL for items scheduled for today and sends generated DICOM files to the PACS server for each item.
         """
-        mwl_assoc = ae.associate(MWL_HOST, MWL_PORT, ae_title=MWL_AET)
-        pacs_assoc = ae.associate(PACS_HOST, PACS_PORT, ae_title=PACS_AET)
+        mwl_assoc = ae.associate(MWL_HOST, MWL_PORT, ae_title=SMOKE_TEST_AET)
+        pacs_assoc = ae.associate(PACS_HOST, PACS_PORT, ae_title=SMOKE_TEST_AET)
 
         if mwl_assoc.is_established and pacs_assoc.is_established:
-            logger.info(f"Connected to MWL server {MWL_HOST}:{MWL_PORT} ({MWL_AET})")
-            logger.info(f"Connected to PACS server {PACS_HOST}:{PACS_PORT} ({PACS_AET})")
+            logger.info(f"Connected to MWL server {MWL_HOST}:{MWL_PORT} ({SMOKE_TEST_AET})")
+            logger.info(f"Connected to PACS server {PACS_HOST}:{PACS_PORT} ({SMOKE_TEST_AET})")
 
             logger.info("Querying MWL for scheduled items...")
             c_find_dataset = self.c_find_dataset(patient_name=patient_name)
@@ -213,7 +214,7 @@ def main():
     logger.info("Modality Emulator Starting...")
     mwl_storage = MWLStorage(db_path=MWL_DB_PATH)
     emulator = ModalityEmulator(mwl_storage)
-    ae = AE(ae_title="SMOKE_TEST_AET")
+    ae = AE(ae_title=SMOKE_TEST_AET)
     ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
     ae.add_requested_context(ModalityWorklistInformationFind)
 

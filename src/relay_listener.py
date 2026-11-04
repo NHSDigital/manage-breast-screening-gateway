@@ -141,9 +141,7 @@ class RelayListener:
         if action_name == "worklist.create_test_item":
             result = CreateWorklistItem(self.storage).call(payload)
 
-            worklist_item = payload.get("parameters", {}).get("worklist_item", {})
-            participant = worklist_item.get("participant", {})
-            patient_name = participant.get("name")
+            patient_name = payload.get("parameters", {}).get("worklist_item", {}).get("participant", {}).get("name")
 
             if not patient_name:
                 logger.warning("No patient name provided for ModalityEmulator test item processing")
@@ -164,6 +162,7 @@ class RelayListener:
 
     def process_with_modality_emulator(self, patient_name: str | None = None):
         """Process worklist items with ModalityEmulator."""
+
         def _run_emulator():
             try:
                 ModalityEmulator(self.storage).process_worklist_items(

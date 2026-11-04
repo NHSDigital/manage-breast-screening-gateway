@@ -4,6 +4,7 @@ import pytest
 from pydicom.dataset import Dataset
 from pydicom.uid import DigitalMammographyXRayImageStorageForPresentation, ExplicitVRLittleEndian, generate_uid
 
+import config
 from modality_emulator import (
     DICOM_LATERALITIES,
     DICOM_VIEWS,
@@ -95,12 +96,14 @@ class TestModalityEmulator:
         return status
 
     @patch("modality_emulator.time.sleep")
+    @patch("modality_emulator.AE")
     @patch("modality_emulator.generate_uid")
     @patch("modality_emulator.DicomExample")
     def test_process_worklist_items_sends_all_dicoms(
         self,
         mock_dicom_example,
         mock_generate_uid,
+        mock_ae,
         _,
         pending_status,
         success_status,
@@ -133,10 +136,11 @@ class TestModalityEmulator:
         pacs_assoc = MagicMock()
         pacs_assoc.is_established = True
 
-        ae = MagicMock()
-        ae.associate.side_effect = [mwl_assoc, pacs_assoc]
+        emulator.ae.associate.side_effect = [mwl_assoc, pacs_assoc]
 
-        emulator.process_worklist_items(ae)
+        emulator.process_worklist_items()
+
+        mock_ae.assert_any_call(ae_title=config.SMOKE_TEST_AET)
 
         mock_dicom_example.assert_any_call(ds, "L", "CC", study_instance_uid, 1)
         mock_dicom_example.assert_any_call(ds, "L", "MLO", study_instance_uid, 2)
@@ -159,15 +163,16 @@ class TestModalityEmulator:
         pacs_assoc.release.assert_called_once()
 
     @patch("modality_emulator.time.sleep")
+    @patch("modality_emulator.AE")
     def test_process_worklist_items_returns_when_no_items(
         self,
+        mock_ae,
         mock_sleep,
         success_status,
     ):
         """Process worklist items returns when no items."""
         mwl_storage = MagicMock()
         emulator = ModalityEmulator(mwl_storage)
-        ae = MagicMock()
 
         mwl_assoc = MagicMock()
         mwl_assoc.is_established = True
@@ -176,10 +181,9 @@ class TestModalityEmulator:
         pacs_assoc = MagicMock()
         pacs_assoc.is_established = True
 
-        ae = MagicMock()
-        ae.associate.side_effect = [mwl_assoc, pacs_assoc]
+        emulator.ae.associate.side_effect = [mwl_assoc, pacs_assoc]
 
-        emulator.process_worklist_items(ae)
+        emulator.process_worklist_items()
 
         mock_sleep.assert_not_called()
         pacs_assoc.send_c_store.assert_not_called()
@@ -187,10 +191,12 @@ class TestModalityEmulator:
         mwl_assoc.release.assert_called_once()
         pacs_assoc.release.assert_called_once()
 
+    @patch("modality_emulator.AE")
     @patch.object(ModalityEmulator, "c_find_dataset")
     def test_process_worklist_items_passes_patient_name_to_c_find_dataset(
         self,
         mock_c_find_dataset,
+        mock_ae,
         success_status,
     ):
         """Process worklist items passes patient_name to c_find_dataset."""
@@ -207,10 +213,9 @@ class TestModalityEmulator:
         pacs_assoc = MagicMock()
         pacs_assoc.is_established = True
 
-        ae = MagicMock()
-        ae.associate.side_effect = [mwl_assoc, pacs_assoc]
+        emulator.ae.associate.side_effect = [mwl_assoc, pacs_assoc]
 
-        emulator.process_worklist_items(ae, patient_name="Jane Doe")
+        emulator.process_worklist_items(patient_name="Jane Doe")
 
         mock_c_find_dataset.assert_called_once_with(patient_name="Jane Doe")
         mwl_storage.update_status.assert_not_called()
@@ -218,8 +223,10 @@ class TestModalityEmulator:
         pacs_assoc.release.assert_called_once()
 
     @patch("modality_emulator.time.sleep")
+    @patch("modality_emulator.AE")
     def test_process_worklist_items_handles_failed_association(
         self,
+        mock_ae,
         _,
     ):
         """Process worklist items handles failed association."""
@@ -232,10 +239,9 @@ class TestModalityEmulator:
         pacs_assoc = MagicMock()
         pacs_assoc.is_established = False
 
-        ae = MagicMock()
-        ae.associate.side_effect = [mwl_assoc, pacs_assoc]
+        emulator.ae.associate.side_effect = [mwl_assoc, pacs_assoc]
 
-        emulator.process_worklist_items(ae)
+        emulator.process_worklist_items()
 
         mwl_assoc.send_c_find.assert_not_called()
         pacs_assoc.send_c_store.assert_not_called()

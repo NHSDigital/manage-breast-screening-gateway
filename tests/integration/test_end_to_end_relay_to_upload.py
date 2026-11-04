@@ -25,6 +25,10 @@ TEST_ACCESSION_NUMBER = "ACC-E2E-12345"  # gitleaks:allow
 TEST_PATIENT_ID = "9991234567"  # gitleaks:allow
 TEST_ACTION_ID = "action-e2e-test-001"  # gitleaks:allow
 
+MWL_AE_TITLE = "MWL_SCP"
+PACS_AE_TITLE = "PACS_SCP"
+SMOKE_TEST_AET = "SMOKE_TEST_AET"
+
 
 @pytest.mark.integration
 class TestEndToEndRelayToUpload:
@@ -77,25 +81,25 @@ class TestEndToEndRelayToUpload:
     def mwl_server(self, mwl_storage):
         """MWL server using the shared storage."""
         server = MWLServer.__new__(MWLServer)
-        server.ae_title = "MWL_SCP"
+        server.ae_title = MWL_AE_TITLE
         server.port = 4243
         server.storage = mwl_storage
         server.ae = None
         server.block = False
-        server.allowed_calling_aets = []
+        server.allowed_calling_aets = [SMOKE_TEST_AET]
         return server
 
     @pytest.fixture
     def pacs_server(self, pacs_storage, mwl_storage):
         """PACS server using the shared storage."""
         server = PACSServer.__new__(PACSServer)
-        server.ae_title = "SCREENING_PACS"
+        server.ae_title = PACS_AE_TITLE
         server.port = 4244
         server.storage = pacs_storage
         server.mwl_storage = mwl_storage
         server.ae = None
         server.block = False
-        server.allowed_calling_aets = []
+        server.allowed_calling_aets = [SMOKE_TEST_AET]
         return server
 
     @pytest.mark.asyncio
@@ -139,9 +143,9 @@ class TestEndToEndRelayToUpload:
         # ===== STEP 2: Query worklist via C-FIND =====
         mwl_server.start()
         try:
-            ae = AE(ae_title="TEST_MODALITY")
+            ae = AE(ae_title=SMOKE_TEST_AET)
             ae.add_requested_context(ModalityWorklistInformationFind)
-            assoc = ae.associate("127.0.0.1", 4243, ae_title="MWL_SCP")
+            assoc = ae.associate("127.0.0.1", 4243, ae_title=MWL_AE_TITLE)
 
             assert assoc.is_established, "Failed to establish C-FIND association"
 
@@ -182,8 +186,8 @@ class TestEndToEndRelayToUpload:
                 dicom_file,
                 "127.0.0.1",
                 4244,
-                "SCREENING_PACS",
-                ae_title="TEST_MODALITY",
+                PACS_AE_TITLE,
+                ae_title=SMOKE_TEST_AET,
             )
             assert success, "C-STORE failed"
 

@@ -254,13 +254,14 @@ Expected: the last line is `Connected - waiting for worklist actions...`
 By default the PACS and MWL listeners accept associations from any calling AE title (see [ADR-009](../../adr/ADR-009_DICOM_Access_Control.md)). Once the site's modality AE titles are confirmed with the supplier, set the `AllowedCallingAets` tag on the Arc machine:
 
 ```bash
-az connectedmachine update \
+az resource tag --is-incremental \
   --name gw-<site>-<ods>-<instance> \
   --resource-group rg-mbsgw-<env>-uks-arc-enabled-servers \
-  --set tags.AllowedCallingAets='MODALITY_AET_1,MODALITY_AET_2'
+  --resource-type "Microsoft.HybridCompute/machines" \
+  --tags AllowedCallingAets='MODALITY_AET_1,MODALITY_AET_2'
 ```
 
-> Use `--set tags.AllowedCallingAets=...`, not `--tags`: the latter replaces the machine's entire tag set, including `DeploymentRing`.
+> `--is-incremental` merges the tag into the machine's existing tag set. Do not use `az connectedmachine update --tags` (it replaces the entire tag set, including `DeploymentRing`), and note that `az connectedmachine update` does not accept generic `--set tags.…` arguments.
 
 Then re-run the **Deploy Gateway** pipeline for the site. The pipeline reads the tag into the machine's `.env` (appending `SMOKE_TEST_AET` automatically so the smoke test keeps passing). If the deploy is skipped because the requested release is already installed, the `.env` is still refreshed but the services are not restarted — restart the two DICOM listeners to pick up the new allowlist:
 

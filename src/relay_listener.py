@@ -16,11 +16,6 @@ import urllib.parse
 
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from dotenv import load_dotenv
-from pynetdicom import AE
-from pynetdicom.sop_class import (
-    DigitalMammographyXRayImageStorageForPresentation,  # type: ignore
-    ModalityWorklistInformationFind,  # type: ignore
-)
 from websockets.asyncio.client import connect
 from websockets.exceptions import ConnectionClosedError
 
@@ -146,9 +141,7 @@ class RelayListener:
         if action_name == "worklist.create_test_item":
             result = CreateWorklistItem(self.storage).call(payload)
 
-            worklist_item = payload.get("parameters", {}).get("worklist_item", {})
-            participant = worklist_item.get("participant", {})
-            patient_name = participant.get("name")
+            patient_name = payload.get("parameters", {}).get("worklist_item", {}).get("participant", {}).get("name")
 
             if not patient_name:
                 logger.warning("No patient name provided for ModalityEmulator test item processing")
@@ -169,14 +162,10 @@ class RelayListener:
 
     def process_with_modality_emulator(self, patient_name: str | None = None):
         """Process worklist items with ModalityEmulator."""
-        ae = AE(ae_title="ModalityEmulator")
-        ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
-        ae.add_requested_context(ModalityWorklistInformationFind)
 
         def _run_emulator():
             try:
                 ModalityEmulator(self.storage).process_worklist_items(
-                    ae,
                     patient_name=patient_name,
                 )
             except Exception:

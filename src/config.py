@@ -13,6 +13,7 @@ from urllib import parse
 
 API_PATH = "/api/v1/dicom"
 RUBIE_DOMAIN = "run-breast-screening.nhs.uk"
+SMOKE_TEST_AET = "SMOKE_TEST_AET"
 
 
 def mwl_db_path() -> str:

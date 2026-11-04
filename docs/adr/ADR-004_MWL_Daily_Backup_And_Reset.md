@@ -4,6 +4,15 @@ Date: 2026-04-02
 
 Status: Accepted
 
+> **Update (August 2026):** the implementation has moved since this was written.
+> `reset_main.py` was consolidated into `scripts/python/database.py`, which now also
+> handles the PACS metadata database; backup rotation (`MAX_BACKUPS`, default 5) addresses
+> the pruning gap noted under Negative Consequences. Task registration moved from
+> `scripts/bat/schtasks.bat` (removed) into `deploy.ps1`, which registers
+> `Gateway-MWL-Maintenance` / `Gateway-PACS-Maintenance` running
+> `maintenance.ps1 -Action Backup<X>Database`. Note the deployed schedule is currently
+> **weekly** (Sunday 02:00), not daily as this ADR assumes.
+
 ## Context
 
 The gateway MWL database holds scheduled appointment data that is consumed by mammography modality via DICOM C-FIND. This data originates from Manage Breast Screening and is written to the gateway by the relay listener.

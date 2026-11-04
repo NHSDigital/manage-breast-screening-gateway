@@ -36,6 +36,7 @@ ENV PACS_AET=SCREENING_PACS \
 
 # Expose DICOM port
 EXPOSE 4244
+EXPOSE 4243
 
-# Run the PACS server
-CMD ["uv", "run", "python", "-m", "server"]
+# Run the Gateway entrypoint script
+CMD ["/bin/bash", "./scripts/bash/entrypoint.sh"]

@@ -3,13 +3,20 @@
 Relay listener uses websocket communication to Manage Breast Screening service via Azure Relay.
 The listener processes worklist actions sent from Manage/Django and creates worklist items in the Modality Worklist server.
 
-
 ## Architecture
 
-```
+```text
 ┌─────────────────────┐                           ┌──────────────────────┐
 │   Django (Manage)   │                           │  Gateway (Behind FW) │
 └─────────────────────┘                           └──────────────────────┘
+         │                                                          │
+         │                                                          │
+         │                                             (0) Connect  │
+         │                       <────────────────────────────────  │
+         │          Establish a connection. Once this succeeds, we  │
+         │          will have a full-duplex, bi-directional comms   │
+         │          channel                                         │
+         │                                                          │
          │                                                          │
          │ (1) Send Worklist Actions                                │
          │ ────────────────────────────────>                        │
@@ -18,7 +25,6 @@ The listener processes worklist actions sent from Manage/Django and creates work
          │   Gateway: LISTENER (relay-listener)                     │
          │                                                          │
 ```
-
 
 ## Firewall Compatibility
 
@@ -68,11 +74,9 @@ AZURE_RELAY_SHARED_ACCESS_KEY=your_actual_key_here
 
 ### 3. Start the Gateway Services
 
-
 ```bash
 docker compose up --build
 ```
-
 
 ## Message Flows
 
@@ -84,7 +88,6 @@ docker compose up --build
 4. Gateway `src.relay_listener.py` receives (as listener)
 5. Gateway creates worklist item in Modality Worklist server storage via `CreateWorklistItem` service class.
 6. Gateway sends success/failure response back.
-
 
 ## Testing
 

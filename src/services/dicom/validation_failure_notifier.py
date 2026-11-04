@@ -4,11 +4,11 @@ Reports validation failures to the Manage Breast Screening HTTP API.
 """
 
 import logging
-import os
 
 import requests
 
 import config
+from services.dicom.cloud_api_auth import auth_headers
 
 logger = logging.getLogger(__name__)
 
@@ -19,11 +19,6 @@ class ValidationFailureNotifier:
         self.timeout = timeout
         self.verify_ssl = verify_ssl
 
-    def headers(self) -> dict:
-        return {
-            "Authorization": f"Bearer {os.getenv('CLOUD_API_TOKEN', '')}",
-        }
-
     def notify(self, source_message_id: str, error: str) -> bool:
         try:
             logger.info(f"Reporting validation failure for action {source_message_id}")
@@ -33,7 +28,7 @@ class ValidationFailureNotifier:
                 json={"error": error},
                 timeout=self.timeout,
                 verify=self.verify_ssl,
-                headers=self.headers(),
+                headers=auth_headers(),
             )
 
             if response.status_code == 200:

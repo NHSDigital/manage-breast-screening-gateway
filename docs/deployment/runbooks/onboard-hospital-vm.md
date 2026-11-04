@@ -4,6 +4,7 @@
 > **When to use**: Onboarding a new NHS hospital gateway VM to Azure Arc for the first time
 
 ---
+
 ## Prerequisites
 
 ### Machine specification
@@ -20,12 +21,13 @@
 ### Network requirements
 
 **Outbound to the internet (TCP 443 only — no inbound from the internet):**
+
 | Destination | Purpose |
 |---|---|
 | `*.arc.azure.com`, `*.his.arc.azure.com` | Azure Arc management |
 | `management.azure.com`, `login.microsoftonline.com` | Azure control plane / identity |
 | `relay-manbrs-<env>.servicebus.windows.net` | Worklist delivery (outbound-initiated listener) |
-| `<env hostname, e.g. manage-breast-screening.nhs.uk>` | Image upload to the national service |
+| `<env hostname, e.g. run-breast-screening.nhs.uk>` | Image upload to the national service |
 | `*.in.applicationinsights.azure.com`, `*.livediagnostics.monitor.azure.com` | Service telemetry |
 | `community.chocolatey.org`, `www.python.org`, `astral.sh`, `github.com`, `objects.githubusercontent.com`, `download.microsoft.com` | Deployment-time software downloads |
 
@@ -246,6 +248,33 @@ Relay listener check (same pattern, fresh `--name`):
 Expected: the last line is `Connected - waiting for worklist actions...`
 
 > A **Running** service that has not logged `Connected - waiting` is not healthy — the relay connection is the part that matters. Do not rely on the Log Analytics heartbeat as a liveness signal: telemetry export from gateway VMs is a known issue at the time of writing.
+
+## Step 7 — Restrict DICOM calling AE titles (once modality AETs are confirmed)
+
+By default the PACS and MWL listeners accept associations from any calling AE title (see [ADR-009](../../adr/ADR-009_DICOM_Access_Control.md)). Once the site's modality AE titles are confirmed with the supplier, set the `AllowedCallingAets` tag on the Arc machine:
+
+```bash
+az resource tag --is-incremental \
+  --name gw-<site>-<ods>-<instance> \
+  --resource-group rg-mbsgw-<env>-uks-arc-enabled-servers \
+  --resource-type "Microsoft.HybridCompute/machines" \
+  --tags AllowedCallingAets='MODALITY_AET_1,MODALITY_AET_2'
+```
+
+> `--is-incremental` merges the tag into the machine's existing tag set. Do not use `az connectedmachine update --tags` (it replaces the entire tag set, including `DeploymentRing`), and note that `az connectedmachine update` does not accept generic `--set tags.…` arguments.
+
+Then re-run the **Deploy Gateway** pipeline for the site. The pipeline reads the tag into the machine's `.env` (appending `SMOKE_TEST_AET` automatically so the smoke test keeps passing). If the deploy is skipped because the requested release is already installed, the `.env` is still refreshed but the services are not restarted — restart the two DICOM listeners to pick up the new allowlist:
+
+```bash
+az connectedmachine run-command create \
+  --machine-name gw-<site>-<ods>-<instance> \
+  --resource-group rg-mbsgw-<env>-uks-arc-enabled-servers \
+  --location uksouth \
+  --name restart-dicom-1 \
+  --script "Restart-Service Gateway-PACS, Gateway-MWL; Get-Service Gateway-PACS, Gateway-MWL | Format-Table Name, Status"
+```
+
+Verify by checking the listener logs for `Accepting associations only from calling AE titles: ...`, and complete the second access-control layer by scoping the inbound firewall rules to the modality IP addresses (`Set-NetFirewallRule -DisplayName "Rubie Gateway*" -RemoteAddress <modality IPs>`).
 
 ---
 

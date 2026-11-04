@@ -71,6 +71,24 @@ class TestPACSServer:
         )
 
     @patch(f"{PACSServer.__module__}.AE")
+    def test_start_with_allowed_calling_aets(self, mock_ae, *_):
+        """PACS server: Start with allowed calling AE titles."""
+        subject = PACSServer(allowed_calling_aets=["MODALITY_1", "MODALITY_2"])
+        subject.start()
+
+        assert cast(Mock, subject.ae).require_calling_aet == ["MODALITY_1", "MODALITY_2"]
+
+    @patch(f"{PACSServer.__module__}.AE")
+    def test_start_without_allowed_calling_aets(self, mock_ae, *_):
+        """PACS server: Start without allowed calling AE titles leaves the server open."""
+        mock_ae.return_value = MagicMock(require_calling_aet=[])
+
+        subject = PACSServer()
+        subject.start()
+
+        assert cast(Mock, subject.ae).require_calling_aet == []
+
+    @patch(f"{PACSServer.__module__}.AE")
     def test_stop(self, *_):
         """PACS server: Stop."""
         subject = PACSServer()
@@ -134,6 +152,24 @@ class TestMWLServer:
         assert "evt_handlers" in kwargs
         assert (evt.EVT_C_ECHO, mock_c_echo.return_value.call) in kwargs["evt_handlers"]
         assert len(kwargs["evt_handlers"]) == 4
+
+    @patch(f"{MWLServer.__module__}.AE")
+    def test_start_with_allowed_calling_aets(self, mock_ae, _):
+        """MWL server: Start with allowed calling AE titles."""
+        subject = MWLServer(allowed_calling_aets=["MODALITY_1"])
+        subject.start()
+
+        assert cast(Mock, subject.ae).require_calling_aet == ["MODALITY_1"]
+
+    @patch(f"{MWLServer.__module__}.AE")
+    def test_start_without_allowed_calling_aets(self, mock_ae, _):
+        """MWL server: Start without allowed calling AE titles leaves the server open."""
+        mock_ae.return_value = MagicMock(require_calling_aet=[])
+
+        subject = MWLServer()
+        subject.start()
+
+        assert cast(Mock, subject.ae).require_calling_aet == []
 
     @patch(f"{MWLServer.__module__}.AE")
     def test_stop(self, *_):

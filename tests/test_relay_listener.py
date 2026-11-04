@@ -116,6 +116,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 
@@ -138,6 +139,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 
@@ -184,6 +186,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 
@@ -211,6 +214,7 @@ class TestRelayListener:
                 modality="MG",
                 study_description="MAMMOGRAPHY",
                 source_message_id="action-12345",
+                source_system_url="https://example.run-breast-screening.nhs.uk",
             )
         )
 
@@ -280,9 +284,8 @@ class TestRelayListener:
                     ("wss://second-url", 2),
                 ],
             ) as mock_details,
-            patch.object(
-                subject,
-                "_connect",
+            patch(
+                "relay_listener.connect",
                 return_value=connection_cm,
             ) as mock_connect,
             patch.object(
@@ -295,8 +298,8 @@ class TestRelayListener:
                 await subject.listen()
 
         assert mock_details.call_count == 2
-        mock_connect.assert_any_call("wss://first-url")
-        mock_connect.assert_any_call("wss://second-url")
+        mock_connect.assert_any_call("wss://first-url", compression=None, ping_interval=30, ping_timeout=10)
+        mock_connect.assert_any_call("wss://second-url", compression=None, ping_interval=30, ping_timeout=10)
 
 
 class TestRelayURIWithDefaultAzureCredential:
@@ -443,11 +446,8 @@ async def test_main_handles_connection_closed_and_keyboard_interrupt(
 
     assert relay_listener_instance.listen.call_count == 3
     mock_logger.info.assert_any_call("Socket Listener Starting...")
-    mock_logger.warning.assert_any_call(
-        "Connection closed with code %s: %s", CloseCode.INTERNAL_ERROR, "Something went wrong"
-    )
-    mock_logger.warning.assert_any_call("Retrying in 5 seconds...")
-    mock_logger.warning.assert_any_call("Connection closed with code %s: %s", CloseCode.BAD_GATEWAY, "Bad gateway")
+    mock_logger.exception.assert_any_call("Connection closed")
+    mock_logger.info.assert_any_call("Retrying in 5 seconds...")
     mock_logger.warning.assert_any_call("\nShutting down...")
 
 

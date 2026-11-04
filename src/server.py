@@ -27,6 +27,15 @@ from services.storage import MWLStorage, PACSStorage
 logger = logging.getLogger(__name__)
 
 
+def _restrict_calling_aets(ae: AE, allowed_calling_aets: list[str]):
+    """Reject associations from calling AE titles outside the allow list."""
+    if allowed_calling_aets:
+        ae.require_calling_aet = allowed_calling_aets
+        logger.info(f"Accepting associations only from calling AE titles: {', '.join(allowed_calling_aets)}")
+    else:
+        logger.info("Accepting associations from any calling AE title")
+
+
 class PACSServer:
     """DICOM PACS Server with C-STORE support."""
 
@@ -38,6 +47,7 @@ class PACSServer:
         db_path: str = "/var/lib/pacs/pacs.db",
         block: bool = True,
         mwl_db_path: str = "/var/lib/pacs/worklist.db",
+        allowed_calling_aets: list[str] | None = None,
     ):
         """
         Initialize PACS server.
@@ -48,6 +58,7 @@ class PACSServer:
             storage_path: Directory for DICOM file storage
             db_path: Path to SQLite database
             mwl_db_path: Path to the MWL SQLite database (for failure notification lookups)
+            allowed_calling_aets: Calling AE titles to accept associations from
         """
         self.ae_title = ae_title
         self.port = port
@@ -55,6 +66,7 @@ class PACSServer:
         self.mwl_storage = MWLStorage(mwl_db_path)
         self.ae = None
         self.block = block
+        self.allowed_calling_aets = allowed_calling_aets or []
 
     def start(self):
         """Start the PACS server and listen for incoming connections."""
@@ -69,6 +81,7 @@ class PACSServer:
             dicom_uid.JPEG2000Lossless,
         ]
         self.ae = AE(ae_title=self.ae_title)
+        _restrict_calling_aets(self.ae, self.allowed_calling_aets)
         self.ae.add_supported_context(Verification)
         self.ae.add_supported_context(DigitalMammographyXRayImageStorageForPresentation, transfer_syntaxes)
         self.ae.add_supported_context(DigitalMammographyXRayImageStorageForProcessing, transfer_syntaxes)
@@ -101,6 +114,7 @@ class MWLServer:
         port: int = 4243,
         db_path: str = "/var/lib/pacs/worklist.db",
         block: bool = True,
+        allowed_calling_aets: list[str] | None = None,
     ):
         """
         Initialize MWL server.
@@ -110,18 +124,21 @@ class MWLServer:
             port: Port to listen on
             db_path: Path to SQLite worklist database
             block: Whether to block when starting server
+            allowed_calling_aets: Calling AE titles to accept associations from
         """
         self.ae_title = ae_title
         self.port = port
         self.storage = MWLStorage(db_path)
         self.ae = None
         self.block = block
+        self.allowed_calling_aets = allowed_calling_aets or []
 
     def start(self):
         """Start the MWL server."""
         logger.info(f"Starting MWL server: {self.ae_title} on port {self.port}")
 
         self.ae = AE(ae_title=self.ae_title)
+        _restrict_calling_aets(self.ae, self.allowed_calling_aets)
         self.ae.add_supported_context(Verification)
         self.ae.add_supported_context(ModalityWorklistInformationFind)
         self.ae.add_supported_context(ModalityPerformedProcedureStep)

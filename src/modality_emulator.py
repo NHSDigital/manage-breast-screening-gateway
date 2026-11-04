@@ -129,12 +129,12 @@ class ModalityEmulator:
         self.mwl_storage = mwl_storage
         self.processed_items = set()
 
-    def process_worklist_items(self, ae: AE, patient_name: str | None = None):
+    def process_worklist_items(self, patient_name: str | None = None):
         """
         Queries the MWL for items scheduled for today and sends generated DICOM files to the PACS server for each item.
         """
-        mwl_assoc = ae.associate(MWL_HOST, MWL_PORT, ae_title=MWL_AET)
-        pacs_assoc = ae.associate(PACS_HOST, PACS_PORT, ae_title=PACS_AET)
+        mwl_assoc = self.ae.associate(MWL_HOST, MWL_PORT, ae_title=MWL_AET)
+        pacs_assoc = self.ae.associate(PACS_HOST, PACS_PORT, ae_title=PACS_AET)
 
         if mwl_assoc.is_established and pacs_assoc.is_established:
             logger.info(f"Connected to MWL server {MWL_HOST}:{MWL_PORT} ({MWL_AET})")
@@ -205,6 +205,13 @@ class ModalityEmulator:
 
         return ds
 
+    @property
+    def ae(self) -> AE:
+        ae = AE(ae_title=config.SMOKE_TEST_AET)
+        ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
+        ae.add_requested_context(ModalityWorklistInformationFind)
+        return ae
+
 
 def main():
     if Environment().production:
@@ -213,14 +220,11 @@ def main():
     logger.info("Modality Emulator Starting...")
     mwl_storage = MWLStorage(db_path=MWL_DB_PATH)
     emulator = ModalityEmulator(mwl_storage)
-    ae = AE(ae_title="ModalityEmulator")
-    ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
-    ae.add_requested_context(ModalityWorklistInformationFind)
 
     while True:
         try:
             time.sleep(EMULATED_PROCEDURE_DURATION_SECONDS)
-            emulator.process_worklist_items(ae)
+            emulator.process_worklist_items()
         except KeyboardInterrupt:
             logger.warning("\n Modality Emulator shutting down...")
             break

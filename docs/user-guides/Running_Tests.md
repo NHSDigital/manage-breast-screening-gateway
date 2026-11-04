@@ -61,8 +61,10 @@ tests/
 # tests/test_example.py
 import pytest
 
+
 def test_addition():
     assert 1 + 1 == 2
+
 
 @pytest.mark.integration
 def test_database_connection():

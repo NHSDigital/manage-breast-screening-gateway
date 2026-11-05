@@ -65,7 +65,7 @@ class WorklistItem:
         if self.source_system_url:
             parsed_url = urlsplit(self.source_system_url)
             hostname = parsed_url.hostname
-            if hostname == "localhost":
+            if hostname == "localhost" and parsed_url.scheme in ("http", "https"):
                 return
 
             if (

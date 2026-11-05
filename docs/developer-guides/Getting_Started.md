@@ -130,10 +130,10 @@ If `make config` fails with `uv: command not found`:
 
 ```bash
 # Install uv manually
-pip install uv==0.9.7
+pip install uv==0.13.5
 
 # Or using asdf
-asdf install uv 0.9.7
+asdf install uv 0.13.5
 ```
 
 ### Pre-commit hooks failing
@@ -156,8 +156,8 @@ Ensure you're using Python 3.14+:
 python --version
 
 # If wrong version, install via asdf
-asdf install python 3.14.0
-asdf global python 3.14.0
+asdf install python 3.14.9
+asdf global python 3.14.9
 ```
 
 ## Next Steps

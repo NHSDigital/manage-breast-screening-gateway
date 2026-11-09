@@ -28,7 +28,9 @@ if os.getenv("ENVIRONMENT", "").lower() == "prod":
 
 seed = random.randint(1000000, 9999999)
 SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "sample_images")
+SMOKE_TEST_AET = "SMOKE_TEST_AET"
 TEST_ACCESSION_NUMBER = f"SMOKE-{seed}"  # gitleaks:allow
+TEST_ACTION_ID = f"action-{seed}"  # gitleaks:allow
 TEST_PATIENT_ID = f"999{seed}"  # gitleaks:allow
 TEST_PATIENT_NAME = f"TEST^{seed}"  # gitleaks:allow
 TEST_PATIENT_BIRTH_DATE = "19900101"  # gitleaks:allow
@@ -89,7 +91,7 @@ def generate_dicom_dataset():
 
 def test_create_worklist_item():
     payload = {
-        "action_id": "action-12345",
+        "action_id": TEST_ACTION_ID,
         "action_type": "worklist.create_item",
         "parameters": {
             "worklist_item": {
@@ -100,8 +102,8 @@ def test_create_worklist_item():
                     "sex": "F",
                 },
                 "scheduled": {
-                    "date": "20240615",
-                    "time": "101500",
+                    "date": TEST_SCHEDULED_DATE,
+                    "time": TEST_SCHEDULED_TIME,
                 },
                 "procedure": {
                     "modality": "MG",
@@ -112,14 +114,15 @@ def test_create_worklist_item():
         },
     }
 
-    response = CreateWorklistItem(MWLStorage(os.environ["MWL_DB_PATH"])).call(payload)
-    assert response == {"action_id": "action-12345", "status": "created"}
+    storage = MWLStorage(os.environ["MWL_DB_PATH"])
+    response = CreateWorklistItem(storage).call(payload)
+    assert response == {"action_id": TEST_ACTION_ID, "status": "created"}
 
 
 def test_c_find_worklist_item():
     mwl_host = os.getenv("MWL_HOST", "127.0.0.1")
     mwl_port = int(os.getenv("MWL_PORT", "4243"))
-    ae = AE(ae_title="SMOKE_TEST_AET")
+    ae = AE(ae_title=SMOKE_TEST_AET)
     ae.add_requested_context(ModalityWorklistInformationFind)
 
     logger.info("Associating with MWL server %s at %s:%s", os.environ["MWL_AET"], mwl_host, mwl_port)
@@ -148,7 +151,7 @@ def test_c_find_worklist_item():
 def test_c_store_dicom_image():
     pacs_host = os.getenv("PACS_HOST", "127.0.0.1")
     pacs_port = int(os.getenv("PACS_PORT", "4244"))
-    ae = AE(ae_title="SMOKE_TEST_AET")
+    ae = AE(ae_title=SMOKE_TEST_AET)
     ae.add_requested_context(DigitalMammographyXRayImageStorageForPresentation)
     pacs_assoc = ae.associate(pacs_host, pacs_port, ae_title=os.environ["PACS_AET"])
 

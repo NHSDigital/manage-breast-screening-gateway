@@ -1,4 +1,5 @@
 import pytest
+
 from models import WorklistItem
 
 
@@ -69,6 +70,14 @@ class TestWorklistItem:
 
         item = WorklistItem(**result)
         assert item.source_system_url is None
+
+    def test_worklist_item_with_localhost_source_system_url(self, result):
+        """Worklist item with localhost source system url."""
+        result["source_system_url"] = "http://localhost:8000"
+
+        item = WorklistItem(**result)
+
+        assert item.source_system_url == result["source_system_url"]
 
     def test_worklist_item_with_missing_required_fields(self, result):
         """Worklist item with missing required fields."""

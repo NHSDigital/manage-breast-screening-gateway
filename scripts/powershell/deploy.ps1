@@ -171,7 +171,13 @@ if ($Bootstrap) {
 
     if (-not (Get-Command choco.exe -ErrorAction SilentlyContinue)) {
         Install-WithRetry "Chocolatey" {
-            Set-ExecutionPolicy Bypass -Scope Process -Force
+            # Fails when a trust Group Policy enforces the execution policy.
+            # The policy will still permit this installer, so log and continue.
+            try {
+                Set-ExecutionPolicy Bypass -Scope Process -Force
+            } catch {
+                Write-Log "Could not set execution policy (Group Policy override?): $_" "WARNING"
+            }
             [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
             $scriptUrl = 'https://community.chocolatey.org/install.ps1'
             Invoke-Expression (Invoke-WebRequest -UseBasicParsing -Uri $scriptUrl).Content

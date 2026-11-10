@@ -25,11 +25,13 @@
 | Destination | Purpose |
 |---|---|
 | `*.arc.azure.com`, `*.his.arc.azure.com` | Azure Arc management |
+| `*.guestconfiguration.azure.com` | Azure Arc agent |
 | `management.azure.com`, `login.microsoftonline.com` | Azure control plane / identity |
 | `relay-manbrs-<env>.servicebus.windows.net` | Worklist delivery (outbound-initiated listener) |
 | `<env hostname, e.g. run-breast-screening.nhs.uk>` | Image upload to the national service |
 | `*.in.applicationinsights.azure.com`, `*.livediagnostics.monitor.azure.com` | Service telemetry |
 | `community.chocolatey.org`, `www.python.org`, `astral.sh`, `github.com`, `objects.githubusercontent.com`, `download.microsoft.com` | Deployment-time software downloads |
+| `raw.githubusercontent.com` | Downloading `arc-setup.ps1` at onboarding (optional — the script can also be pasted onto the VM over RDP) |
 
 **Hospital LAN (inbound, from the mammography modality only):** TCP 104
 (DICOM worklist) and TCP 11112 (DICOM image store) to the gateway machine.
@@ -263,7 +265,7 @@ az resource tag --is-incremental \
 
 > `--is-incremental` merges the tag into the machine's existing tag set. Do not use `az connectedmachine update --tags` (it replaces the entire tag set, including `DeploymentRing`), and note that `az connectedmachine update` does not accept generic `--set tags.…` arguments.
 
-Then re-run the **Deploy Gateway** pipeline for the site. The pipeline reads the tag into the machine's `.env` (appending `SMOKE_TEST_AET` automatically so the smoke test keeps passing). If the deploy is skipped because the requested release is already installed, the `.env` is still refreshed but the services are not restarted — restart the two DICOM listeners to pick up the new allowlist:
+Then re-run the **Deploy Gateway** pipeline for the site. The pipeline reads the tag into the machine's `.env` (appending `SMOKE_TEST_AET` automatically so internally generated test traffic — the smoke test and remote gateway test actions — keeps working). If the deploy is skipped because the requested release is already installed, the `.env` is still refreshed but the services are not restarted — restart the two DICOM listeners to pick up the new allowlist:
 
 ```bash
 az connectedmachine run-command create \
@@ -306,6 +308,27 @@ Check `C:\ArcSetup\ArcSetup.log` on the VM. Common causes:
 - **Firewall blocking outbound** — confirm the VM can reach `*.arc.azure.com` on port 443
 - **SPN credentials wrong** — confirm the one-time secret shared before the call has not expired (1-day validity); generate a new one and retry if needed
 - **VM already registered** — if the machine was previously connected under a different name, disconnect first: `azcmagent disconnect`
+- **Arc endpoint resolves to a private IP** (`AZCM0026`, "Private Link Scope") — see the next section
+
+### Onboarding fails: AZCM0026, Arc endpoint resolves to a private IP
+
+If `azcmagent connect` fails with `AZCM0026: Network Error` mentioning a private endpoint or Private Link Scope, the trust's DNS has Azure Private DNS zones (eg `privatelink.guestconfiguration.azure.com`) for its own Azure estate, so the VM resolves public Arc endpoints to the trust's private endpoints.
+
+Diagnose with `azcmagent check --location <region>`: every endpoint listed with `Private: true` is affected.
+
+The proper fix is a trust DNS exemption so these FQDNs resolve publicly for this VM — ask the trust's network/DNS team. As a temporary unblock during the onboarding call, pin each affected FQDN in `C:\Windows\System32\drivers\etc\hosts` to its public IP, run `ipconfig /flushdns`, and retry the script.
+
+### Re-running a deployment for the same release returns a stale result
+
+The deployment pipeline names each Arc run command `deploy-mbsgw-<release>-<machine>`, so re-deploying the same release to the same machine re-uses the name, and Azure reports the previous execution's result. Before re-running a deployment of an already-deployed release, delete the old run command first:
+
+```bash
+az connectedmachine run-command delete \
+  --machine-name gw-<site>-<ods>-<instance> \
+  --resource-group rg-mbsgw-<env>-uks-arc-enabled-servers \
+  --run-command-name deploy-mbsgw-<release-tag-with-dashes>-gw-<site>-<ods>-<instance> \
+  --yes
+```
 
 ### Script execution blocked
 

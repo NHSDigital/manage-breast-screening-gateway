@@ -26,30 +26,30 @@ source "infrastructure/environments/${ENVIRONMENT}/variables.sh"
 CLOUD_API_ENDPOINT="https://${CLOUD_API_HOSTNAME}/api/v1/dicom"
 
 CLOUD_API_RESOURCE=$(az ad sp list \
-  --display-name "spn-manbrs-web-api-${ENVIRONMENT}" \
-  --query "[0].appId" -o tsv 2>/dev/null || echo "")
+    --display-name "spn-manbrs-web-api-${ENVIRONMENT}" \
+    --query "[0].appId" -o tsv 2>/dev/null || echo "")
 if [[ -z "$CLOUD_API_RESOURCE" ]]; then
-  echo "##vso[task.logissue type=error]Could not resolve client ID for spn-manbrs-web-api-${ENVIRONMENT}"
-  exit 1
+    echo "##vso[task.logissue type=error]Could not resolve client ID for spn-manbrs-web-api-${ENVIRONMENT}"
+    exit 1
 fi
 
 APPLICATIONINSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show \
-  --app "ai-${APP_SHORT_NAME}-${ENVIRONMENT}-arc-uks" \
-  --resource-group "$ARC_RG" \
-  --query connectionString -o tsv 2>/dev/null || echo "")
-[[ -z "$APPLICATIONINSIGHTS_CONNECTION_STRING" ]] && \
-  echo "##vso[task.logissue type=warning]Application Insights resource not found — telemetry will be disabled"
+    --app "ai-${APP_SHORT_NAME}-${ENVIRONMENT}-arc-uks" \
+    --resource-group "$ARC_RG" \
+    --query connectionString -o tsv 2>/dev/null || echo "")
+[[ -z "$APPLICATIONINSIGHTS_CONNECTION_STRING" ]] &&
+    echo "##vso[task.logissue type=warning]Application Insights resource not found — telemetry will be disabled"
 
 # ── Discover machines ──────────────────────────────────────────────────────────
 MACHINES_JSON=$(az connectedmachine list \
-  --resource-group "$ARC_RG" \
-  --query "[?tags.DeploymentRing=='${RING}'].{name:name,location:location,allowedCallingAets:tags.AllowedCallingAets}" \
-  --output json)
+    --resource-group "$ARC_RG" \
+    --query "[?tags.DeploymentRing=='${RING}'].{name:name,location:location,allowedCallingAets:tags.AllowedCallingAets}" \
+    --output json)
 
 MACHINE_COUNT=$(echo "$MACHINES_JSON" | jq 'length')
 if [[ "$MACHINE_COUNT" -eq 0 ]]; then
-  echo "##vso[task.logissue type=warning]No machines found for ${RING} in ${ENVIRONMENT} — skipping"
-  exit 0
+    echo "##vso[task.logissue type=warning]No machines found for ${RING} in ${ENVIRONMENT} — skipping"
+    exit 0
 fi
 
 echo "Found ${MACHINE_COUNT} machine(s) for ${RING} in ${ENVIRONMENT}"
@@ -65,19 +65,19 @@ declare -a RUN_CMD_NAMES=()
 # API_ENVIRONMENT is used to set the AET and port for the MWL and PACS servers.
 API_ENVIRONMENT=$(echo "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
 if [[ ${#API_ENVIRONMENT} -gt 4 ]]; then
-  API_ENVIRONMENT=${API_ENVIRONMENT:0:3} # Truncate REVIEW and PREPROD to 3 chars to fit within AET length limit
+    API_ENVIRONMENT=${API_ENVIRONMENT:0:3} # Truncate REVIEW and PREPROD to 3 chars to fit within AET length limit
 fi
 
 while IFS= read -r MACHINE_JSON; do
-  MACHINE=$(echo "$MACHINE_JSON" | jq -r '.name')
-  LOCATION=$(echo "$MACHINE_JSON" | jq -r '.location')
-  ALLOWED_CALLING_AETS=$(echo "$MACHINE_JSON" | jq -r '.allowedCallingAets // empty')
-  echo "Preparing deploy for $MACHINE ($LOCATION)..."
+    MACHINE=$(echo "$MACHINE_JSON" | jq -r '.name')
+    LOCATION=$(echo "$MACHINE_JSON" | jq -r '.location')
+    ALLOWED_CALLING_AETS=$(echo "$MACHINE_JSON" | jq -r '.allowedCallingAets // empty')
+    echo "Preparing deploy for $MACHINE ($LOCATION)..."
 
-  # Build .env, then base64-encode to pass newlines as a run command parameter.
-  # NOTE: Arc Run Command drops protectedParameters for inline source.script,
-  # so EnvContentB64 travels as a regular parameter (base64-encoded, not plain text).
-  ENV_CONTENT="AZURE_RELAY_NAMESPACE=${RELAY_NAMESPACE_HOSTNAME}
+    # Build .env, then base64-encode to pass newlines as a run command parameter.
+    # NOTE: Arc Run Command drops protectedParameters for inline source.script,
+    # so EnvContentB64 travels as a regular parameter (base64-encoded, not plain text).
+    ENV_CONTENT="AZURE_RELAY_NAMESPACE=${RELAY_NAMESPACE_HOSTNAME}
 AZURE_RELAY_HYBRID_CONNECTION=hc-${MACHINE}
 CLOUD_API_ENDPOINT=${CLOUD_API_ENDPOINT}
 CLOUD_API_RESOURCE=${CLOUD_API_RESOURCE}
@@ -93,40 +93,41 @@ PACS_DB_PATH=${BASE_PATH}/data/pacs.db
 LOG_LEVEL=INFO
 SAMPLE_IMAGES_PATH=${BASE_PATH}/current/sample_images"
 
-  # Per-machine DICOM access control from the machine's AllowedCallingAets Arc
-  # tag (comma-separated). No tag means the lines are omitted and the DICOM
-  # servers accept any calling AE title — see ADR-009. SMOKE_TEST_AET (the
-  # calling title used by scripts/python/smoke_test.py) is always appended so
-  # the post-deployment smoke test passes on restricted machines.
-  if [[ -n "$ALLOWED_CALLING_AETS" ]]; then
-    ENV_CONTENT="${ENV_CONTENT}
+    # Per-machine DICOM access control from the machine's AllowedCallingAets Arc
+    # tag (comma-separated). No tag means the lines are omitted and the DICOM
+    # servers accept any calling AE title — see ADR-009. SMOKE_TEST_AET (the
+    # calling title for all internally generated test traffic) is always
+    # appended.
+    if [[ -n "$ALLOWED_CALLING_AETS" ]]; then
+        ENV_CONTENT="${ENV_CONTENT}
 PACS_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS},SMOKE_TEST_AET
 MWL_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS},SMOKE_TEST_AET"
-    echo "Restricting DICOM calling AE titles for $MACHINE to: $ALLOWED_CALLING_AETS (+ SMOKE_TEST_AET)"
-  fi
+        echo "Restricting DICOM calling AE titles for $MACHINE to: $ALLOWED_CALLING_AETS (+ SMOKE_TEST_AET)"
+    fi
 
-  # Cross-platform base64 encoding (works on macOS and Linux)
-  ENV_CONTENT_B64=$(printf '%s' "$ENV_CONTENT" | base64 | tr -d '\n')
+    # Cross-platform base64 encoding (works on macOS and Linux)
+    ENV_CONTENT_B64=$(printf '%s' "$ENV_CONTENT" | base64 | tr -d '\n')
 
-  # deploy.ps1 is embedded directly in source.script (limit ~4 MB) rather than passed
-  # as a parameter value. Parameter values are passed on the PowerShell command line and
-  # the Windows command line limit (32,767 chars) would be exceeded by the ~40 KB script.
+    # deploy.ps1 is embedded directly in source.script (limit ~4 MB) rather than passed
+    # as a parameter value. Parameter values are passed on the PowerShell command line and
+    # the Windows command line limit (32,767 chars) would be exceeded by the ~40 KB script.
 
-  # Use machine name + timestamp to ensure uniqueness across parallel submissions.
-  CLEAN_TAG=$(echo "${RELEASE_TAG}" | tr '.' '-' | tr '/' '-')
-  RUN_CMD_NAME="deploy-mbsgw-${CLEAN_TAG}-${MACHINE}"
+    # Stable per release+machine: re-deploying the same release re-uses the name and
+    # Azure returns the previous execution's result — see the onboarding runbook.
+    CLEAN_TAG=$(echo "${RELEASE_TAG}" | tr '.' '-' | tr '/' '-')
+    RUN_CMD_NAME="deploy-mbsgw-${CLEAN_TAG}-${MACHINE}"
 
-  CMD_URL="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${ARC_RG}/providers/Microsoft.HybridCompute/machines/${MACHINE}/runCommands/${RUN_CMD_NAME}?api-version=2024-07-10"
+    CMD_URL="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${ARC_RG}/providers/Microsoft.HybridCompute/machines/${MACHINE}/runCommands/${RUN_CMD_NAME}?api-version=2024-07-10"
 
-  BODY=$(jq -n \
-    --arg loc    "$LOCATION" \
-    --rawfile script scripts/powershell/deploy.ps1 \
-    --arg tag    "$RELEASE_TAG" \
-    --arg pyver  "$PYTHON_VERSION" \
-    --arg envb64 "$ENV_CONTENT_B64" \
-    --arg token  "$GITHUB_TOKEN" \
-    --arg env    "$ENVIRONMENT" \
-    '{
+    BODY=$(jq -n \
+        --arg loc "$LOCATION" \
+        --rawfile script scripts/powershell/deploy.ps1 \
+        --arg tag "$RELEASE_TAG" \
+        --arg pyver "$PYTHON_VERSION" \
+        --arg envb64 "$ENV_CONTENT_B64" \
+        --arg token "$GITHUB_TOKEN" \
+        --arg env "$ENVIRONMENT" \
+        '{
       location: $loc,
       properties: {
         source: { script: $script },
@@ -142,17 +143,17 @@ MWL_ALLOWED_CALLING_AETS=${ALLOWED_CALLING_AETS},SMOKE_TEST_AET"
       }
     }')
 
-  echo "Submitting run command '$RUN_CMD_NAME' for $MACHINE..."
-  PUT_RESPONSE=$(az rest --method PUT \
-    --url "$CMD_URL" \
-    --body "$BODY" \
-    --output json)
+    echo "Submitting run command '$RUN_CMD_NAME' for $MACHINE..."
+    PUT_RESPONSE=$(az rest --method PUT \
+        --url "$CMD_URL" \
+        --body "$BODY" \
+        --output json)
 
-  PROV_STATE=$(echo "$PUT_RESPONSE" | jq -r '.properties.provisioningState // "unknown"')
-  echo "Run command submitted for $MACHINE: $PROV_STATE"
+    PROV_STATE=$(echo "$PUT_RESPONSE" | jq -r '.properties.provisioningState // "unknown"')
+    echo "Run command submitted for $MACHINE: $PROV_STATE"
 
-  MACHINE_NAMES+=("$MACHINE")
-  RUN_CMD_NAMES+=("$RUN_CMD_NAME")
+    MACHINE_NAMES+=("$MACHINE")
+    RUN_CMD_NAMES+=("$RUN_CMD_NAME")
 
 done < <(echo "$MACHINES_JSON" | jq -c '.[]')
 
@@ -161,21 +162,24 @@ echo "Waiting for ${#MACHINE_NAMES[@]} machine(s) in parallel..."
 
 declare -a PIDS=()
 for i in "${!MACHINE_NAMES[@]}"; do
-  MACHINE="${MACHINE_NAMES[$i]}"
-  RUN_CMD_NAME="${RUN_CMD_NAMES[$i]}"
-  (
-    scripts/bash/wait_arc_run_command.sh "$MACHINE" "$ARC_RG" "$RUN_CMD_NAME" \
-      && echo "Deploy succeeded for $MACHINE" \
-      || { echo "ERROR: Deploy failed for $MACHINE"; exit 1; }
-  ) &
-  PIDS+=($!)
+    MACHINE="${MACHINE_NAMES[$i]}"
+    RUN_CMD_NAME="${RUN_CMD_NAMES[$i]}"
+    (
+        scripts/bash/wait_arc_run_command.sh "$MACHINE" "$ARC_RG" "$RUN_CMD_NAME" &&
+            echo "Deploy succeeded for $MACHINE" ||
+            {
+                echo "ERROR: Deploy failed for $MACHINE"
+                exit 1
+            }
+    ) &
+    PIDS+=($!)
 done
 
 FAILED=0
 for i in "${!PIDS[@]}"; do
-  if ! wait "${PIDS[$i]}"; then
-    FAILED=1
-  fi
+    if ! wait "${PIDS[$i]}"; then
+        FAILED=1
+    fi
 done
 
 exit $FAILED

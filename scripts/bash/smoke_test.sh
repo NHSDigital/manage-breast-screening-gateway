@@ -63,7 +63,6 @@ while IFS= read -r MACHINE; do
       --name "${RUN_NAME}" \
       --machine-name "${MACHINE}" \
       --resource-group "${RESOURCE_GROUP}" \
-      --instance-view \
       --query "instanceView.executionState" \
       --output tsv 2>/dev/null || echo "Unknown")
 
@@ -76,14 +75,12 @@ while IFS= read -r MACHINE; do
         --name "${RUN_NAME}" \
         --machine-name "${MACHINE}" \
         --resource-group "${RESOURCE_GROUP}" \
-        --instance-view \
         --query "instanceView.output" \
         --output tsv 2>/dev/null || echo "(no output)")
       ERROR=$(az connectedmachine run-command show \
         --name "${RUN_NAME}" \
         --machine-name "${MACHINE}" \
         --resource-group "${RESOURCE_GROUP}" \
-        --instance-view \
         --query "instanceView.error" \
         --output tsv 2>/dev/null || echo "(no error)")
       echo "✗ ${MACHINE}: smoke test FAILED"

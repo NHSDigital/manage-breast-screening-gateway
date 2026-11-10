@@ -53,3 +53,19 @@ stages:
                       export ARM_USE_AZUREAD=true
                       export GITHUB_TOKEN="${{ parameters.githubToken }}"
                       make ci ${{ parameters.environment }} deploy-app RELEASE_TAG="${{ parameters.releaseTag }}"
+
+                - task: AzureCLI@2
+                  displayName: Run gateway app smoke test in ${{ parameters.environment }}
+                  inputs:
+                    azureSubscription: mbsgw-${{ parameters.environment }}
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    addSpnToEnvironment: true
+                    inlineScript: |
+                      export ARM_TENANT_ID="$tenantId"
+                      export ARM_CLIENT_ID="$servicePrincipalId"
+                      export ARM_OIDC_TOKEN="$idToken"
+                      export ARM_USE_OIDC=true
+                      export ARM_USE_AZUREAD=true
+                      export GITHUB_TOKEN="${{ parameters.githubToken }}"
+                      make ci ${{ parameters.environment }} smoke-test

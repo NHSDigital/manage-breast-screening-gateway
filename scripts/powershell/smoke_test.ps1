@@ -35,7 +35,8 @@ if (-not (Test-Path $installPath)) {
 Set-Location $installPath
 $env:PYTHONPATH = 'src'
 
-& '.venv\Scripts\pytest.exe' 'scripts\python\smoke_test.py'
+& ".venv\Scripts\pytest.exe" "-p" "no:warnings" .\scripts\python\smoke_test.py
+
 if ($LASTEXITCODE -ne 0) {
     throw "DICOM C-FIND and C-STORE smoke test failed (exit code: $LASTEXITCODE)"
 }

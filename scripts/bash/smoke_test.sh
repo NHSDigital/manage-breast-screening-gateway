@@ -54,6 +54,8 @@ while IFS= read -r MACHINE; do
     --script "${SCRIPT_CONTENT}" \
     --output none
 
+  echo "--- Waiting for smoke test to complete on ${MACHINE} ---"
+
   # Poll until the run command completes (max 5 minutes, 10s interval)
   PASSED=false
   for i in $(seq 1 30); do

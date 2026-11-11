@@ -175,6 +175,21 @@ class TestPACSStorage:
         assert row["patient_name"] == metadata["patient_name"]
         assert row["accession_number"] == metadata["accession_number"]
 
+    def test_delete_instance_removes_from_db_and_filesystem(self, pacs_storage):
+        """Delete instance removes from db and filesystem."""
+        uid = generate_uid()
+        metadata = {"patient_id": "9990001112", "patient_name": "SMITH^JANE"}
+        filepath = pacs_storage.store_instance(uid, b"foo", metadata)
+        assert Path(filepath).exists()
+        pacs_storage.delete_instance(uid)
+        with pacs_storage._get_connection() as conn:
+            row = conn.execute(
+                "SELECT * FROM stored_instances WHERE sop_instance_uid = ?",
+                (uid,),
+            ).fetchone()
+        assert row is None
+        assert not Path(filepath).exists()
+
 
 class TestMWLStorage:
     def _insert_item(self, storage, result):

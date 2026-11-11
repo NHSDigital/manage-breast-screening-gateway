@@ -147,6 +147,8 @@ def test_c_find_worklist_item():
     assert status.Status == PENDING, "C-FIND response status is not PENDING"
     assert ds.PatientID == TEST_PATIENT_ID, "C-FIND response PatientID does not match"
 
+    assert MWLStorage(os.environ["MWL_DB_PATH"]).delete_worklist_item(TEST_ACCESSION_NUMBER)
+
 
 def test_c_store_dicom_image():
     pacs_host = os.getenv("PACS_HOST", "127.0.0.1")
@@ -184,3 +186,4 @@ def test_upload_attempted_for_stored_image():
         time.sleep(1)
 
     assert upload_attempted, f"No upload attempt detected within {max_wait_time} seconds"
+    assert storage.delete_instance(stored_image["sop_instance_uid"])

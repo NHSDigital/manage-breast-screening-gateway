@@ -41,9 +41,9 @@ Portal checks first; the VM column is the escalation when telemetry isn't enough
 | Symptom | From the portal | On the VM |
 |---|---|---|
 | Appointment checked in on Manage but not on the modality worklist | Manage App Insights: run the [relay trace trail](#worklist-sends-the-relay-trace-trail) — did the send confirm? If it failed, the error names the phase. If it confirmed: gateway App Insights, `cloud_RoleName == 'mwl-server'` traces while the modality refreshes | `Get-GwWorklist` — is the item in the DB? If no: `Watch-GwLog Relay`. If yes: `Watch-GwLog MWL` while the modality refreshes; confirm port 104 listening; scheduled_date is stored in **UTC** `YYYYMMDD` |
-| Exposure taken but images not on the VM | Gateway App Insights: `cloud_RoleName == 'pacs-server'` traces while the modality sends | `Watch-GwLog PACS`; `Get-GwImages`; confirm port 11112 and that the modality is configured with AE title `RUBIE_PACS_PROD`, correct IP and port |
+| Exposure taken but images not on the VM | Gateway App Insights: `cloud_RoleName == 'pacs-server'` traces while the modality sends. Nothing at all while MWL works? See [prove whether anything reaches port 11112](#mwl-works-but-no-images-prove-whether-anything-reaches-port-11112) | `Watch-GwLog PACS`; `Get-GwImages`; confirm port 11112 and that the modality is configured with AE title `RUBIE_PACS_PROD`, correct IP and port |
 | Modality C-ECHO / worklist query times out | Nothing to see from Azure — this hop is modality → VM over the hospital LAN | Missing inbound Windows Firewall rules on the VM. Check the `firewall_rules` health check or `Get-NetFirewallRule -DisplayName "Rubie Gateway*"`; create the rules per the [onboarding runbook troubleshooting](./onboard-hospital-vm.md#modality-c-echo-dicom-ping-to-the-gateway-times-out) |
-| Images on VM but not appearing in Manage | Gateway App Insights: `cloud_RoleName == 'upload-listener'` traces and exceptions. Auth errors usually mean the Arc managed identity / `Gateway.Access` app role or `Gateway.oid` in Manage is wrong. Cross-check Manage's side: `requests` on `/api/v1/dicom` | `Get-GwUploadFailures` — look at `upload_error` and `upload_attempt_count`; `Watch-GwLog Upload` |
+| Images on VM but not appearing in Manage | Gateway App Insights: `cloud_RoleName == 'upload-listener'` traces and exceptions. Auth errors usually mean the Arc managed identity / `Gateway.Access` app role or `Gateway.oid` in Manage is wrong — except 403 "No valid GatewayAction", which is [its own failure mode](#upload-403-no-valid-gatewayaction-found-for-the-provided-source_message_id-and-oid). Cross-check Manage's side: `requests` on `/api/v1/dicom` | `Get-GwUploadFailures` — look at `upload_error` and `upload_attempt_count`; `Watch-GwLog Upload` |
 | Item status stuck at SCHEDULED after procedure started | Gateway App Insights: `mwl-server` traces for MPPS N-CREATE/N-SET messages | `Get-GwWorklistItem <ACC>` — MPPS updates set `status` / `mpps_instance_uid`; check `Watch-GwLog MWL` |
 | Anything crashing / restart loops | Gateway App Insights: `exceptions` table, any `cloud_RoleName` | `Search-GwLogs`; `Get-Service Gateway-*` (NSSM restarts failed services automatically — repeated banner lines in the log mean crash-looping) |
 
@@ -95,6 +95,23 @@ traces
 > deploy time — if queries return nothing at all, fall back to the VM logs and
 > check the deploy log for the "Application Insights resource not found" warning.
 > This is the one failure mode where the VM is the *only* source.
+
+### Upload 403: "No valid GatewayAction found for the provided source_message_id and OID"
+
+Manage authorises each upload against the GatewayAction its worklist item came
+from, and the action must have been **created on the current calendar day**.
+Images arriving a day or more after their worklist item are refused on every
+retry. After 3 attempts the instance is marked `upload_status = 'FAILED'`.
+
+To re-queue the rows on the VM:
+
+```sql
+UPDATE stored_instances
+SET upload_status = 'PENDING', upload_attempt_count = 0, upload_error = NULL
+WHERE upload_status = 'FAILED';
+```
+
+The upload listener picks requeued rows up on its next poll.
 
 ### Manage telemetry (Application Insights)
 
@@ -298,3 +315,37 @@ Output lands in `instanceView.output` in the result. Working rules:
   will never return).
 - Keep it to metadata — worklist rows, upload failure counts, log excerpts.
   Don't pull DICOM or patient data through command output.
+
+### MWL works but no images: prove whether anything reaches port 11112
+
+When worklist queries succeed but `pacs-server` shows no inbound associations,
+the question is "is traffic reaching the VM and being dropped, or never being
+sent?". This question can be answered with Windows Firewall packet logging:
+
+```powershell
+# enable: log allowed and dropped packets
+Set-NetFirewallProfile -All -LogFileName '%systemroot%\system32\LogFiles\Firewall\pfirewall.log' -LogMaxSizeKilobytes 16384 -LogAllowed True -LogBlocked True
+
+# read: traffic on the DICOM ports (ALLOW/DROP, source IP, port)
+Select-String -Path "$env:systemroot\system32\LogFiles\Firewall\pfirewall.log" -Pattern ' (104|11112) ' | Select-Object -Last 50
+
+# disable when finished
+Set-NetFirewallProfile -All -LogAllowed False -LogBlocked False
+```
+
+- **ALLOW lines on 104 (worklist refreshes), nothing at all on 11112, no
+  DROPs** → nothing is being sent. The fault is modality-side configuration,
+  not network, firewall or gateway.
+- **DROP lines on 11112** → firewall rule problem — see the
+  [onboarding runbook troubleshooting](./onboard-hospital-vm.md#modality-c-echo-dicom-ping-to-the-gateway-times-out).
+
+If firewall logging shows nothing at all on 11112, the next step is to check the
+modality configuration. If the same unit still sends to trust PACS normally,
+its sending machinery is healthy and the fault is specific to the gateway
+*destination entry*: ask the supplier's engineer to check the destination is
+enabled.
+
+A C-ECHO from the modality to the gateway is the quick retest after any change,
+and a trust-side `Test-NetConnection <gateway-ip> -Port 11112` from another
+machine on the modality subnet separates "network path broken" from "modality
+not sending" without waiting on the supplier.

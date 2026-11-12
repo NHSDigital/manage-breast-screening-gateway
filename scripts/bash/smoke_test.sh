@@ -54,6 +54,8 @@ while IFS= read -r MACHINE; do
     --script "${SCRIPT_CONTENT}" \
     --output none
 
+  echo "--- Waiting for smoke test to complete on ${MACHINE} ---"
+
   # Poll until the run command completes (max 5 minutes, 10s interval)
   PASSED=false
   for i in $(seq 1 30); do
@@ -61,7 +63,6 @@ while IFS= read -r MACHINE; do
       --name "${RUN_NAME}" \
       --machine-name "${MACHINE}" \
       --resource-group "${RESOURCE_GROUP}" \
-      --instance-view \
       --query "instanceView.executionState" \
       --output tsv 2>/dev/null || echo "Unknown")
 
@@ -74,14 +75,12 @@ while IFS= read -r MACHINE; do
         --name "${RUN_NAME}" \
         --machine-name "${MACHINE}" \
         --resource-group "${RESOURCE_GROUP}" \
-        --instance-view \
         --query "instanceView.output" \
         --output tsv 2>/dev/null || echo "(no output)")
       ERROR=$(az connectedmachine run-command show \
         --name "${RUN_NAME}" \
         --machine-name "${MACHINE}" \
         --resource-group "${RESOURCE_GROUP}" \
-        --instance-view \
         --query "instanceView.error" \
         --output tsv 2>/dev/null || echo "(no error)")
       echo "✗ ${MACHINE}: smoke test FAILED"

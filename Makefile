@@ -35,6 +35,9 @@ clean: # Clean-up project resources @Operations
 	find . -type f -name "*.pyc" -delete
 	find . -type f -name "*.pyo" -delete
 
+smoke-test: # Run smoke tests @Operations
+	scripts/bash/smoke_test.sh "$(ENV_CONFIG)"
+
 # ---------------------------------------------------------------------------
 # Bootstrap & Environment
 # ---------------------------------------------------------------------------

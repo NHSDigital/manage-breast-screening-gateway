@@ -5,6 +5,7 @@ import random
 import time
 
 import numpy as np
+import pytest
 from dotenv import load_dotenv
 from PIL import Image
 from pydicom.dataset import Dataset, FileMetaDataset
@@ -34,6 +35,16 @@ TEST_PATIENT_BIRTH_DATE = "19900101"  # gitleaks:allow
 TEST_SCHEDULED_DATE = datetime.date.today().strftime("%Y%m%d")
 TEST_SCHEDULED_TIME = datetime.datetime.now().strftime("%H%M%S")
 TEST_STUDY_ID = f"STUDY{seed}"  # gitleaks:allow
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mwl_storage():
+    return MWLStorage(os.environ["MWL_DB_PATH"])
+
+
+@pytest.fixture(scope="module", autouse=True)
+def pacs_storage():
+    return PACSStorage(os.environ["PACS_DB_PATH"], os.environ["PACS_STORAGE_PATH"])
 
 
 # This smoke test is designed to verify the end-to-end functionality
@@ -86,7 +97,8 @@ def generate_dicom_dataset():
     return ds
 
 
-def test_create_worklist_item():
+@pytest.fixture
+def test_create_worklist_item(mwl_storage):
     payload = {
         "action_id": TEST_ACTION_ID,
         "action_type": "worklist.create_item",
@@ -111,12 +123,12 @@ def test_create_worklist_item():
         },
     }
 
-    storage = MWLStorage(os.environ["MWL_DB_PATH"])
-    response = CreateWorklistItem(storage).call(payload)
+    response = CreateWorklistItem(mwl_storage).call(payload)
     assert response == {"action_id": TEST_ACTION_ID, "status": "created"}
 
 
-def test_c_find_worklist_item():
+@pytest.fixture
+def test_c_find_worklist_item(test_create_worklist_item):
     mwl_host = os.getenv("MWL_HOST", "127.0.0.1")
     mwl_port = int(os.getenv("MWL_PORT", "4243"))
     ae = AE(ae_title=SMOKE_TEST_AET)
@@ -144,10 +156,9 @@ def test_c_find_worklist_item():
     assert status.Status == PENDING, "C-FIND response status is not PENDING"
     assert ds.PatientID == TEST_PATIENT_ID, "C-FIND response PatientID does not match"
 
-    assert MWLStorage(os.environ["MWL_DB_PATH"]).delete_worklist_item(TEST_ACCESSION_NUMBER)
 
-
-def test_c_store_dicom_image():
+@pytest.fixture
+def test_c_store_dicom_image(test_c_find_worklist_item):
     pacs_host = os.getenv("PACS_HOST", "127.0.0.1")
     pacs_port = int(os.getenv("PACS_PORT", "4244"))
     ae = AE(ae_title=SMOKE_TEST_AET)
@@ -161,20 +172,20 @@ def test_c_store_dicom_image():
     assert response.Status == SUCCESS, f"C-STORE failed with status: 0x{response.Status:04X}"
 
 
-def test_image_stored_in_pacs():
-    storage = PACSStorage(os.environ["PACS_DB_PATH"], os.environ["PACS_STORAGE_PATH"])
-    stored_image = storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
+@pytest.fixture
+def test_image_stored_in_pacs(pacs_storage, test_c_store_dicom_image):
+    stored_image = pacs_storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
     assert stored_image["patient_id"] == TEST_PATIENT_ID, "Stored image PatientID does not match"
     assert stored_image["accession_number"] == TEST_ACCESSION_NUMBER, "Stored image AccessionNumber does not match"
     assert stored_image["storage_path"] is not None, "Stored image storage_path is None"
 
 
-def test_upload_attempted_for_stored_image():
-    storage = PACSStorage(os.environ["PACS_DB_PATH"], os.environ["PACS_STORAGE_PATH"])
+@pytest.fixture
+def test_upload_attempted_for_stored_image(pacs_storage, test_image_stored_in_pacs):
     max_wait_time = 10
     upload_attempted = False
     for _ in range(max_wait_time):
-        stored_image = storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
+        stored_image = pacs_storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
         # We expect a FAILED upload as the smoke test action id won't match anything in Rubie
         # or Rubie won't be available to receive the upload.
         if stored_image["upload_status"] == "FAILED":
@@ -182,5 +193,17 @@ def test_upload_attempted_for_stored_image():
             break
         time.sleep(1)
 
-    assert upload_attempted, f"No upload attempt detected within {max_wait_time} seconds"
-    assert storage.delete_instance(stored_image["sop_instance_uid"])
+        assert upload_attempted, f"No upload attempt detected within {max_wait_time} seconds"
+
+
+def test_remove_worklist_item(mwl_storage, test_c_find_worklist_item):
+    worklist_item_deleted = mwl_storage.delete_worklist_item(TEST_ACCESSION_NUMBER)
+    assert worklist_item_deleted, "Failed to delete worklist item"
+
+
+def test_remove_stored_image(pacs_storage, test_image_stored_in_pacs):
+    stored_image = pacs_storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
+    if stored_image:
+        stored_image_deleted = pacs_storage.delete_instance(stored_image["sop_instance_uid"])
+
+        assert stored_image_deleted, "Failed to delete stored image"

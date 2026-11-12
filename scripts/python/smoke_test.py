@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-if os.getenv("ENVIRONMENT", "").lower() == "prod":
-    raise Exception("Smoke tests are not intended to be run in production environments.")
-
 seed = random.randint(1000000, 9999999)
 SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "sample_images")
 SMOKE_TEST_AET = "SMOKE_TEST_AET"

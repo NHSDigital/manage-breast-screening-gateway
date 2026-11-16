@@ -25,7 +25,9 @@ SERVICE_QUERY_TIMEOUT_SECONDS = 2
 _SERVICE_STATE_RUNNING = 4  # SERVICE_RUNNING in the Windows Service Control Manager
 # Rule names must match those created by scripts/powershell/deploy.ps1.
 FIREWALL_RULE_NAMES = ("Rubie Gateway MWL", "Rubie Gateway PACS")
-FIREWALL_QUERY_TIMEOUT_SECONDS = 5
+# Get-NetFirewallRule cold-loads the CIM/NetSecurity stack, which can take
+# several seconds on a busy VM.
+FIREWALL_QUERY_TIMEOUT_SECONDS = 20
 
 _STARTED_AT = time.time()
 

@@ -59,6 +59,15 @@ class TestDICOMUploader:
 
         assert result is False
 
+    def test_upload_with_smoke_test_action_id(self, _, dicom_file):
+        """Upload with smoke test action_id does not make request."""
+        uploader = DICOMUploader()
+        result = uploader.upload_dicom(
+            sop_instance_uid="1.2.3", dicom_stream=open(dicom_file, "rb"), source_attributes=("SMOKE-TEST", None)
+        )
+
+        assert result is True
+
     def test_upload_with_base_url(self, mock_put, dicom_file):
         """DICOM uploader: Upload with base_url."""
         mock_response = Mock()

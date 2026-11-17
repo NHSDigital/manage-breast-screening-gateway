@@ -314,6 +314,22 @@ class PACSStorage(Storage):
             )
             conn.commit()
 
+    def delete_instance(self, sop_instance_uid) -> bool:
+        """Delete a stored instance from database and disk."""
+        instance = self.get_instance(sop_instance_uid)
+        if not instance:
+            return False
+        # Delete file from disk
+        storage_path = self.storage_root / instance["storage_path"]
+        if storage_path.exists():
+            storage_path.unlink()
+        # Delete from database
+        with self._get_connection() as conn:
+            conn.execute("DELETE FROM stored_instances WHERE sop_instance_uid = ?", (sop_instance_uid,))
+            conn.commit()
+        logger.info("Deleted instance: %s", sop_instance_uid)
+        return True
+
 
 class WorklistItemNotFoundError(Exception):
     """Raised when a worklist item is not found in storage."""

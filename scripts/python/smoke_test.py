@@ -28,7 +28,9 @@ seed = random.randint(1000000, 9999999)
 SAMPLE_IMAGES_PATH = os.getenv("SAMPLE_IMAGES_PATH", "sample_images")
 SMOKE_TEST_AET = "SMOKE_TEST_AET"
 TEST_ACCESSION_NUMBER = f"SMOKE-{seed}"  # gitleaks:allow
-TEST_ACTION_ID = f"action-{seed}"  # gitleaks:allow
+# DicomUploader will skip uploads with action_id containing "SMOKE-"
+# to avoid uploading test images to the Rubie API.
+TEST_ACTION_ID = f"SMOKE-{seed}"  # gitleaks:allow
 TEST_PATIENT_ID = f"999{seed}"  # gitleaks:allow
 TEST_PATIENT_NAME = f"TEST^{seed}"  # gitleaks:allow
 TEST_PATIENT_BIRTH_DATE = "19900101"  # gitleaks:allow
@@ -176,19 +178,19 @@ def get_image_stored_in_pacs(pacs_storage):
     assert stored_image["storage_path"] is not None, "Stored image storage_path is None"
 
 
-def get_upload_attempt_for_stored_image(pacs_storage):
+def get_status_of_stored_image(pacs_storage):
     max_wait_time = 30
-    upload_attempted = False
+    stored_image = pacs_storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
+
     for _ in range(max_wait_time):
-        stored_image = pacs_storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
-        # We expect a FAILED upload as the smoke test action id won't match anything in Rubie
-        # or Rubie won't be available to receive the upload.
-        if stored_image["upload_status"] == "FAILED":
-            upload_attempted = True
+        if stored_image["upload_status"] == "COMPLETE":
             break
         time.sleep(1)
+        stored_image = pacs_storage.get_instance_by_accession(TEST_ACCESSION_NUMBER)
+    else:
+        pytest.fail(f"Stored image upload_status did not become COMPLETE within {max_wait_time} seconds")
 
-    assert upload_attempted, f"No upload attempt detected within {max_wait_time} seconds"
+    assert stored_image["upload_status"] == "COMPLETE", "Stored image upload_status is not COMPLETE"
 
 
 @pytest.fixture
@@ -214,4 +216,4 @@ def test_gateway(mwl_storage, pacs_storage, teardown):
     c_find_worklist_item()
     store_dicom_image()
     get_image_stored_in_pacs(pacs_storage)
-    get_upload_attempt_for_stored_image(pacs_storage)
+    get_status_of_stored_image(pacs_storage)

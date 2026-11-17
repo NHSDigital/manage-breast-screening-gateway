@@ -28,8 +28,12 @@ class DICOMUploader:
         action_id, base_url = source_attributes if source_attributes else (None, None)
 
         if not action_id:
-            logger.error(f"No action_id for {sop_instance_uid}, upload will be rejected by server")
+            logger.error("No action_id for %s, upload will be rejected by server", sop_instance_uid)
             return False
+
+        if "SMOKE-" in action_id:
+            logger.info("Skipping upload for %s with smoke test action_id %s", sop_instance_uid, action_id)
+            return True
 
         api_endpoint_url = config.cloud_api_endpoint(base_url) if base_url else self.api_endpoint
         api_endpoint_url = api_endpoint_url + "/" + action_id

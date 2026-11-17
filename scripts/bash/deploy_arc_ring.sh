@@ -62,6 +62,35 @@ GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 declare -a MACHINE_NAMES=()
 declare -a RUN_CMD_NAMES=()
 
+# Delete all submitted run commands on exit, whether the deploy succeeded or failed.
+# Preserves the script's original exit code.
+cleanup_run_commands() {
+  local rc=$?
+  set +e
+  trap - EXIT
+  local i machine name url
+  for i in "${!RUN_CMD_NAMES[@]}"; do
+    machine="${MACHINE_NAMES[$i]}"
+    name="${RUN_CMD_NAMES[$i]}"
+    url="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/${ARC_RG}/providers/Microsoft.HybridCompute/machines/${machine}/runCommands/${name}?api-version=2024-07-10"
+    state=$(az rest --method GET --url "${url}&\$expand=instanceView" \
+      --query "properties.instanceView.executionState" -o tsv 2>/dev/null)
+
+    if [[ "$state" == "Running" || "$state" == "Pending" ]]; then
+      echo "##vso[task.logissue type=warning]Run command '${name}' on ${machine} is still ${state} — not deleting"
+      continue
+    fi
+
+    echo "Deleting run command '${name}' on ${machine}..."
+    if ! az rest --method DELETE --url "$url" --output none; then
+      echo "##vso[task.logissue type=warning]Failed to delete run command '${name}' on ${machine}"
+    fi
+  done
+  exit $rc
+}
+trap cleanup_run_commands EXIT
+
+
 # API_ENVIRONMENT is used to set the AET and port for the MWL and PACS servers.
 API_ENVIRONMENT=$(echo "$ENVIRONMENT" | tr '[:lower:]' '[:upper:]')
 if [[ ${#API_ENVIRONMENT} -gt 4 ]]; then

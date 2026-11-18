@@ -1,0 +1,51 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: environment
+    displayName: Environment
+    type: string
+
+  - name: pool
+    displayName: ADO management pool
+    type: string
+
+  - name: githubToken
+    displayName: GitHub token for release downloads
+    type: string
+    default: ""
+
+
+stages:
+  - stage: ${{ parameters.environment }}
+    displayName: Run smoke test on gateway app in ${{ parameters.environment }}
+    pool:
+      name: ${{ parameters.pool }}
+    lockBehavior: sequential
+    isSkippable: false
+
+    jobs:
+      - deployment: SmokeTestGatewayApp
+        displayName: Smoke test gateway app
+        environment: ${{ parameters.environment }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+
+                - task: AzureCLI@2
+                  displayName: Smoke test gateway app in ${{ parameters.environment }}
+                  inputs:
+                    azureSubscription: mbsgw-${{ parameters.environment }}
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    addSpnToEnvironment: true
+                    inlineScript: |
+                      export ARM_TENANT_ID="$tenantId"
+                      export ARM_CLIENT_ID="$servicePrincipalId"
+                      export ARM_OIDC_TOKEN="$idToken"
+                      export ARM_USE_OIDC=true
+                      export ARM_USE_AZUREAD=true
+                      export GITHUB_TOKEN="${{ parameters.githubToken }}"
+                      make ci ${{ parameters.environment }} smoke-test

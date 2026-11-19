@@ -101,6 +101,7 @@ class CFind:
 
         ds.StudyDescription = item.study_description
         sps_item.ScheduledProcedureStepDescription = ds.StudyDescription
+        ds.RequestedProcedureDescription = ds.StudyDescription
 
         ds.RequestedProcedureID = item.procedure_code
 

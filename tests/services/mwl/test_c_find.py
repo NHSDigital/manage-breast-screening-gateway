@@ -247,6 +247,7 @@ class TestCFind:
         assert ds.PatientSex == "F"
 
         assert ds.StudyDescription == "Bilateral Screening Mammogram"
+        assert ds.RequestedProcedureDescription == "Bilateral Screening Mammogram"
         assert ds.StudyInstanceUID == "1.2.3.4.5"  # gitleaks:allow
 
         scheduled_procedure_step = ds.ScheduledProcedureStepSequence[0]

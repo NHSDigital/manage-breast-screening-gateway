@@ -38,77 +38,98 @@ if [[ -z "$MACHINES" ]]; then
 fi
 
 FAILED_MACHINES=()
+MACHINE_NAMES=()
+PIDS=()
+MACHINE_INDEX=0
+
+run_smoke_test() {
+  local machine="$1"
+  local run_name="$2"
+  local result=0
+
+  echo "--- Smoke test: ${machine} (run command: ${run_name}) ---"
+
+  ( az connectedmachine run-command create \
+    --name "${run_name}" \
+    --machine-name "${machine}" \
+    --resource-group "${RESOURCE_GROUP}" \
+    --location "${LOCATION}" \
+    --script "${SCRIPT_CONTENT}" \
+    --output none ) &
+
+    echo "--- Waiting for smoke test to complete on ${machine} ---"
+
+    # Poll until the run command completes (max 10 minutes, 10s interval)
+    for i in $(seq 1 60); do
+      EXEC_STATE=$(az connectedmachine run-command show \
+        --name "${run_name}" \
+        --machine-name "${machine}" \
+        --resource-group "${RESOURCE_GROUP}" \
+        --query "instanceView.executionState" \
+        --output tsv 2>/dev/null || echo "Unknown")
+
+      if [[ "$EXEC_STATE" == "Succeeded" ]]; then
+        echo "✓ ${machine}: smoke test passed"
+        break
+      elif [[ "$EXEC_STATE" == "Failed" ]]; then
+        OUTPUT=$(az connectedmachine run-command show \
+          --name "${run_name}" \
+          --machine-name "${machine}" \
+          --resource-group "${RESOURCE_GROUP}" \
+          --query "instanceView.output" \
+          --output tsv 2>/dev/null || echo "(no output)")
+        ERROR=$(az connectedmachine run-command show \
+          --name "${run_name}" \
+          --machine-name "${machine}" \
+          --resource-group "${RESOURCE_GROUP}" \
+          --query "instanceView.error" \
+          --output tsv 2>/dev/null || echo "(no error)")
+        echo "✗ ${machine}: smoke test FAILED"
+        echo "  Output: ${OUTPUT}"
+        echo "  Error:  ${ERROR}"
+        result=1
+        break
+      fi
+
+      if [[ $i -eq 60 ]]; then
+        echo "✗ ${machine}: timed out after 10 minutes (last state: ${EXEC_STATE})"
+        result=1
+      else
+        echo "  ${machine}: [${i}/60] ${EXEC_STATE} — waiting 10s..."
+        sleep 10
+      fi
+    done
+
+  # Clean up the run command resource regardless of outcome.
+  az connectedmachine run-command delete \
+    --name "${run_name}" \
+    --machine-name "${machine}" \
+    --resource-group "${RESOURCE_GROUP}" \
+    --yes --output none 2>/dev/null || true
+
+  return "$result"
+}
 
 while IFS= read -r MACHINE; do
   [[ -z "$MACHINE" ]] && continue
 
-  RUN_NAME="smoke-$(date +%s)"
-  echo ""
-  echo "--- Smoke test: ${MACHINE} (run command: ${RUN_NAME}) ---"
-
-  az connectedmachine run-command create \
-    --name "${RUN_NAME}" \
-    --machine-name "${MACHINE}" \
-    --resource-group "${RESOURCE_GROUP}" \
-    --location "${LOCATION}" \
-    --script "${SCRIPT_CONTENT}" \
-    --output none
-
-  echo "--- Waiting for smoke test to complete on ${MACHINE} ---"
-
-  # Poll until the run command completes (max 5 minutes, 10s interval)
-  PASSED=false
-  for i in $(seq 1 30); do
-    EXEC_STATE=$(az connectedmachine run-command show \
-      --name "${RUN_NAME}" \
-      --machine-name "${MACHINE}" \
-      --resource-group "${RESOURCE_GROUP}" \
-      --query "instanceView.executionState" \
-      --output tsv 2>/dev/null || echo "Unknown")
-
-    if [[ "$EXEC_STATE" == "Succeeded" ]]; then
-      echo "✓ ${MACHINE}: smoke test passed"
-      PASSED=true
-      break
-    elif [[ "$EXEC_STATE" == "Failed" ]]; then
-      OUTPUT=$(az connectedmachine run-command show \
-        --name "${RUN_NAME}" \
-        --machine-name "${MACHINE}" \
-        --resource-group "${RESOURCE_GROUP}" \
-        --query "instanceView.output" \
-        --output tsv 2>/dev/null || echo "(no output)")
-      ERROR=$(az connectedmachine run-command show \
-        --name "${RUN_NAME}" \
-        --machine-name "${MACHINE}" \
-        --resource-group "${RESOURCE_GROUP}" \
-        --query "instanceView.error" \
-        --output tsv 2>/dev/null || echo "(no error)")
-      echo "✗ ${MACHINE}: smoke test FAILED"
-      echo "  Output: ${OUTPUT}"
-      echo "  Error:  ${ERROR}"
-      break
-    fi
-
-    if [[ $i -eq 30 ]]; then
-      echo "✗ ${MACHINE}: timed out after 5 minutes (last state: ${EXEC_STATE})"
-    else
-      echo "  [${i}/30] ${EXEC_STATE} — waiting 10s..."
-      sleep 10
-    fi
-  done
-
-  # Clean up the run command resource regardless of outcome
-  az connectedmachine run-command delete \
-    --name "${RUN_NAME}" \
-    --machine-name "${MACHINE}" \
-    --resource-group "${RESOURCE_GROUP}" \
-    --yes --output none 2>/dev/null || true
-
-  if [[ "$PASSED" != "true" ]]; then
-    FAILED_MACHINES+=("${MACHINE}")
-  fi
+  MACHINE_NAMES+=("${MACHINE}")
+  MACHINE_INDEX=$((MACHINE_INDEX + 1))
+  RUN_NAME="smoke-$(date +%s)-${MACHINE_INDEX}"
+  echo "Starting smoke test on ${MACHINE} (run command: ${RUN_NAME})..."
+  ( run_smoke_test "${MACHINE}" "${RUN_NAME}" ) &
+  PIDS+=("$!")
 
 done <<< "$MACHINES"
+
+echo "Started smoke tests on ${#MACHINE_NAMES[@]} machine(s) in parallel."
+
+for i in "${!PIDS[@]}"; do
+  echo ""
+  if ! wait "${PIDS[$i]}"; then
+    FAILED_MACHINES+=("${MACHINE_NAMES[$i]}")
+  fi
+done
 
 echo ""
 if [[ ${#FAILED_MACHINES[@]} -gt 0 ]]; then

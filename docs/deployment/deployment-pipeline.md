@@ -348,8 +348,8 @@ On success, write the `ReleaseTag` to `<BaseInstallPath>\VERSION`. This is read 
 After the app deployment job completes, [`stage-4-deploy-env.yaml`](https://github.com/NHSDigital/manage-breast-screening-gateway/blob/main/.github/workflows/stage-4-deploy-env.yaml) runs a smoke test. The test calls [`scripts/bash/smoke_test.sh`](https://github.com/NHSDigital/manage-breast-screening-gateway/blob/main/scripts/bash/smoke_test.sh) `<environment>`, which:
 
 1. Lists all Arc machines in the environment's Arc RG.
-2. For each machine, submits an `az connectedmachine run-command create` running [`scripts/powershell/smoke_test.ps1`](https://github.com/NHSDigital/manage-breast-screening-gateway/blob/main/scripts/powershell/smoke_test.ps1).
-3. Polls up to 5 minutes for completion.
+2. Submits an `az connectedmachine run-command create` running [`scripts/powershell/smoke_test.ps1`](https://github.com/NHSDigital/manage-breast-screening-gateway/blob/main/scripts/powershell/smoke_test.ps1) to every machine in parallel.
+3. Polls each machine in parallel for up to 5 minutes.
 4. Cleans up the run command resource regardless of outcome.
 5. Reports failures and exits non-zero if any machine failed.
 

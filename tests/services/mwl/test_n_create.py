@@ -124,3 +124,21 @@ class TestNCreate:
 
         assert status == MISSING_ATTRIBUTE
         assert ds is None
+
+    def test_ncreate_uses_default_charset_when_not_specified(self, storage, event, sop_instance_uid):
+        """N-CREATE uses default character set when not specified."""
+        status, ds = NCreate(storage).call(event)
+
+        assert status == SUCCESS
+        assert ds is not None
+        assert ds.SpecificCharacterSet == "ISO_IR 192"
+
+    def test_ncreate_honours_specific_character_set(self, storage, event, sop_instance_uid):
+        """N-CREATE honours SpecificCharacterSet ISO_IR 100."""
+        event.attribute_list.SpecificCharacterSet = "ISO_IR 100"
+
+        status, ds = NCreate(storage).call(event)
+
+        assert status == SUCCESS
+        assert ds is not None
+        assert ds.SpecificCharacterSet == "ISO_IR 100"

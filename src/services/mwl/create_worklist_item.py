@@ -23,7 +23,7 @@ class CreateWorklistItem:
             self.storage.store_worklist_item(
                 WorklistItem(
                     accession_number=accession_number,
-                    patient_id=participant.get("nhs_number"),
+                    patient_id=participant.get("patient_id", participant.get("nhs_number")),
                     patient_name=participant.get("name"),
                     patient_birth_date=participant.get("birth_date"),
                     patient_sex=participant.get("sex", ""),

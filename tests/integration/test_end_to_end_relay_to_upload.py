@@ -16,7 +16,7 @@ from pynetdicom.sop_class import ModalityWorklistInformationFind
 
 from relay_listener import RelayListener
 from server import MWLServer, PACSServer
-from services.dicom import PENDING, SUCCESS
+from services.dicom import PENDING, SUCCESS, next_message_id
 from services.dicom.dicom_uploader import DICOMUploader
 from services.dicom.upload_processor import UploadProcessor
 from services.storage import MWLStorage, PACSStorage
@@ -149,10 +149,18 @@ class TestEndToEndRelayToUpload:
 
             assert assoc.is_established, "Failed to establish C-FIND association"
 
+            message_id = next_message_id()
             query = Dataset()
+            query.MessageID = message_id
             query.PatientID = TEST_PATIENT_ID
 
-            responses = list(assoc.send_c_find(query, query_model=ModalityWorklistInformationFind))
+            responses = list(
+                assoc.send_c_find(
+                    query,
+                    query_model=ModalityWorklistInformationFind,
+                    msg_id=message_id,
+                )
+            )
             assoc.release()
 
             # Should have 1 pending result + 1 success status
@@ -161,6 +169,7 @@ class TestEndToEndRelayToUpload:
             assert status.Status == PENDING
             assert ds.PatientID == TEST_PATIENT_ID
             assert ds.AccessionNumber == TEST_ACCESSION_NUMBER
+            assert ds.MessageIDBeingRespondedTo == message_id
 
             status, ds = responses[1]
             assert status.Status == SUCCESS

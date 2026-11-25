@@ -4,7 +4,7 @@ import pytest
 from pydicom import Dataset
 from pydicom.uid import generate_uid
 
-from services.dicom import PENDING, SUCCESS
+from services.dicom import DEFAULT_MESSAGE_ID, PENDING, SUCCESS
 from services.mwl.c_find import CFind
 from services.storage import MWLStorage, WorklistItem
 
@@ -55,10 +55,12 @@ class TestCFindReturnsWorklistItems:
     @pytest.fixture
     def event(self):
         dataset = Dataset()
+        dataset.MessageID = DEFAULT_MESSAGE_ID
         sps = Dataset()
         dataset.ScheduledProcedureStepSequence = [sps]
         event = PropertyMock()
         event.assoc.requestor.ae_title = "ae-title"
+        event.message_id = DEFAULT_MESSAGE_ID
         event.identifier = dataset
         return event
 
@@ -74,6 +76,7 @@ class TestCFindReturnsWorklistItems:
         assert ds.PatientBirthDate == "19800101"
         assert ds.PatientSex == "F"
         assert ds.AccessionNumber == "ACC123456"
+        assert ds.MessageIDBeingRespondedTo == DEFAULT_MESSAGE_ID
         assert ds.StudyDescription == "MAMMOGRAPHY"
         assert ds.ScheduledProcedureStepSequence[0].Modality == "MG"
         assert ds.ScheduledProcedureStepSequence[0].ScheduledProcedureStepDescription == "MAMMOGRAPHY"

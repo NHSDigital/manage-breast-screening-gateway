@@ -5,7 +5,7 @@ from pynetdicom import AE
 from pynetdicom.sop_class import ModalityWorklistInformationFind
 
 from server import MWLServer
-from services.dicom import PENDING, SUCCESS
+from services.dicom import PENDING, SUCCESS, next_message_id
 from services.storage import WorklistItem
 
 
@@ -60,10 +60,18 @@ class TestRequestCFindOnWorklist:
         assoc = ae.associate("0.0.0.0", 4243, ae_title="MWL_SCP_AE_TITLE")
 
         assert assoc.is_established
+        message_id = next_message_id()
         query = Dataset()
+        query.MessageID = message_id
         query.QueryRetrieveLevel = "SCHEDULED"
 
-        responses = list(assoc.send_c_find(query, query_model=ModalityWorklistInformationFind))
+        responses = list(
+            assoc.send_c_find(
+                query,
+                query_model=ModalityWorklistInformationFind,
+                msg_id=message_id,
+            )
+        )
         assert len(responses) == 3
 
         status, ds = responses[0]
@@ -71,6 +79,7 @@ class TestRequestCFindOnWorklist:
         assert ds.PatientID == "999123456"
         assert ds.PatientName == "SMITH^JANE"
         assert ds.AccessionNumber == "ACC123456"
+        assert ds.MessageIDBeingRespondedTo == message_id
 
         status, ds = responses[1]
         assert status.Status == PENDING
@@ -89,14 +98,22 @@ class TestRequestCFindOnWorklist:
         assoc = ae.associate("0.0.0.0", 4243, ae_title="MWL_SCP_AE_TITLE")
 
         assert assoc.is_established
+        message_id = next_message_id()
         query = Dataset()
+        query.MessageID = message_id
         query.QueryRetrieveLevel = "SCHEDULED"
         query.ScheduledProcedureStepSequence = [Dataset()]
         query.ScheduledProcedureStepSequence[0].ScheduledProcedureStepStartDate = "20240102"
         query.AccessionNumber = ""
         query.Modality = "MG"
 
-        responses = list(assoc.send_c_find(query, query_model=ModalityWorklistInformationFind))
+        responses = list(
+            assoc.send_c_find(
+                query,
+                query_model=ModalityWorklistInformationFind,
+                msg_id=message_id,
+            )
+        )
         assert len(responses) == 2
 
         status, ds = responses[0]

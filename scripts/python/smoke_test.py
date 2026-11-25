@@ -16,7 +16,7 @@ from pynetdicom.sop_class import (
     ModalityWorklistInformationFind,
 )
 
-from services.dicom import PENDING, SUCCESS
+from services.dicom import PENDING, SUCCESS, next_message_id
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.storage import MWLStorage, PACSStorage
 
@@ -139,13 +139,16 @@ def c_find_worklist_item():
     assoc = ae.associate(mwl_host, mwl_port, ae_title=os.environ["MWL_AET"])
     assert assoc.is_established, "Failed to establish C-FIND association"
 
+    message_id = next_message_id()
     query = Dataset()
+    query.MessageID = message_id
     query.PatientID = TEST_PATIENT_ID
 
     responses = list(
         assoc.send_c_find(
             query,
             query_model=ModalityWorklistInformationFind,
+            msg_id=message_id,
         )
     )
     assoc.release()
@@ -155,6 +158,7 @@ def c_find_worklist_item():
     status, ds = responses[0]
     assert status.Status == PENDING, "C-FIND response status is not PENDING"
     assert ds.PatientID == TEST_PATIENT_ID, "C-FIND response PatientID does not match"
+    assert ds.MessageIDBeingRespondedTo == message_id, "C-FIND response does not echo MessageID"
 
 
 def store_dicom_image():

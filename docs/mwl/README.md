@@ -103,11 +103,17 @@ be adjusted in Task Scheduler or via Azure Arc without a code change. An equival
 from pynetdicom import AE, QueryRetrievePresentationContexts
 from pydicom import Dataset
 
+from services.dicom import next_message_id
+
 ae = AE()
 ae.requested_contexts = QueryRetrievePresentationContexts
 
-# Create query dataset
+# Create query dataset. MessageID (0000,0110) is mandatory in the
+# C-FIND-RQ command set and must be unique per association. The SCP echoes
+# it back as MessageIDBeingRespondedTo (0000,0120).
+MESSAGE_ID = next_message_id()
 ds = Dataset()
+ds.MessageID = MESSAGE_ID
 ds.PatientID = "9876543210"
 ds.PatientName = ""
 ds.AccessionNumber = ""
@@ -120,7 +126,7 @@ ds.ScheduledProcedureStepSequence = [sps]
 
 # Send C-FIND with Worklist Information Model ('W')
 assoc = ae.associate("localhost", 4243, ae_title="MWL_SCP")
-responses = assoc.send_c_find(ds, query_model="W")
+responses = assoc.send_c_find(ds, query_model="W", msg_id=MESSAGE_ID)
 for status, identifier in responses:
     if status.Status in (0xFF00, 0xFF01):
         print(f"Found: {identifier.PatientName}")

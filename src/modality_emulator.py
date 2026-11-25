@@ -16,7 +16,7 @@ from pynetdicom.sop_class import (
 
 import config
 from environment import Environment
-from services.dicom import PENDING, PENDING_WARNING, SUCCESS
+from services.dicom import PENDING, PENDING_WARNING, SUCCESS, next_message_id
 from services.mwl import MWLStatus
 from services.storage import MWLStorage
 
@@ -141,8 +141,13 @@ class ModalityEmulator:
             logger.info(f"Connected to PACS server {PACS_HOST}:{PACS_PORT} ({PACS_AET})")
 
             logger.info("Querying MWL for scheduled items...")
-            c_find_dataset = self.c_find_dataset(patient_name=patient_name)
-            responses = mwl_assoc.send_c_find(c_find_dataset, query_model=ModalityWorklistInformationFind)
+            message_id = next_message_id()
+            c_find_dataset = self.c_find_dataset(patient_name=patient_name, message_id=message_id)
+            responses = mwl_assoc.send_c_find(
+                c_find_dataset,
+                query_model=ModalityWorklistInformationFind,
+                msg_id=message_id,
+            )
             for status, ds in responses:
                 status_code = getattr(status, "Status", SUCCESS)
 
@@ -191,9 +196,12 @@ class ModalityEmulator:
         mwl_assoc.release()
         pacs_assoc.release()
 
-    def c_find_dataset(self, patient_name: str | None = None) -> Dataset:
+    def c_find_dataset(self, patient_name: str | None = None, message_id: int | None = None) -> Dataset:
         date_today = datetime.date.today()
         ds = Dataset()
+        # (0000,0110) Message ID is mandatory in the C-FIND command set and
+        # must be unique among outstanding requests on the association.
+        ds.MessageID = message_id if message_id is not None else next_message_id()
         sps_dataset = Dataset()
         sps_dataset.Modality = MODALITY
         sps_dataset.ScheduledProcedureStepStartDate = date_today.strftime("%Y%m%d")

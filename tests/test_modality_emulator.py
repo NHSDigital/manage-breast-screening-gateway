@@ -12,6 +12,7 @@ from modality_emulator import (
     ModalityEmulator,
     main,
 )
+from services.dicom import DEFAULT_MESSAGE_ID, MAX_MESSAGE_ID
 
 
 class TestDicomExample:
@@ -83,6 +84,18 @@ class TestDicomExample:
 
 
 class TestModalityEmulator:
+    def test_c_find_dataset_includes_unique_message_id(self):
+        """C-FIND queries allocate distinct 16-bit Message ID values."""
+        emulator = ModalityEmulator(MagicMock())
+
+        first_query = emulator.c_find_dataset()
+        second_query = emulator.c_find_dataset()
+        explicit_query = emulator.c_find_dataset(message_id=42)
+
+        assert DEFAULT_MESSAGE_ID <= first_query.MessageID <= MAX_MESSAGE_ID
+        assert first_query.MessageID != second_query.MessageID
+        assert explicit_query.MessageID == 42
+
     @pytest.fixture
     def pending_status(self):
         status = Dataset()
@@ -152,6 +165,8 @@ class TestModalityEmulator:
         expected_send_count = len(DICOM_LATERALITIES) * len(DICOM_VIEWS)
 
         assert mwl_assoc.send_c_find.call_count == 1
+        query = mwl_assoc.send_c_find.call_args.args[0]
+        assert query.MessageID == mwl_assoc.send_c_find.call_args.kwargs["msg_id"]
         assert pacs_assoc.send_c_store.call_count == expected_send_count
 
         mwl_storage.update_status.assert_called_once_with(
@@ -217,7 +232,9 @@ class TestModalityEmulator:
 
         emulator.process_worklist_items(patient_name="Jane Doe")
 
-        mock_c_find_dataset.assert_called_once_with(patient_name="Jane Doe")
+        mock_c_find_dataset.assert_called_once()
+        assert mock_c_find_dataset.call_args.kwargs["patient_name"] == "Jane Doe"
+        assert mock_c_find_dataset.call_args.kwargs["message_id"] == mwl_assoc.send_c_find.call_args.kwargs["msg_id"]
         mwl_storage.update_status.assert_not_called()
         mwl_assoc.release.assert_called_once()
         pacs_assoc.release.assert_called_once()

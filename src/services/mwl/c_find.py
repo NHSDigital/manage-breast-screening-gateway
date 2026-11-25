@@ -11,10 +11,27 @@ from pydicom import Dataset
 from pynetdicom import evt
 
 from models import WorklistItem
-from services.dicom import CHARSET_UTF8, FAILURE, PENDING, SUCCESS
+from services.dicom import CHARSET_UTF8, DEFAULT_MESSAGE_ID, FAILURE, PENDING, SUCCESS
 from services.storage import MWLStorage
 
 logger = logging.getLogger(__name__)
+
+
+def _request_message_id(event: evt.Event, identifier: Dataset) -> int:
+    """Return the Message ID (0000,0110) of the C-FIND request.
+
+    pynetdicom exposes this on the event as ``message_id``. Fall back to the
+    raw DIMSE request and then to the identifier so that handler test doubles
+    which don't model the command set still produce a conformant response.
+    """
+    message_id = getattr(event, "message_id", None)
+    if not isinstance(message_id, int):
+        message_id = getattr(getattr(event, "request", None), "MessageID", None)
+    if not isinstance(message_id, int):
+        message_id = identifier.get("MessageID")
+    if not isinstance(message_id, int):
+        return DEFAULT_MESSAGE_ID
+    return message_id
 
 
 class CFind:
@@ -36,8 +53,9 @@ class CFind:
         """
         identifier = event.identifier
         requestor_aet = event.assoc.requestor.ae_title
+        message_id = _request_message_id(event, identifier)
 
-        logger.info(f"C-FIND request from {requestor_aet}")
+        logger.info(f"C-FIND request from {requestor_aet} (MessageID {message_id})")
 
         query_patient_id = identifier.get("PatientID")
         anonymised_patient_id = f"*******{query_patient_id[7:]}" if query_patient_id else "None"
@@ -70,7 +88,7 @@ class CFind:
             logger.info("Found %s matching worklist items", len(items))
 
             for item in items:
-                response_ds = self._build_worklist_response(item)
+                response_ds = self._build_worklist_response(item, message_id)
                 yield PENDING, response_ds
 
             yield SUCCESS, None
@@ -79,9 +97,12 @@ class CFind:
             logger.error("Error processing C-FIND request: %s", e, exc_info=True)
             yield FAILURE, None
 
-    def _build_worklist_response(self, item: WorklistItem) -> Dataset:
+    def _build_worklist_response(self, item: WorklistItem, message_id: int = DEFAULT_MESSAGE_ID) -> Dataset:
         ds = Dataset()
         sps_item = Dataset()
+
+        # Mandatory in every C-FIND-RSP: it must match the request's Message ID.
+        ds.MessageIDBeingRespondedTo = message_id
 
         ds.SpecificCharacterSet = CHARSET_UTF8
 

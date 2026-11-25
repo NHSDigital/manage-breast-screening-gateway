@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 from pydicom import Dataset
 
-from services.dicom import CHARSET_UTF8, FAILURE, PENDING, SUCCESS
+from services.dicom import CHARSET_UTF8, DEFAULT_MESSAGE_ID, FAILURE, PENDING, SUCCESS
 from services.mwl.c_find import CFind
 from services.storage import WorklistItem
 
@@ -74,12 +74,24 @@ class TestCFind:
         assert status == PENDING
         assert isinstance(ds, Dataset)
         assert ds.SpecificCharacterSet == CHARSET_UTF8
+        assert ds.MessageIDBeingRespondedTo == DEFAULT_MESSAGE_ID
         assert ds.PatientID == "9876543210"
         assert ds.AccessionNumber == "ACC001"
         # Final result: success
         status, ds = results[1]
         assert status == SUCCESS
         assert ds is None
+
+    def test_call_echoes_request_message_id_in_response(self, handler, mock_storage, mock_event, sample_worklist_item):
+        """C-FIND: Response includes MessageIDBeingRespondedTo from the request."""
+        mock_event.message_id = 42
+        mock_storage.find_worklist_items.return_value = [WorklistItem(**sample_worklist_item)]
+
+        results = list(handler.call(mock_event))
+
+        status, ds = results[0]
+        assert status == PENDING
+        assert ds.MessageIDBeingRespondedTo == 42
 
     def test_call_with_multiple_results(self, handler, mock_storage, mock_event):
         """C-FIND: Call with multiple results."""

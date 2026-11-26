@@ -21,8 +21,8 @@ from websockets.exceptions import ConnectionClosedError
 
 import config
 from environment import Environment
-from modality_emulator import ModalityEmulator
 from services.health import collect_health
+from services.mwl.create_test_worklist_item import CreateTestWorklistItem
 from services.mwl.create_worklist_item import CreateWorklistItem
 from services.mwl.update_worklist_item_status import UpdateWorklistItemStatus
 from services.storage import MWLStorage
@@ -139,45 +139,12 @@ class RelayListener:
         if action_name == "worklist.create_item":
             return CreateWorklistItem(self.storage).call(payload)
         if action_name == "worklist.create_test_item":
-            result = CreateWorklistItem(self.storage).call(payload)
-
-            patient_name = payload.get("parameters", {}).get("worklist_item", {}).get("participant", {}).get("name")
-
-            if not patient_name:
-                logger.warning("No patient name provided for ModalityEmulator test item processing")
-                return {
-                    "status": "error",
-                    "message": ("No patient name provided for ModalityEmulator test item processing"),
-                }
-
-            if payload.get("parameters", {}).get("emulate_modality", True):
-                self.process_with_modality_emulator(patient_name=patient_name)
-
-            return result
+            return CreateTestWorklistItem(self.storage).call(payload)
         if action_name == "worklist.update_status":
             return UpdateWorklistItemStatus(self.storage).call(payload)
 
         logger.error("Unsupported action: %s", action_name)
         return {"status": "error", "message": f"Unsupported action: {action_name}"}
-
-    def process_with_modality_emulator(self, patient_name: str | None = None):
-        """Process worklist items with ModalityEmulator."""
-
-        def _run_emulator():
-            try:
-                ModalityEmulator(self.storage).process_worklist_items(
-                    patient_name=patient_name,
-                )
-            except Exception:
-                logger.exception("Modality emulator processing failed")
-
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            # Called outside an event loop (e.g. unit tests)
-            _run_emulator()
-        else:
-            loop.create_task(asyncio.to_thread(_run_emulator))
 
 
 class RelayURI:

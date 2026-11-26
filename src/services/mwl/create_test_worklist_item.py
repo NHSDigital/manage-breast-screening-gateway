@@ -34,7 +34,7 @@ class CreateTestWorklistItem(CreateWorklistItem):
         if status == "exists":
             return result
 
-        if payload.get("parameters", {}).get("emulate_modality", True):
+        if parameters.get("emulate_modality", True):
             self.process_with_modality_emulator(
                 patient_name=patient_name,
                 accession_number=accession_number,
